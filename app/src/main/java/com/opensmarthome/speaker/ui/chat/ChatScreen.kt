@@ -61,16 +61,31 @@ fun ChatScreen(
             }
         }
 
-        if (state is ConversationState.Thinking) {
+        if (state is ConversationState.Thinking || state is ConversationState.Listening) {
             LinearProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
         }
 
         if (state is ConversationState.Error) {
+            val errorMsg = (state as ConversationState.Error).message
+            val isNoProvider = errorMsg.contains("No available") || errorMsg.contains("not found")
             Text(
-                text = (state as ConversationState.Error).message,
+                text = if (isNoProvider) {
+                    "AI provider not configured. Go to Settings to set up On-Device LLM, OpenClaw, or external LLM endpoint."
+                } else {
+                    errorMsg
+                },
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        if (messages.isEmpty() && state is ConversationState.Idle) {
+            Text(
+                text = "Say \"Hey Speaker\" or tap the mic to start talking.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 

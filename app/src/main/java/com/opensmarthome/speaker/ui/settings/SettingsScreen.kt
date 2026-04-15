@@ -71,6 +71,39 @@ fun SettingsScreen(
         SettingsTextField("Model Name", localLlmModel) { model ->
             viewModel.saveLocalLlmSettings(localLlmUrl, model)
         }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // SwitchBot Section
+        val switchBotToken by viewModel.switchBotToken.collectAsState()
+        val switchBotSecret by viewModel.switchBotSecret.collectAsState()
+        SectionHeader("SwitchBot")
+        SettingsTextField("Token", switchBotToken) { token ->
+            viewModel.saveSwitchBotSettings(token, switchBotSecret)
+        }
+        SettingsPasswordField("Secret Key", switchBotSecret) { secret ->
+            viewModel.saveSwitchBotSettings(switchBotToken, secret)
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // MQTT Section
+        val mqttBrokerUrl by viewModel.mqttBrokerUrl.collectAsState()
+        SectionHeader("MQTT (Shelly / Tasmota)")
+        SettingsTextField("Broker URL", mqttBrokerUrl) { url ->
+            viewModel.saveMqttSettings(url)
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Info
+        Text(
+            text = "On-Device LLM: Place a .task model file in the app's files/models/ directory. " +
+                "The app will auto-detect and load it on startup.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
     }
 }
 

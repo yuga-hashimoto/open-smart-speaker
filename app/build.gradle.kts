@@ -104,9 +104,13 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.guava)
 
     // MQTT
     implementation(libs.paho.mqtt)
+
+    // On-device LLM (MediaPipe)
+    implementation(libs.mediapipe.genai)
 
     // Logging
     implementation(libs.timber)
