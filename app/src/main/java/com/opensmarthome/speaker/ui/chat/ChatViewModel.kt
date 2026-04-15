@@ -8,6 +8,8 @@ import com.opensmarthome.speaker.assistant.model.ConversationState
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.voice.pipeline.VoicePipeline
+import com.opensmarthome.speaker.voice.pipeline.VoicePipelineState
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +23,8 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val router: ConversationRouter,
     private val toolExecutor: ToolExecutor,
-    private val moshi: Moshi
+    private val moshi: Moshi,
+    private val voicePipeline: VoicePipeline
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<AssistantMessage>>(emptyList())
@@ -35,8 +38,19 @@ class ChatViewModel @Inject constructor(
 
     private var session: AssistantSession? = null
 
+    val voiceState: StateFlow<VoicePipelineState> = voicePipeline.state
+
     companion object {
         private const val MAX_TOOL_ROUNDS = 10
+    }
+
+    fun startVoiceInput() {
+        viewModelScope.launch {
+            _conversationState.value = ConversationState.Listening
+            voicePipeline.startListening()
+            // After listening completes, the pipeline processes and speaks
+            // We need to sync the text result back to chat
+        }
     }
 
     fun sendMessage(text: String) {

@@ -76,7 +76,7 @@ fun ChatScreen(
 
         ChatInputBar(
             onSend = { viewModel.sendMessage(it) },
-            onMicClick = { /* Will be connected to VoicePipeline */ }
+            onMicClick = { viewModel.startVoiceInput() }
         )
     }
 }

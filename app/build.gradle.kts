@@ -30,6 +30,19 @@ android {
         }
     }
 
+    // NDK build for llama.cpp JNI - requires NDK installation
+    // Install NDK: Android Studio > SDK Manager > SDK Tools > NDK
+    val ndkDir = file("${android.sdkDirectory}/ndk/27.0.12077973")
+    if (ndkDir.exists()) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
+        }
+        ndkVersion = "27.0.12077973"
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
