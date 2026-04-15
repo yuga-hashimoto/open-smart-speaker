@@ -28,6 +28,8 @@ class EmbeddedLlmProvider(
     )
 
     private val bridge = LlamaCppBridge()
+    private val promptBuilder = SystemPromptBuilder()
+    private val toolCallParser = ToolCallParser()
 
     override suspend fun startSession(config: Map<String, String>): AssistantSession {
         if (!bridge.isModelLoaded()) {
@@ -84,37 +86,18 @@ class EmbeddedLlmProvider(
     }
 
     private fun buildPrompt(messages: List<AssistantMessage>, tools: List<ToolSchema>): String {
-        val sb = StringBuilder()
-
-        // Keep prompt minimal for fast inference
-        // Only include the last user message for speed
+        // Minimal prompt for fast inference — no tool schemas, no history
         val lastUserMsg = messages.lastOrNull { it is AssistantMessage.User } as? AssistantMessage.User
+            ?: return "<start_of_turn>user\nHello<end_of_turn>\n<start_of_turn>model\n"
 
-        if (lastUserMsg != null) {
-            sb.append("<start_of_turn>user\n${lastUserMsg.content}<end_of_turn>\n")
-        }
-        sb.append("<start_of_turn>model\n")
-        return sb.toString()
+        return "<start_of_turn>user\n${lastUserMsg.content}<end_of_turn>\n<start_of_turn>model\n"
     }
 
     private fun parseResponse(response: String): AssistantMessage {
-        val trimmed = response.trim()
-        val toolCallRegex = """\{"tool"\s*:\s*"(\w+)"\s*,\s*"arguments"\s*:\s*(\{[^}]*\})\}""".toRegex()
-        val match = toolCallRegex.find(trimmed)
-
-        return if (match != null) {
-            AssistantMessage.Assistant(
-                content = trimmed,
-                toolCalls = listOf(
-                    ToolCallRequest(
-                        id = "call_${java.lang.System.currentTimeMillis()}",
-                        name = match.groupValues[1],
-                        arguments = match.groupValues[2]
-                    )
-                )
-            )
-        } else {
-            AssistantMessage.Assistant(content = trimmed)
-        }
+        val result = toolCallParser.parse(response.trim())
+        return AssistantMessage.Assistant(
+            content = result.text,
+            toolCalls = result.toolCalls
+        )
     }
 }

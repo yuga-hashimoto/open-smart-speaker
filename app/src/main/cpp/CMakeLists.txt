@@ -3,14 +3,11 @@ project(llama_jni)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Build llama.cpp as a static library
+# Let llama.cpp handle ARM optimizations via its own Android detection
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_METAL OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
-set(GGML_CPU_AARCH64 OFF CACHE BOOL "" FORCE)
-set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
-set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -18,7 +15,6 @@ set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(llama.cpp)
 
-# JNI bridge library
 add_library(llama_jni SHARED llama_jni.cpp)
 
 find_library(log-lib log)

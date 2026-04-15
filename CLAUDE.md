@@ -49,3 +49,13 @@ Details: [docs/conventions.md](docs/conventions.md)
 - Write test first (RED → GREEN → REFACTOR)
 - After implementation: run `./gradlew test`, fix failures before declaring done
 - HTTP tests: use `MockWebServer`
+
+## Improvement Loop
+
+Roadmap: [docs/roadmap.md](docs/roadmap.md)
+
+Cycle: Plan → Branch → TDD → Implement → Verify → PR → Merge → Update roadmap
+
+Agents:
+- `improvement-planner` — picks next item, researches, produces plan
+- `improvement-verifier` — build/test/lint/review after implementation

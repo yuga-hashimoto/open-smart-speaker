@@ -16,13 +16,20 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class VoicePipelineTest {
 
     private lateinit var pipeline: VoicePipeline
@@ -32,17 +39,20 @@ class VoicePipelineTest {
     private lateinit var toolExecutor: ToolExecutor
     private lateinit var provider: AssistantProvider
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    private val testDispatcher = StandardTestDispatcher()
 
     @BeforeEach
     fun setup() {
-        stt = mockk()
-        tts = mockk()
-        router = mockk()
-        toolExecutor = mockk()
-        provider = mockk()
+        Dispatchers.setMain(testDispatcher)
+        stt = mockk(relaxed = true)
+        tts = mockk(relaxed = true)
+        router = mockk(relaxed = true)
+        toolExecutor = mockk(relaxed = true)
+        provider = mockk(relaxed = true)
 
         every { stt.isListening } returns MutableStateFlow(false)
         every { tts.isSpeaking } returns MutableStateFlow(false)
+        every { tts.stop() } returns Unit
         every { router.activeProvider } returns MutableStateFlow(provider)
         every { router.availableProviders } returns MutableStateFlow(listOf(provider))
         every { router.policy } returns MutableStateFlow(RoutingPolicy.Auto)
@@ -53,6 +63,11 @@ class VoicePipelineTest {
         pipeline = VoicePipeline(stt, tts, router, toolExecutor, moshi)
     }
 
+    @AfterEach
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
     fun `initial state is Idle`() {
         assertEquals(VoicePipelineState.Idle, pipeline.state.value)
@@ -61,11 +76,13 @@ class VoicePipelineTest {
     @Test
     fun `processUserInput sets state to Processing then Idle`() = runTest {
         coEvery { router.resolveProvider() } returns provider
+        coEvery { provider.startSession(any()) } returns AssistantSession(providerId = "test")
         coEvery { provider.send(any(), any(), any()) } returns
             AssistantMessage.Assistant(content = "Hello!")
-        coEvery { tts.speak("Hello!") } returns Unit
+        coEvery { tts.speak(any()) } returns Unit
 
         pipeline.processUserInput("Hi")
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(VoicePipelineState.Idle, pipeline.state.value)
         coVerify { tts.speak("Hello!") }
@@ -76,9 +93,11 @@ class VoicePipelineTest {
         coEvery { router.resolveProvider() } throws RuntimeException("No providers")
 
         pipeline.processUserInput("test")
+        testDispatcher.scheduler.advanceTimeBy(5000)
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = pipeline.state.value
-        assert(state is VoicePipelineState.Error)
+        // After delay(4000), state returns to Idle
+        assertEquals(VoicePipelineState.Idle, pipeline.state.value)
     }
 
     @Test

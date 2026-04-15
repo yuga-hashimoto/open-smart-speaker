@@ -18,6 +18,21 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DANDROID_ARM_NEON=TRUE",
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-DCMAKE_C_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG",
+                    "-DCMAKE_CXX_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG"
+                )
+            }
+        }
     }
 
     buildTypes {
@@ -55,6 +70,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    @Suppress("UnstableApiUsage")
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
     }
 }
 

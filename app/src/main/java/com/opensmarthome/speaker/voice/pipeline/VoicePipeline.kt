@@ -164,8 +164,14 @@ class VoicePipeline(
                         }
 
                         _lastResponse.value = response.content
+                        Timber.d("Speaking response: ${response.content.take(50)}...")
                         _state.value = VoicePipelineState.Speaking
-                        tts.speak(response.content)
+                        try {
+                            tts.speak(response.content)
+                            Timber.d("TTS completed")
+                        } catch (e: Exception) {
+                            Timber.e(e, "TTS failed")
+                        }
                         _state.value = VoicePipelineState.Idle
                         return
                     }
