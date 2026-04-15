@@ -15,6 +15,7 @@ import com.opensmarthome.speaker.device.tool.DeviceToolExecutor
 import com.opensmarthome.speaker.homeassistant.client.HomeAssistantClient
 import com.opensmarthome.speaker.tool.CompositeToolExecutor
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.tool.system.AndroidAppLauncher
 import com.opensmarthome.speaker.tool.system.AndroidTimerManager
 import com.opensmarthome.speaker.tool.system.AndroidVolumeManager
 import com.opensmarthome.speaker.tool.system.SystemToolExecutor
@@ -73,7 +74,8 @@ object DeviceModule {
             DeviceToolExecutor(deviceManager, moshi),
             SystemToolExecutor(
                 AndroidTimerManager(context),
-                AndroidVolumeManager(context)
+                AndroidVolumeManager(context),
+                AndroidAppLauncher(context)
             )
         )
     )

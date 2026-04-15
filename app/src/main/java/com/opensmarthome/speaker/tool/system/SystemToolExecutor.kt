@@ -6,14 +6,19 @@ import com.opensmarthome.speaker.tool.ToolParameter
 import com.opensmarthome.speaker.tool.ToolResult
 import com.opensmarthome.speaker.tool.ToolSchema
 import timber.log.Timber
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
- * Executes Android system tools: timers, volume control, etc.
+ * Executes Android system tools: timers, volume, app launcher, datetime.
  * Bridges LLM tool calls to Android system APIs.
  */
 class SystemToolExecutor(
     private val timerManager: TimerManager,
-    private val volumeManager: VolumeManager
+    private val volumeManager: VolumeManager,
+    private val appLauncher: AppLauncher? = null
 ) : ToolExecutor {
 
     override suspend fun availableTools(): List<ToolSchema> = listOf(
@@ -48,6 +53,23 @@ class SystemToolExecutor(
             name = "get_volume",
             description = "Get the current device volume level.",
             parameters = emptyMap()
+        ),
+        ToolSchema(
+            name = "get_datetime",
+            description = "Get the current date, time, and day of week.",
+            parameters = emptyMap()
+        ),
+        ToolSchema(
+            name = "launch_app",
+            description = "Open an app on the device by name (e.g. 'YouTube', 'Chrome', 'Settings').",
+            parameters = mapOf(
+                "app_name" to ToolParameter("string", "The app name to launch", required = true)
+            )
+        ),
+        ToolSchema(
+            name = "list_apps",
+            description = "List installed apps on the device.",
+            parameters = emptyMap()
         )
     )
 
@@ -59,6 +81,9 @@ class SystemToolExecutor(
                 "get_timers" -> executeGetTimers(call)
                 "set_volume" -> executeSetVolume(call)
                 "get_volume" -> executeGetVolume(call)
+                "get_datetime" -> executeGetDatetime(call)
+                "launch_app" -> executeLaunchApp(call)
+                "list_apps" -> executeListApps(call)
                 else -> ToolResult(call.id, false, "", "Unknown tool: ${call.name}")
             }
         } catch (e: Exception) {
@@ -115,5 +140,40 @@ class SystemToolExecutor(
     private suspend fun executeGetVolume(call: ToolCall): ToolResult {
         val level = volumeManager.getVolume()
         return ToolResult(call.id, true, """{"volume": $level}""")
+    }
+
+    private fun executeGetDatetime(call: ToolCall): ToolResult {
+        val now = Date()
+        val tz = TimeZone.getDefault()
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+        val dayFormat = SimpleDateFormat("EEEE", Locale.US)
+
+        return ToolResult(
+            call.id, true,
+            """{"date":"${dateFormat.format(now)}","time":"${timeFormat.format(now)}","day":"${dayFormat.format(now)}","timezone":"${tz.id}"}"""
+        )
+    }
+
+    private suspend fun executeLaunchApp(call: ToolCall): ToolResult {
+        val launcher = appLauncher
+            ?: return ToolResult(call.id, false, "", "App launcher not available")
+        val appName = call.arguments["app_name"] as? String
+            ?: return ToolResult(call.id, false, "", "Missing app_name")
+
+        val success = launcher.launchApp(appName)
+        return if (success) {
+            ToolResult(call.id, true, """{"launched":"$appName"}""")
+        } else {
+            ToolResult(call.id, false, "", "App not found: $appName")
+        }
+    }
+
+    private suspend fun executeListApps(call: ToolCall): ToolResult {
+        val launcher = appLauncher
+            ?: return ToolResult(call.id, false, "", "App launcher not available")
+        val apps = launcher.listInstalledApps()
+        val data = apps.joinToString(",") { """{"name":"${it.name}","package":"${it.packageName}"}""" }
+        return ToolResult(call.id, true, "[$data]")
     }
 }

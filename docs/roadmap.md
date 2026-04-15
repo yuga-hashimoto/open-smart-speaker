@@ -40,11 +40,11 @@ Make the local LLM a proper agent with multi-step reasoning.
 ### Phase 2: Android System Tools
 Give the agent Android-native capabilities.
 
-- [ ] P2.1: Timer/Alarm tool (set timer, set alarm, cancel)
+- [x] P2.1: Timer/Alarm tool (set timer, set alarm, cancel)
 - [ ] P2.2: Notification tool (read notifications, clear)
 - [ ] P2.3: Calendar tool (query events, create reminders)
-- [ ] P2.4: App launcher tool (open apps by name)
-- [ ] P2.5: Volume/Media control tool
+- [x] P2.4: App launcher tool (open apps by name)
+- [x] P2.5: Volume/Media control tool
 - [ ] P2.6: Contacts/Phone tool (lookup, call)
 
 ### Phase 3: Information Tools
@@ -61,7 +61,7 @@ Make the agent persistent and contextual.
 - [ ] P4.1: Conversation summarization (compress old context)
 - [ ] P4.2: User preference memory (remember user habits)
 - [ ] P4.3: Device state context (auto-include relevant device states)
-- [ ] P4.4: Time/location awareness in system prompt
+- [x] P4.4: Time/location awareness in system prompt (get_datetime tool)
 
 ### Phase 5: Advanced Agent Capabilities
 OpenClaw-level autonomy.
