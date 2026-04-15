@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Chat</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_ambient">Ambient</string>
+    <string name="tab_settings">Settings</string>
+</resources>

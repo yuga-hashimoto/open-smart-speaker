@@ -1,0 +1,82 @@
+package com.opensmarthome.speaker.ui.chat
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.assistant.model.ConversationState
+
+@Composable
+fun ChatScreen(
+    modifier: Modifier = Modifier,
+    viewModel: ChatViewModel = hiltViewModel()
+) {
+    val messages by viewModel.messages.collectAsState()
+    val state by viewModel.conversationState.collectAsState()
+    val streaming by viewModel.streamingContent.collectAsState()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f).padding(top = 8.dp)
+        ) {
+            items(messages, key = { it.id }) { message ->
+                ChatMessageItem(message)
+            }
+
+            if (streaming.isNotBlank()) {
+                item {
+                    Surface(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Text(
+                            text = streaming,
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        }
+
+        if (state is ConversationState.Thinking) {
+            LinearProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
+        }
+
+        if (state is ConversationState.Error) {
+            Text(
+                text = (state as ConversationState.Error).message,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        ChatInputBar(
+            onSend = { viewModel.sendMessage(it) },
+            onMicClick = { /* Will be connected to VoicePipeline */ }
+        )
+    }
+}

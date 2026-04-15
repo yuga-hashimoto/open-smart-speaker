@@ -1,0 +1,8 @@
+package com.opensmarthome.speaker.assistant.provider
+
+data class ProviderCapabilities(
+    val supportsStreaming: Boolean,
+    val supportsTools: Boolean,
+    val maxContextTokens: Int,
+    val modelName: String
+)

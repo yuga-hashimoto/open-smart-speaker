@@ -1,0 +1,7 @@
+package com.opensmarthome.speaker.voice.wakeword
+
+data class WakeWordConfig(
+    val keyword: String = "hey speaker",
+    val modelPath: String = "",
+    val sensitivity: Float = 0.6f
+)
