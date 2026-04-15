@@ -63,6 +63,8 @@ fun ModeScaffold(
     viewModel: ModeScaffoldViewModel = hiltViewModel()
 ) {
     val voiceState by viewModel.voiceState.collectAsState()
+    val sttText by viewModel.partialText.collectAsState()
+    val responseText by viewModel.lastResponse.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 2 }
     var showSettings by remember { mutableStateOf(false) }
     var showNightClock by remember { mutableStateOf(false) }
@@ -158,8 +160,8 @@ fun ModeScaffold(
         if (showOverlay) {
             VoiceOverlay(
                 voiceState = voiceState,
-                sttText = "",
-                responseText = ""
+                sttText = sttText,
+                responseText = responseText
             )
         }
 

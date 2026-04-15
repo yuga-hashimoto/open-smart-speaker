@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.opensmarthome.speaker.service.VoiceService
 import com.opensmarthome.speaker.ui.common.ModeScaffold
@@ -22,6 +21,8 @@ import timber.log.Timber
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private var voiceServiceStarted = false
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
         if (audioGranted) {
             startVoiceService()
         } else {
-            Timber.w("RECORD_AUDIO permission denied")
+            Timber.w("RECORD_AUDIO permission denied - voice features unavailable")
         }
     }
 
@@ -46,12 +47,19 @@ class MainActivity : ComponentActivity() {
         requestPermissionsAndStart()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-check permissions on resume (user may have granted in system settings)
+        if (!voiceServiceStarted && hasAudioPermission()) {
+            startVoiceService()
+        }
+    }
+
     private fun setupImmersiveMode() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         insetsController.isAppearanceLightStatusBars = false
         insetsController.isAppearanceLightNavigationBars = false
-        // Transparent system bars over dark content, no hiding
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
     }
@@ -71,8 +79,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun hasAudioPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
     private fun startVoiceService() {
+        if (voiceServiceStarted) return
+        voiceServiceStarted = true
         VoiceService.start(this)
+        Timber.d("VoiceService started")
     }
 
     override fun onDestroy() {

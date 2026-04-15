@@ -15,6 +15,8 @@ class ModeScaffoldViewModel @Inject constructor(
 ) : ViewModel() {
 
     val voiceState: StateFlow<VoicePipelineState> = voicePipeline.state
+    val partialText: StateFlow<String> = voicePipeline.partialText
+    val lastResponse: StateFlow<String> = voicePipeline.lastResponse
 
     fun startVoiceInput() {
         viewModelScope.launch {

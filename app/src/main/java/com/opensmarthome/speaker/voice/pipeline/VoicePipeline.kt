@@ -34,6 +34,12 @@ class VoicePipeline(
     private val _state = MutableStateFlow<VoicePipelineState>(VoicePipelineState.Idle)
     val state: StateFlow<VoicePipelineState> = _state.asStateFlow()
 
+    private val _partialText = MutableStateFlow("")
+    val partialText: StateFlow<String> = _partialText.asStateFlow()
+
+    private val _lastResponse = MutableStateFlow("")
+    val lastResponse: StateFlow<String> = _lastResponse.asStateFlow()
+
     private var currentSession: AssistantSession? = null
     private val conversationHistory = mutableListOf<AssistantMessage>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -41,14 +47,11 @@ class VoicePipeline(
 
     companion object {
         private const val MAX_TOOL_ROUNDS = 10
-        private const val WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000L // 5 minutes
+        private const val WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
     fun startWakeWordListening() {
-        val detector = wakeWordDetector ?: run {
-            Timber.w("No wake word detector configured")
-            return
-        }
+        val detector = wakeWordDetector ?: return
         _state.value = VoicePipelineState.WakeWordListening
         detector.start {
             Timber.d("Wake word detected!")
@@ -64,13 +67,14 @@ class VoicePipeline(
     }
 
     suspend fun startListening() {
-        // Always reset to allow re-entry
+        // Reset for re-entry
         if (_state.value is VoicePipelineState.Speaking) {
             tts.stop()
         }
         stt.stopListening()
+        _partialText.value = ""
+        _lastResponse.value = ""
 
-        wakeWordDetector?.stop()
         _state.value = VoicePipelineState.Listening
         resetWatchdog()
 
@@ -78,17 +82,28 @@ class VoicePipeline(
         try {
             stt.startListening().collect { result ->
                 when (result) {
-                    is SttResult.Partial -> { /* UI can observe */ }
-                    is SttResult.Final -> { finalText = result.text }
+                    is SttResult.Partial -> {
+                        _partialText.value = result.text
+                    }
+                    is SttResult.Final -> {
+                        finalText = result.text
+                        _partialText.value = result.text
+                    }
                     is SttResult.Error -> {
                         Timber.w("STT error: ${result.message}")
+                        _lastResponse.value = "Could not hear you. Tap the mic to try again."
+                        _state.value = VoicePipelineState.Error(result.message)
+                        delay(2000)
                         _state.value = VoicePipelineState.Idle
                         return@collect
                     }
                 }
             }
         } catch (e: Exception) {
-            Timber.e(e, "STT startListening failed")
+            Timber.e(e, "STT failed")
+            _lastResponse.value = "Voice recognition unavailable."
+            _state.value = VoicePipelineState.Error(e.message ?: "STT error")
+            delay(2000)
             _state.value = VoicePipelineState.Idle
             return
         }
@@ -102,6 +117,8 @@ class VoicePipeline(
 
     suspend fun processUserInput(text: String) {
         _state.value = VoicePipelineState.Processing
+        _partialText.value = text
+        _lastResponse.value = ""
         resetWatchdog()
 
         try {
@@ -146,23 +163,29 @@ class VoicePipeline(
                             continue
                         }
 
-                        _state.value = VoicePipelineState.PreparingSpeech
+                        _lastResponse.value = response.content
                         _state.value = VoicePipelineState.Speaking
                         tts.speak(response.content)
-                        returnToListeningOrIdle()
+                        _state.value = VoicePipelineState.Idle
                         return
                     }
                     else -> {
-                        returnToListeningOrIdle()
+                        _state.value = VoicePipelineState.Idle
                         return
                     }
                 }
             }
 
-            Timber.w("Max tool rounds ($MAX_TOOL_ROUNDS) reached")
-            returnToListeningOrIdle()
+            _state.value = VoicePipelineState.Idle
         } catch (e: Exception) {
             Timber.e(e, "Voice pipeline error")
+            _lastResponse.value = when {
+                e.message?.contains("No available") == true ->
+                    "No AI provider configured. Go to Settings to set up OpenClaw or a local LLM model."
+                else -> "Something went wrong: ${e.message}"
+            }
+            _state.value = VoicePipelineState.Error(e.message ?: "Error")
+            delay(4000)
             _state.value = VoicePipelineState.Idle
         }
     }
@@ -182,21 +205,6 @@ class VoicePipeline(
         currentSession = null
     }
 
-    private fun returnToListeningOrIdle() {
-        if (continuousMode && wakeWordDetector != null) {
-            startWakeWordListening()
-        } else {
-            _state.value = VoicePipelineState.Idle
-        }
-    }
-
-    private fun resumeAfterError() {
-        scope.launch {
-            delay(2000)
-            returnToListeningOrIdle()
-        }
-    }
-
     private fun trimConversationHistory() {
         val maxMessages = 50
         if (conversationHistory.size > maxMessages) {
@@ -204,7 +212,6 @@ class VoicePipeline(
             val recentMessages = conversationHistory.takeLast(maxMessages - systemMessages.size)
             conversationHistory.clear()
             conversationHistory.addAll(systemMessages + recentMessages)
-            Timber.d("Trimmed conversation history to ${conversationHistory.size} messages")
         }
     }
 
@@ -213,30 +220,20 @@ class VoicePipeline(
         watchdogJob = scope.launch {
             delay(WATCHDOG_TIMEOUT_MS)
             if (isActive) {
-                Timber.w("Watchdog timeout - resetting pipeline")
                 tts.stop()
                 stt.stopListening()
                 _state.value = VoicePipelineState.Idle
-                if (continuousMode) startWakeWordListening()
             }
         }
     }
 
-    private fun resetWatchdog() {
-        startWatchdog()
-    }
-
-    private fun cancelWatchdog() {
-        watchdogJob?.cancel()
-        watchdogJob = null
-    }
+    private fun resetWatchdog() { startWatchdog() }
+    private fun cancelWatchdog() { watchdogJob?.cancel(); watchdogJob = null }
 
     @Suppress("UNCHECKED_CAST")
     private fun parseToolArguments(json: String): Map<String, Any?> {
         return try {
             moshi.adapter(Map::class.java).fromJson(json) as? Map<String, Any?> ?: emptyMap()
-        } catch (e: Exception) {
-            emptyMap()
-        }
+        } catch (e: Exception) { emptyMap() }
     }
 }
