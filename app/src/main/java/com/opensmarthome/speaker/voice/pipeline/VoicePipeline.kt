@@ -190,6 +190,15 @@ class VoicePipeline(
         }
     }
 
+    fun showError(message: String) {
+        _lastResponse.value = message
+        _state.value = VoicePipelineState.Error(message)
+        scope.launch {
+            delay(4000)
+            _state.value = VoicePipelineState.Idle
+        }
+    }
+
     fun interruptAndListen() {
         tts.stop()
         scope.launch { startListening() }
