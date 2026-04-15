@@ -6,7 +6,7 @@ Say "Hey Speaker" and control your lights, switches, and home devices with your 
 
 ## Features
 
-- **On-device AI**: Runs Gemma 2B locally via MediaPipe LLM Inference. No internet needed for conversations.
+- **On-device AI**: Runs Gemma 4 E2B locally via MediaPipe LLM Inference. No internet needed for conversations.
 - **Wake word activation**: Always listening for "Hey Speaker" using Vosk (auto-downloaded on first launch).
 - **Voice conversation**: Speak naturally. The app understands your intent, controls devices, and responds aloud.
 - **Smart home control**: Supports SwitchBot, Matter, MQTT (Shelly/Tasmota), and Home Assistant devices.
@@ -37,7 +37,7 @@ Say "Hey Speaker" and control your lights, switches, and home devices with your 
    - **SwitchBot**: Enter your API Token and Secret Key
    - **MQTT**: Enter your broker URL (e.g. `tcp://192.168.1.100:1883`)
    - **Home Assistant**: Enter base URL and Long-Lived Access Token (optional)
-4. For on-device AI: place a Gemma 2B `.task` model file in the app's `files/models/` directory
+4. For on-device AI: place a Gemma 4 E2B `.task` model file in the app's `files/models/` directory
 5. Say "Hey Speaker" or tap the microphone button
 
 ## Building from Source
