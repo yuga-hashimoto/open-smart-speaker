@@ -27,8 +27,9 @@ android {
             cmake {
                 arguments += listOf(
                     "-DANDROID_ARM_NEON=TRUE",
-                    "-DCMAKE_C_FLAGS=-march=armv8.2-a+fp16+dotprod",
-                    "-DCMAKE_CXX_FLAGS=-march=armv8.2-a+fp16+dotprod"
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-DCMAKE_C_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG",
+                    "-DCMAKE_CXX_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG"
                 )
             }
         }
@@ -69,6 +70,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    @Suppress("UnstableApiUsage")
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
     }
 }
 

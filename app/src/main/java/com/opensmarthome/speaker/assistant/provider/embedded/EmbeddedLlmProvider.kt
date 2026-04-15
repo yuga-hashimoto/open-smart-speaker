@@ -29,6 +29,7 @@ class EmbeddedLlmProvider(
 
     private val bridge = LlamaCppBridge()
     private val promptBuilder = SystemPromptBuilder()
+    private val toolCallParser = ToolCallParser()
 
     override suspend fun startSession(config: Map<String, String>): AssistantSession {
         if (!bridge.isModelLoaded()) {
@@ -94,23 +95,10 @@ class EmbeddedLlmProvider(
     }
 
     private fun parseResponse(response: String): AssistantMessage {
-        val trimmed = response.trim()
-        val toolCallRegex = """\{"tool"\s*:\s*"(\w+)"\s*,\s*"arguments"\s*:\s*(\{[^}]*\})\}""".toRegex()
-        val match = toolCallRegex.find(trimmed)
-
-        return if (match != null) {
-            AssistantMessage.Assistant(
-                content = trimmed,
-                toolCalls = listOf(
-                    ToolCallRequest(
-                        id = "call_${java.lang.System.currentTimeMillis()}",
-                        name = match.groupValues[1],
-                        arguments = match.groupValues[2]
-                    )
-                )
-            )
-        } else {
-            AssistantMessage.Assistant(content = trimmed)
-        }
+        val result = toolCallParser.parse(response.trim())
+        return AssistantMessage.Assistant(
+            content = result.text,
+            toolCalls = result.toolCalls
+        )
     }
 }

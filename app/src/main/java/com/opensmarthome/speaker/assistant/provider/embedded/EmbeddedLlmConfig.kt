@@ -16,4 +16,4 @@ You can call tools to interact with devices. When you need to perform an action,
 
 Be concise and conversational — users are speaking to you, not reading long text. Respond in the same language the user speaks."""
     }
-)
+}
