@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.assistant.model.AssistantSession
 import com.opensmarthome.speaker.assistant.model.ConversationState
+import com.opensmarthome.speaker.assistant.model.ToolCallRequest
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.voice.pipeline.VoicePipeline
 import com.opensmarthome.speaker.voice.pipeline.VoicePipelineState
+import com.opensmarthome.speaker.voice.stt.SpeechToText
+import com.opensmarthome.speaker.voice.stt.SttResult
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +27,8 @@ class ChatViewModel @Inject constructor(
     private val router: ConversationRouter,
     private val toolExecutor: ToolExecutor,
     private val moshi: Moshi,
-    private val voicePipeline: VoicePipeline
+    private val voicePipeline: VoicePipeline,
+    private val stt: SpeechToText
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<AssistantMessage>>(emptyList())
@@ -47,9 +51,24 @@ class ChatViewModel @Inject constructor(
     fun startVoiceInput() {
         viewModelScope.launch {
             _conversationState.value = ConversationState.Listening
-            voicePipeline.startListening()
-            // After listening completes, the pipeline processes and speaks
-            // We need to sync the text result back to chat
+
+            var recognizedText = ""
+            stt.startListening().collect { result ->
+                when (result) {
+                    is SttResult.Final -> recognizedText = result.text
+                    is SttResult.Partial -> { /* UI could show partial */ }
+                    is SttResult.Error -> {
+                        _conversationState.value = ConversationState.Error(result.message)
+                        return@collect
+                    }
+                }
+            }
+
+            if (recognizedText.isNotBlank()) {
+                sendMessage(recognizedText)
+            } else {
+                _conversationState.value = ConversationState.Idle
+            }
         }
     }
 
@@ -73,36 +92,24 @@ class ChatViewModel @Inject constructor(
 
                 while (toolRounds < MAX_TOOL_ROUNDS) {
                     _streamingContent.value = ""
-
                     val responseBuilder = StringBuilder()
-                    var assistantResponse: AssistantMessage.Assistant? = null
+                    val toolCalls = mutableListOf<ToolCallRequest>()
 
                     provider.sendStreaming(session!!, conversationMessages, tools)
                         .collect { delta ->
                             responseBuilder.append(delta.contentDelta)
                             _streamingContent.value = responseBuilder.toString()
-
-                            if (delta.finishReason != null || delta.toolCallDelta != null) {
-                                // Will be handled after collection
-                            }
+                            delta.toolCallDelta?.let { toolCalls.add(it) }
                         }
 
-                    // After streaming completes, get the full response
-                    val fullResponse = provider.send(session!!, conversationMessages, tools)
-                    if (fullResponse is AssistantMessage.Assistant) {
-                        assistantResponse = fullResponse
-                    }
-
-                    if (assistantResponse == null) {
-                        val fallback = AssistantMessage.Assistant(content = responseBuilder.toString())
-                        _messages.value = _messages.value + fallback
-                        break
-                    }
-
+                    val assistantResponse = AssistantMessage.Assistant(
+                        content = responseBuilder.toString(),
+                        toolCalls = toolCalls
+                    )
                     conversationMessages.add(assistantResponse)
 
-                    if (assistantResponse.toolCalls.isNotEmpty()) {
-                        for (toolCallReq in assistantResponse.toolCalls) {
+                    if (toolCalls.isNotEmpty()) {
+                        for (toolCallReq in toolCalls) {
                             val args = parseToolArguments(toolCallReq.arguments)
                             val toolCall = ToolCall(
                                 id = toolCallReq.id,
@@ -122,13 +129,17 @@ class ChatViewModel @Inject constructor(
                     }
 
                     _messages.value = _messages.value + assistantResponse
-                    break
+                    _streamingContent.value = ""
+                    _conversationState.value = ConversationState.Idle
+                    return@launch
                 }
 
+                Timber.w("Max tool rounds ($MAX_TOOL_ROUNDS) reached")
                 _streamingContent.value = ""
                 _conversationState.value = ConversationState.Idle
             } catch (e: Exception) {
                 Timber.e(e, "Failed to send message")
+                _streamingContent.value = ""
                 _conversationState.value = ConversationState.Error(e.message ?: "Unknown error")
             }
         }
