@@ -33,6 +33,15 @@ class SettingsViewModel @Inject constructor(
     private val _localLlmModel = MutableStateFlow("gemma-4-e2b")
     val localLlmModel: StateFlow<String> = _localLlmModel.asStateFlow()
 
+    private val _switchBotToken = MutableStateFlow("")
+    val switchBotToken: StateFlow<String> = _switchBotToken.asStateFlow()
+
+    private val _switchBotSecret = MutableStateFlow("")
+    val switchBotSecret: StateFlow<String> = _switchBotSecret.asStateFlow()
+
+    private val _mqttBrokerUrl = MutableStateFlow("")
+    val mqttBrokerUrl: StateFlow<String> = _mqttBrokerUrl.asStateFlow()
+
     init {
         viewModelScope.launch {
             preferences.observe(PreferenceKeys.HA_BASE_URL).collect { _haBaseUrl.value = it ?: "" }
@@ -46,8 +55,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferences.observe(PreferenceKeys.LOCAL_LLM_MODEL).collect { _localLlmModel.value = it ?: "gemma-4-e2b" }
         }
-        // Load encrypted token
+        viewModelScope.launch {
+            preferences.observe(PreferenceKeys.SWITCHBOT_TOKEN).collect { _switchBotToken.value = it ?: "" }
+        }
+        viewModelScope.launch {
+            preferences.observe(PreferenceKeys.MQTT_BROKER_URL).collect { _mqttBrokerUrl.value = it ?: "" }
+        }
         _haToken.value = securePreferences.getString(SecurePreferences.KEY_HA_TOKEN)
+        _switchBotSecret.value = securePreferences.getString("switchbot_secret")
     }
 
     fun saveHaSettings(baseUrl: String, token: String) {
@@ -68,6 +83,21 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferences.set(PreferenceKeys.LOCAL_LLM_BASE_URL, url)
             preferences.set(PreferenceKeys.LOCAL_LLM_MODEL, model)
+        }
+    }
+
+    fun saveSwitchBotSettings(token: String, secret: String) {
+        viewModelScope.launch {
+            preferences.set(PreferenceKeys.SWITCHBOT_TOKEN, token)
+            securePreferences.putString("switchbot_secret", secret)
+            _switchBotToken.value = token
+            _switchBotSecret.value = secret
+        }
+    }
+
+    fun saveMqttSettings(brokerUrl: String) {
+        viewModelScope.launch {
+            preferences.set(PreferenceKeys.MQTT_BROKER_URL, brokerUrl)
         }
     }
 }

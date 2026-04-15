@@ -23,7 +23,7 @@ class ModelManager(private val context: Context) {
 
     fun listAvailableModels(): List<ModelInfo> {
         return getModelsDirectory().listFiles()
-            ?.filter { it.extension == "gguf" }
+            ?.filter { it.extension in listOf("bin", "task", "tflite", "gguf") }
             ?.map { ModelInfo(path = it.absolutePath, name = it.nameWithoutExtension, sizeBytes = it.length()) }
             ?: emptyList()
     }
@@ -31,12 +31,17 @@ class ModelManager(private val context: Context) {
     fun validateModel(path: String): Boolean {
         val file = File(path)
         if (!file.exists() || file.length() < 1024) return false
-        // Check GGUF magic bytes: "GGUF"
         return try {
-            file.inputStream().use { stream ->
-                val magic = ByteArray(4)
-                stream.read(magic)
-                String(magic) == "GGUF"
+            when (file.extension) {
+                "gguf" -> {
+                    file.inputStream().use { stream ->
+                        val magic = ByteArray(4)
+                        stream.read(magic)
+                        String(magic) == "GGUF"
+                    }
+                }
+                "bin", "task", "tflite" -> true // MediaPipe / TFLite formats
+                else -> false
             }
         } catch (e: Exception) {
             Timber.w(e, "Model validation failed: $path")

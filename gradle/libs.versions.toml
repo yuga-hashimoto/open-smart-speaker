@@ -19,6 +19,7 @@ activity-compose = "1.9.3"
 core-ktx = "1.15.0"
 security-crypto = "1.1.0-alpha06"
 paho-mqtt = "1.2.5"
+mediapipe-genai = "0.10.22"
 
 junit5 = "5.11.3"
 mockk = "1.13.13"
@@ -79,9 +80,13 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 # MQTT
 paho-mqtt = { group = "org.eclipse.paho", name = "org.eclipse.paho.client.mqttv3", version.ref = "paho-mqtt" }
 
+# On-device LLM
+mediapipe-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe-genai" }
+
 # Coroutines
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+coroutines-guava = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-guava", version.ref = "coroutines" }
 
 # Testing
 junit5 = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }

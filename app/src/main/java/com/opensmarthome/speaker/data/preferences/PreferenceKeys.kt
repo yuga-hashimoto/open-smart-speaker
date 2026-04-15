@@ -11,4 +11,9 @@ object PreferenceKeys {
     val LOCAL_LLM_MODEL = stringPreferencesKey("local_llm_model")
     val ROUTING_POLICY = stringPreferencesKey("routing_policy")
     val ACTIVE_PROVIDER_ID = stringPreferencesKey("active_provider_id")
+    val SWITCHBOT_TOKEN = stringPreferencesKey("switchbot_token")
+    val SWITCHBOT_SECRET = stringPreferencesKey("switchbot_secret")
+    val MQTT_BROKER_URL = stringPreferencesKey("mqtt_broker_url")
+    val MQTT_USERNAME = stringPreferencesKey("mqtt_username")
+    val MQTT_PASSWORD = stringPreferencesKey("mqtt_password")
 }
