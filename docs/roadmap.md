@@ -41,7 +41,7 @@ Make the local LLM a proper agent with multi-step reasoning.
 Give the agent Android-native capabilities.
 
 - [x] P2.1: Timer/Alarm tool (set timer, set alarm, cancel)
-- [ ] P2.2: Notification tool (read notifications, clear)
+- [x] P2.2: Notification tool (read notifications, clear)
 - [ ] P2.3: Calendar tool (query events, create reminders)
 - [x] P2.4: App launcher tool (open apps by name)
 - [x] P2.5: Volume/Media control tool
