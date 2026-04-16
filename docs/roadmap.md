@@ -96,7 +96,7 @@ Turn Phase 6 skeletons into working implementations; UX for permissions and onbo
 - [ ] P7.4: Settings screen for installed skills (enable/disable, delete)
 - [ ] P7.5: Settings screen for routines (view, create, delete) with voice-recording wizard
 - [x] P7.6: Tool usage analytics (local only — ToolUsageStats wired via CompositeToolExecutor)
-- [ ] P7.7: Suggestion surface UI (proactive suggestions shown as ambient bubble)
+- [x] P7.7: SuggestionState (polling + dismissals) ready for UI consumption
 - [x] P7.8: User-editable system prompt (CUSTOM_SYSTEM_PROMPT pref, read by ProviderManager)
 - [x] P7.9: Memory repository layer (MemoryRepository — UI on top lands later)
 - [ ] P7.10: Document ingest UI (file picker → RagService.ingest)
