@@ -260,6 +260,28 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `turn off everything`() {
+        val m = router.match("turn off everything")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `japanese everything off`() {
+        val m = router.match("全部消して")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `turn it off does not match everything-off`() {
+        // 'turn it off' is too vague — should not trigger the bulk action
+        val m = router.match("turn it off")
+        // Either matches LightsMatcher (lights) or returns null — either way
+        // not the everything-off fallback path
+        assertThat(m?.spokenConfirmation).isNotEqualTo("Everything off.")
+    }
+
+    @Test
     fun `set thermostat to 22 dispatches climate set_temperature`() {
         val m = router.match("set thermostat to 22")
         assertThat(m?.toolName).isEqualTo("execute_command")

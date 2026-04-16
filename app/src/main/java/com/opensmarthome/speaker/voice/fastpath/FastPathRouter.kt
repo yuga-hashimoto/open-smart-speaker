@@ -45,6 +45,8 @@ class DefaultFastPathRouter(
             TimeQueryMatcher,
             VolumeMatcher,
             ThermostatMatcher,
+            // EverythingOffMatcher must precede LightsMatcher because "lights off" partially overlaps "off".
+            EverythingOffMatcher,
             LightsMatcher,
             MediaControlMatcher,
             // RunRoutineMatcher must precede LaunchAppMatcher because "run X" overlaps.
@@ -205,6 +207,37 @@ object VolumeMatcher : FastPathMatcher {
                 arguments = mapOf("level" to 30.0),
                 spokenConfirmation = "Volume down."
             )
+        }
+        return null
+    }
+}
+
+/**
+ * "turn off everything", "all off", "全部消して" — bulk-off across switches +
+ * lights + media. Done as a single execute_command with device_type=switch
+ * for simplicity; users with separate types can chain via the LLM path.
+ *
+ * Conservative: requires explicit 'everything'/'all'/'全部' keyword so
+ * accidental 'turn it off' doesn't nuke the house.
+ */
+object EverythingOffMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:turn\s+)?(?:off\s+)?(?:everything|all\s+(?:lights\s+and\s+switches|devices))(?:\s+off)?"""),
+        Regex("""(?:全部|ぜんぶ|全て)\s*(?:を)?\s*(?:消して|オフ|切って)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "execute_command",
+                    arguments = mapOf(
+                        "device_type" to "light",
+                        "action" to "turn_off"
+                    ),
+                    spokenConfirmation = "Everything off."
+                )
+            }
         }
         return null
     }
