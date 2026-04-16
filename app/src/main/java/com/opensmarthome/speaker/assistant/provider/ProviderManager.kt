@@ -74,6 +74,9 @@ class ProviderManager @Inject constructor(
                 )
                 router.registerProvider(provider)
                 Timber.d("Registered EmbeddedLlmProvider with model: ${models.first().name} (custom prompt: ${!customPrompt.isNullOrBlank()})")
+                // Pre-warm the engine in the background so the first user
+                // request doesn't pay the GPU/CPU init cost.
+                scope.launch { provider.warmUp() }
             } else {
                 Timber.d("No models found, EmbeddedLlmProvider not registered")
             }

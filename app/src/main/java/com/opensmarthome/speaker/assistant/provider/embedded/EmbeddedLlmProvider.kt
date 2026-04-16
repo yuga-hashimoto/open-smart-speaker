@@ -68,6 +68,27 @@ class EmbeddedLlmProvider(
         return AssistantSession(providerId = id)
     }
 
+    /**
+     * Pre-warm the engine off the main thread so the first user request
+     * doesn't pay the GPU/CPU init cost. Safe to call from app start —
+     * idempotent (subsequent calls no-op once engine is up).
+     *
+     * Returns true on success, false on init failure (caller can fall back
+     * to the legacy lazy path).
+     */
+    suspend fun warmUp(): Boolean = withContext(Dispatchers.IO) {
+        if (engine != null) return@withContext true
+        try {
+            initializeEngine()
+            if (conversation == null) createConversation()
+            Timber.d("EmbeddedLlmProvider warmed up")
+            true
+        } catch (e: Exception) {
+            Timber.w(e, "EmbeddedLlmProvider warmup failed")
+            false
+        }
+    }
+
     private suspend fun initializeEngine() {
         val modelPath = this.config.modelPath
 
