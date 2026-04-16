@@ -8,11 +8,13 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
+import com.opensmarthome.speaker.assistant.context.DeviceContextBuilder
 import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.assistant.model.AssistantSession
 import com.opensmarthome.speaker.assistant.provider.AssistantProvider
 import com.opensmarthome.speaker.assistant.provider.ProviderCapabilities
 import com.opensmarthome.speaker.assistant.skills.SkillRegistry
+import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.tool.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -25,8 +27,11 @@ import java.io.File
 class EmbeddedLlmProvider(
     private val context: Context,
     private val config: EmbeddedLlmConfig,
-    private val skillRegistry: SkillRegistry? = null
+    private val skillRegistry: SkillRegistry? = null,
+    private val deviceManager: DeviceManager? = null
 ) : AssistantProvider {
+
+    private val deviceContextBuilder = DeviceContextBuilder()
 
     override val id: String = "embedded_llm"
     override val displayName: String = "On-Device LLM"
@@ -124,7 +129,7 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): AssistantMessage = withContext(Dispatchers.IO) {
-        val prompt = extractLastUserMessage(messages)
+        val prompt = buildEnrichedPrompt(messages)
         val response = StringBuilder()
 
         conversation?.sendMessageAsync(prompt)?.collect { message ->
@@ -139,7 +144,7 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): Flow<AssistantMessage.Delta> = flow {
-        val prompt = extractLastUserMessage(messages)
+        val prompt = buildEnrichedPrompt(messages)
         val response = StringBuilder()
 
         conversation?.sendMessageAsync(prompt)?.collect { message ->
@@ -171,5 +176,25 @@ class EmbeddedLlmProvider(
     private fun extractLastUserMessage(messages: List<AssistantMessage>): String {
         return (messages.lastOrNull { it is AssistantMessage.User } as? AssistantMessage.User)
             ?.content ?: "Hello"
+    }
+
+    /**
+     * Prepends a compact device state snapshot to the user's message so the
+     * agent knows which devices exist and their current state without
+     * needing to call a tool first.
+     */
+    private fun buildEnrichedPrompt(messages: List<AssistantMessage>): String {
+        val userMessage = extractLastUserMessage(messages)
+        val devices = deviceManager?.devices?.value?.values ?: return userMessage
+        if (devices.isEmpty()) return userMessage
+
+        val ctx = deviceContextBuilder.build(devices)
+        if (ctx.isBlank()) return userMessage
+
+        return buildString {
+            append(ctx)
+            append("\n\n")
+            append(userMessage)
+        }
     }
 }
