@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,12 @@ fun SystemInfoScreen(
     viewModel: SystemInfoViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val nearby by viewModel.nearbySpeakers.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        viewModel.startDiscovery()
+        onDispose { viewModel.stopDiscovery() }
+    }
 
     Scaffold(
         topBar = {
@@ -67,6 +74,11 @@ fun SystemInfoScreen(
             add("Connectivity" to if (state.online) "Online" else "Offline")
             add("Latency budget violations" to "${state.totalBudgetViolations}")
             add("Latency measurements (lifetime)" to "${state.totalLatencyMeasurements}")
+            add("Nearby speakers (mDNS)" to if (nearby.isEmpty()) "(none)" else "${nearby.size}")
+            nearby.forEach { speaker ->
+                val suffix = speaker.host?.let { host -> speaker.port?.let { " — $host:$it" } ?: " — $host" } ?: ""
+                add("  • ${speaker.serviceName}" to suffix.trimStart(' ', '—', ' '))
+            }
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),

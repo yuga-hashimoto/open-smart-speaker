@@ -9,12 +9,16 @@ import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.rag.RagRepository
+import com.opensmarthome.speaker.util.DiscoveredSpeaker
+import com.opensmarthome.speaker.util.MulticastDiscovery
 import com.opensmarthome.speaker.util.NetworkMonitor
 import com.opensmarthome.speaker.voice.metrics.LatencyRecorder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,8 +36,18 @@ class SystemInfoViewModel @Inject constructor(
     private val latencyRecorder: LatencyRecorder,
     private val toolExecutor: ToolExecutor,
     private val routineDao: RoutineDao,
-    private val ragRepository: RagRepository
+    private val ragRepository: RagRepository,
+    private val multicastDiscovery: MulticastDiscovery
 ) : ViewModel() {
+
+    val nearbySpeakers: StateFlow<List<DiscoveredSpeaker>> = multicastDiscovery.speakers
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Start (idempotent) mDNS discovery. Callers trigger this when the screen is visible. */
+    fun startDiscovery() = multicastDiscovery.start()
+
+    /** Stop mDNS discovery to release the network stack. */
+    fun stopDiscovery() = multicastDiscovery.stop()
 
     data class Snapshot(
         val activeProviderModel: String?,
