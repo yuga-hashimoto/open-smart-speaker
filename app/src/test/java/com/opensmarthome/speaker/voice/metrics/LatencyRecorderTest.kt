@@ -101,6 +101,23 @@ class LatencyRecorderTest {
     }
 
     @Test
+    fun `totalMeasurements counts all recorded samples`() {
+        var now = 0L
+        val recorder = LatencyRecorder(clock = { now })
+        repeat(3) {
+            recorder.startSpan(LatencyRecorder.Span.WAKE_TO_LISTENING)
+            now += 100_000_000L
+            recorder.endSpan(LatencyRecorder.Span.WAKE_TO_LISTENING)
+        }
+        repeat(2) {
+            recorder.startSpan(LatencyRecorder.Span.LLM_ROUND_TRIP)
+            now += 1_000_000_000L
+            recorder.endSpan(LatencyRecorder.Span.LLM_ROUND_TRIP)
+        }
+        assertThat(recorder.totalMeasurements()).isEqualTo(5L)
+    }
+
+    @Test
     fun `independent spans use independent keys`() {
         var now = 0L
         val recorder = LatencyRecorder(clock = { now })
