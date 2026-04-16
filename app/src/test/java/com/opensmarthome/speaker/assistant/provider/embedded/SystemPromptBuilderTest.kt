@@ -133,6 +133,30 @@ class SystemPromptBuilderTest {
     }
 
     @Test
+    fun `buildPrompt with Qwen template uses im_start markers`() {
+        val qwenBuilder = SystemPromptBuilder(template = QwenTemplate)
+        val messages = listOf(AssistantMessage.User(content = "Hello"))
+
+        val result = qwenBuilder.build("System", messages, emptyList())
+
+        assertThat(result).contains("<|im_start|>system")
+        assertThat(result).contains("<|im_start|>user")
+        assertThat(result).endsWith("<|im_start|>assistant\n")
+    }
+
+    @Test
+    fun `buildPrompt with Llama3 template uses header markers`() {
+        val llamaBuilder = SystemPromptBuilder(template = Llama3Template)
+        val messages = listOf(AssistantMessage.User(content = "Hello"))
+
+        val result = llamaBuilder.build("System", messages, emptyList())
+
+        assertThat(result).contains("<|start_header_id|>system")
+        assertThat(result).contains("<|start_header_id|>user")
+        assertThat(result).endsWith("<|start_header_id|>assistant<|end_header_id|>\n\n")
+    }
+
+    @Test
     fun `buildPrompt tool section includes JSON format instructions`() {
         val tools = listOf(
             ToolSchema(

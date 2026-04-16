@@ -7,9 +7,12 @@ import com.opensmarthome.speaker.tool.ToolSchema
  * Builds a complete prompt for the embedded LLM including system prompt,
  * tool definitions, conversation history, and proper turn markers.
  *
- * Uses Gemma chat template format by default.
+ * Template is pluggable (Gemma / Qwen / Llama3 / ChatML) via ChatTemplate.
+ * Defaults to Gemma.
  */
-class SystemPromptBuilder {
+class SystemPromptBuilder(
+    private val template: ChatTemplate = GemmaTemplate
+) {
 
     fun build(
         systemPrompt: String,
@@ -20,33 +23,32 @@ class SystemPromptBuilder {
     ): String {
         val sb = StringBuilder()
 
-        // System turn
-        sb.append("<start_of_turn>user\n")
-        sb.append(systemPrompt)
+        // System turn content
+        val systemContent = buildString {
+            append(systemPrompt)
 
-        // Skills XML (OpenClaw pattern) — advertises available skills; LLM loads body on demand
-        if (skillsXml.isNotBlank()) {
-            sb.append("\n\n")
-            sb.append(skillsXml)
-            sb.append("\n\nWhen your task matches a skill's description, call `get_skill` with its name to load the full instructions.")
+            if (skillsXml.isNotBlank()) {
+                append("\n\n")
+                append(skillsXml)
+                append("\n\nWhen your task matches a skill's description, call `get_skill` with its name to load the full instructions.")
+            }
+
+            if (tools.isNotEmpty()) {
+                append("\n\n")
+                append(buildToolSection(tools))
+            }
         }
-
-        // Tool definitions
-        if (tools.isNotEmpty()) {
-            sb.append("\n\n")
-            sb.append(buildToolSection(tools))
-        }
-
-        sb.append("<end_of_turn>\n")
+        sb.append(template.renderTurn(ChatTemplate.Role.SYSTEM, systemContent))
 
         // Conversation history (truncated if needed)
-        val historySection = buildHistorySection(messages)
-        val availableChars = maxPromptChars - sb.length - MODEL_TURN_MARKER.length
-        val truncatedHistory = truncateHistory(historySection, availableChars)
+        val historyParts = buildHistorySection(messages)
+        val modelMarker = template.modelTurnMarker()
+        val availableChars = maxPromptChars - sb.length - modelMarker.length
+        val truncatedHistory = truncateHistory(historyParts, availableChars)
         sb.append(truncatedHistory)
 
         // End with model turn
-        sb.append(MODEL_TURN_MARKER)
+        sb.append(modelMarker)
 
         return sb.toString()
     }
@@ -76,29 +78,32 @@ class SystemPromptBuilder {
     }
 
     private fun buildHistorySection(messages: List<AssistantMessage>): List<String> {
-        return messages.map { msg ->
+        return messages.mapNotNull { msg ->
             when (msg) {
                 is AssistantMessage.User ->
-                    "<start_of_turn>user\n${msg.content}<end_of_turn>\n"
+                    template.renderTurn(ChatTemplate.Role.USER, msg.content)
 
                 is AssistantMessage.Assistant -> {
-                    val toolCallStr = if (msg.toolCalls.isNotEmpty()) {
+                    val content = if (msg.toolCalls.isNotEmpty()) {
                         msg.toolCalls.joinToString("\n") { call ->
                             """{"tool_call": {"name": "${call.name}", "arguments": ${call.arguments}}}"""
                         }
                     } else {
                         msg.content
                     }
-                    "<start_of_turn>model\n$toolCallStr<end_of_turn>\n"
+                    template.renderTurn(ChatTemplate.Role.MODEL, content)
                 }
 
                 is AssistantMessage.ToolCallResult ->
-                    "<start_of_turn>user\n[Tool Result: ${msg.callId}]\n${msg.result}<end_of_turn>\n"
+                    template.renderTurn(
+                        ChatTemplate.Role.TOOL_RESULT,
+                        "[Tool Result: ${msg.callId}]\n${msg.result}"
+                    )
 
                 is AssistantMessage.System ->
-                    "<start_of_turn>user\n[System] ${msg.content}<end_of_turn>\n"
+                    template.renderTurn(ChatTemplate.Role.SYSTEM, msg.content)
 
-                is AssistantMessage.Delta -> ""
+                is AssistantMessage.Delta -> null
             }
         }
     }
@@ -109,7 +114,6 @@ class SystemPromptBuilder {
     ): String {
         if (maxChars <= 0) return ""
 
-        // Always include the most recent messages first
         val reversed = historyParts.reversed()
         val selected = mutableListOf<String>()
         var totalChars = 0
@@ -125,6 +129,5 @@ class SystemPromptBuilder {
 
     companion object {
         private const val DEFAULT_MAX_PROMPT_CHARS = 3000
-        private const val MODEL_TURN_MARKER = "<start_of_turn>model\n"
     }
 }
