@@ -56,6 +56,8 @@ import com.opensmarthome.speaker.tool.system.DeviceHealthToolExecutor
 import com.opensmarthome.speaker.tool.system.LocationToolExecutor
 import com.opensmarthome.speaker.tool.system.NotificationToolExecutor
 import com.opensmarthome.speaker.tool.system.PhotosToolExecutor
+import com.opensmarthome.speaker.tool.system.ScreenRecorderHolder
+import com.opensmarthome.speaker.tool.system.ScreenRecorderToolExecutor
 import com.opensmarthome.speaker.tool.system.SmsToolExecutor
 import com.opensmarthome.speaker.tool.system.SystemToolExecutor
 import com.squareup.moshi.Moshi
@@ -120,6 +122,10 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideScreenRecorderHolder(): ScreenRecorderHolder = ScreenRecorderHolder()
+
+    @Provides
+    @Singleton
     fun provideSkillInstaller(
         @ApplicationContext context: Context,
         client: OkHttpClient,
@@ -141,7 +147,8 @@ object DeviceModule {
         memoryDao: MemoryDao,
         routineDao: RoutineDao,
         documentChunkDao: DocumentChunkDao,
-        cameraProviderHolder: CameraProviderHolder
+        cameraProviderHolder: CameraProviderHolder,
+        screenRecorderHolder: ScreenRecorderHolder
     ): ToolExecutor {
         val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
@@ -193,6 +200,7 @@ object DeviceModule {
                 AndroidSmsSender(context)
             ),
             CameraToolExecutor(cameraProviderHolder),
+            ScreenRecorderToolExecutor(screenRecorderHolder),
             ScreenToolExecutor(
                 AccessibilityScreenReader()
             ),
