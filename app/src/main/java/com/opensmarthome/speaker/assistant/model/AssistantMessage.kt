@@ -9,7 +9,8 @@ sealed class AssistantMessage {
     data class User(
         override val id: String = UUID.randomUUID().toString(),
         override val timestamp: Long = java.lang.System.currentTimeMillis(),
-        val content: String
+        val content: String,
+        val attachments: List<MediaAttachment> = emptyList()
     ) : AssistantMessage()
 
     data class Assistant(

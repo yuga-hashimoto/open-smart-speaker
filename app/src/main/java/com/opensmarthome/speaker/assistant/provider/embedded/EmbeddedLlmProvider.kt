@@ -39,8 +39,15 @@ class EmbeddedLlmProvider(
         supportsStreaming = true,
         supportsTools = false,
         maxContextTokens = config.contextSize,
-        modelName = File(config.modelPath).nameWithoutExtension
+        modelName = File(config.modelPath).nameWithoutExtension,
+        supportsVision = detectVisionSupport(File(config.modelPath).nameWithoutExtension)
     )
+
+    private fun detectVisionSupport(modelName: String): Boolean {
+        val lower = modelName.lowercase()
+        // Gemma 3n (E2B/E4B) and Gemma 4 with -mm variants support vision.
+        return "gemma-3n" in lower || "gemma3n" in lower || "-mm" in lower || "vision" in lower
+    }
 
     private var engine: Engine? = null
     private var conversation: Conversation? = null
