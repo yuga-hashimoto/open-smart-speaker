@@ -548,6 +548,37 @@ object EveningBriefingMatcher : FastPathMatcher {
 }
 
 /** "what's the weather", "today's weather", "今日の天気" */
+/**
+ * Forecast queries — "what's the weather tomorrow", "this week's forecast",
+ * "明日の天気", "今週の天気" → get_forecast.
+ *
+ * Must precede WeatherMatcher because both contain the substring "weather"
+ * / "天気" but the forward-looking flavor needs the multi-day forecast.
+ */
+object ForecastMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""(?:what'?s\s+)?(?:the\s+)?weather\s+(?:tomorrow|this\s+(?:week|weekend)|for\s+(?:the\s+)?(?:week|weekend))"""),
+        Regex("""(?:tomorrow'?s|this\s+week'?s|weekend'?s)\s+(?:weather|forecast)"""),
+        Regex("""forecast(?:\s+for\s+(?:tomorrow|this\s+week|the\s+week|the\s+weekend))?"""),
+        Regex("""(?:will\s+it|is\s+it\s+going\s+to)\s+rain\s+(?:tomorrow|this\s+(?:week|weekend))""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""明日\s*(?:の)?\s*(?:天気|てんき)"""),
+        Regex("""今週\s*(?:の)?\s*(?:天気|てんき)"""),
+        Regex("""週末\s*(?:の)?\s*(?:天気|てんき)"""),
+        Regex("""(?:天気)?予報""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(toolName = "get_forecast", arguments = emptyMap())
+        }
+        return null
+    }
+}
+
 object WeatherMatcher : FastPathMatcher {
     private val patterns = listOf(
         Regex("""(?:what'?s\s+)?the\s+weather"""),

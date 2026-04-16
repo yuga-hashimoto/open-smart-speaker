@@ -452,6 +452,55 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `weather tomorrow routes to get_forecast`() {
+        val m = router.match("what's the weather tomorrow")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `weather this week routes to get_forecast`() {
+        val m = router.match("weather this week")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `forecast for the week`() {
+        val m = router.match("forecast for the week")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `will it rain tomorrow`() {
+        val m = router.match("will it rain tomorrow")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `japanese tomorrow weather routes to forecast`() {
+        val m = router.match("明日の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `japanese week weather routes to forecast`() {
+        val m = router.match("今週の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `today weather still routes to get_weather`() {
+        // Precedence guard: "weather today" is the present-tense variant.
+        val m = router.match("what's the weather today")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+    }
+
+    @Test
+    fun `japanese today weather still routes to get_weather`() {
+        val m = router.match("今日の天気")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+    }
+
+    @Test
     fun `what do you remember calls list_memory`() {
         val m = router.match("what do you remember")
         assertThat(m?.toolName).isEqualTo("list_memory")

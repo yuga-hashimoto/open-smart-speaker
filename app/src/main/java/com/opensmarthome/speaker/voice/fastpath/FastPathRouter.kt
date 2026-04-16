@@ -79,6 +79,9 @@ class DefaultFastPathRouter(
             // so 'good morning briefing' / 'evening briefing' win.
             MorningBriefingMatcher,
             EveningBriefingMatcher,
+            // ForecastMatcher must precede WeatherMatcher because both
+            // contain "weather" / "天気"; forecast wants multi-day get_forecast.
+            ForecastMatcher,
             WeatherMatcher,
             NewsMatcher,
             CalendarMatcher,

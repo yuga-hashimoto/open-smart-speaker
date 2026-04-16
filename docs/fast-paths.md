@@ -28,6 +28,7 @@ to the list.
 | `LeaveHomeMatcher` | "I'm leaving", "行ってきます" | `leave_home` (composite) | Lights off + media pause |
 | `MorningBriefingMatcher` | "morning briefing", "朝のサマリー" | `morning_briefing` (composite) | Weather + news + calendar |
 | `EveningBriefingMatcher` | "evening briefing", "wind down", "夜のサマリー" | `evening_briefing` (composite) | Notifications + calendar + timers |
+| `ForecastMatcher` | "weather tomorrow", "this week's forecast", "will it rain tomorrow", "明日の天気", "今週の天気" | `get_forecast` | Precedes WeatherMatcher |
 | `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` | |
 | `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
 | `CalendarMatcher` | "what's on my calendar today", "do I have any meetings", "今日の予定", "今日のミーティング" | `get_calendar_events` (days_ahead=1) | |
