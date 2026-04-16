@@ -36,6 +36,31 @@ object TtsUtils {
         return result.trim()
     }
 
+    /**
+     * Split a long string at sentence boundaries into chunks no longer than [maxChars].
+     * Android TTS performance degrades with very long utterances. Breaking at sentence
+     * boundaries keeps prosody natural.
+     *
+     * Reference: OpenClaw Assistant TTSUtils.splitTextForTTS
+     */
+    fun splitIntoChunks(text: String, maxChars: Int = 500): List<String> {
+        if (text.length <= maxChars) return listOf(text)
+        // Sentence terminators (JP + EN)
+        val sentenceEnd = Regex("(?<=[。！？\\.!?])\\s*")
+        val sentences = text.split(sentenceEnd).filter { it.isNotBlank() }
+        val chunks = mutableListOf<String>()
+        val current = StringBuilder()
+        for (s in sentences) {
+            if (current.length + s.length > maxChars && current.isNotEmpty()) {
+                chunks.add(current.toString().trim())
+                current.clear()
+            }
+            current.append(s)
+        }
+        if (current.isNotEmpty()) chunks.add(current.toString().trim())
+        return chunks
+    }
+
     data class EngineInfo(
         val packageName: String,
         val label: String

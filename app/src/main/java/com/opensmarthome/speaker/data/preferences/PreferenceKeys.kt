@@ -2,6 +2,7 @@ package com.opensmarthome.speaker.data.preferences
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
@@ -12,6 +13,18 @@ object PreferenceKeys {
     val TTS_ENGINE = stringPreferencesKey("tts_engine")
     val TTS_LANGUAGE = stringPreferencesKey("tts_language")
     val TTS_ENABLED = booleanPreferencesKey("tts_enabled")
+
+    // TTS Provider ("android" | "openai" | "elevenlabs" | "voicevox")
+    val TTS_PROVIDER = stringPreferencesKey("tts_provider")
+    val OPENAI_TTS_VOICE = stringPreferencesKey("openai_tts_voice")   // alloy/echo/fable/onyx/nova/shimmer/coral
+    val OPENAI_TTS_MODEL = stringPreferencesKey("openai_tts_model")   // tts-1 / tts-1-hd / gpt-4o-mini-tts
+    val ELEVENLABS_VOICE_ID = stringPreferencesKey("elevenlabs_voice_id")
+    val ELEVENLABS_MODEL = stringPreferencesKey("elevenlabs_model")    // eleven_multilingual_v2
+    val ELEVENLABS_SPEED = floatPreferencesKey("elevenlabs_speed")     // 0.7 - 1.2
+    val VOICEVOX_SPEAKER_ID = intPreferencesKey("voicevox_speaker_id")
+    val VOICEVOX_STYLE_ID = intPreferencesKey("voicevox_style_id")
+    val VOICEVOX_TERMS_ACCEPTED = booleanPreferencesKey("voicevox_terms_accepted")
+    val VOICEVOX_BASE_URL = stringPreferencesKey("voicevox_base_url") // self-hosted HTTP engine URL
 
     // Voice interaction
     val CONTINUOUS_MODE = booleanPreferencesKey("continuous_mode")

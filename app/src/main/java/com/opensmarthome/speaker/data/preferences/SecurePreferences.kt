@@ -44,5 +44,7 @@ class SecurePreferences @Inject constructor(
         const val KEY_HA_TOKEN = "ha_token"
         const val KEY_OPENCLAW_API_KEY = "openclaw_api_key"
         const val KEY_LOCAL_LLM_API_KEY = "local_llm_api_key"
+        const val KEY_OPENAI_TTS_API_KEY = "openai_tts_api_key"
+        const val KEY_ELEVENLABS_API_KEY = "elevenlabs_api_key"
     }
 }

@@ -107,13 +107,89 @@ fun SettingsScreen(
 
         SettingsDivider()
 
-        // === Text-to-Speech ===
+        // === TTS Provider ===
+        SectionHeader("TTS Provider")
+        val ttsProvider by viewModel.ttsProvider.collectAsState()
+        listOf(
+            "android" to "Android System (on-device, free)",
+            "openai" to "OpenAI TTS (cloud, natural)",
+            "elevenlabs" to "ElevenLabs (cloud, high quality)",
+            "voicevox" to "VOICEVOX (self-hosted, Japanese)"
+        ).forEach { (id, label) ->
+            val isSelected = ttsProvider == id
+            OutlinedButton(
+                onClick = { viewModel.saveTtsProvider(id) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = if (isSelected) ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ) else ButtonDefaults.outlinedButtonColors()
+            ) {
+                Text(label, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+
+        if (ttsProvider == "openai") {
+            Spacer(modifier = Modifier.height(8.dp))
+            val apiKey by viewModel.openAiTtsApiKey.collectAsState()
+            val voice by viewModel.openAiTtsVoice.collectAsState()
+            val model by viewModel.openAiTtsModel.collectAsState()
+            SettingsPasswordField("OpenAI API Key", apiKey) {
+                viewModel.saveOpenAiTts(it, voice, model)
+            }
+            SettingsTextField("Voice (alloy/echo/fable/onyx/nova/shimmer/coral)", voice) {
+                viewModel.saveOpenAiTts(apiKey, it, model)
+            }
+            SettingsTextField("Model (tts-1 / tts-1-hd / gpt-4o-mini-tts)", model) {
+                viewModel.saveOpenAiTts(apiKey, voice, it)
+            }
+        }
+
+        if (ttsProvider == "elevenlabs") {
+            Spacer(modifier = Modifier.height(8.dp))
+            val apiKey by viewModel.elevenLabsApiKey.collectAsState()
+            val voiceId by viewModel.elevenLabsVoiceId.collectAsState()
+            val model by viewModel.elevenLabsModel.collectAsState()
+            SettingsPasswordField("ElevenLabs API Key", apiKey) {
+                viewModel.saveElevenLabs(it, voiceId, model)
+            }
+            SettingsTextField("Voice ID", voiceId) {
+                viewModel.saveElevenLabs(apiKey, it, model)
+            }
+            SettingsTextField("Model (eleven_multilingual_v2)", model) {
+                viewModel.saveElevenLabs(apiKey, voiceId, it)
+            }
+        }
+
+        if (ttsProvider == "voicevox") {
+            Spacer(modifier = Modifier.height(8.dp))
+            val baseUrl by viewModel.voicevoxBaseUrl.collectAsState()
+            val speakerId by viewModel.voicevoxSpeakerId.collectAsState()
+            val termsAccepted by viewModel.voicevoxTermsAccepted.collectAsState()
+            SettingsTextField("VOICEVOX Engine URL (e.g. http://192.168.1.10:50021)", baseUrl) {
+                viewModel.saveVoiceVox(it, speakerId, termsAccepted)
+            }
+            SettingsTextField("Speaker/Style ID (3 = ずんだもん)", speakerId.toString()) { value ->
+                val id = value.toIntOrNull() ?: 3
+                viewModel.saveVoiceVox(baseUrl, id, termsAccepted)
+            }
+            SettingsToggle(
+                "I agree to VOICEVOX terms of use (credit the speaker per their license)",
+                termsAccepted
+            ) { accepted ->
+                viewModel.saveVoiceVox(baseUrl, speakerId, accepted)
+            }
+            SettingsHint("Run the VOICEVOX ENGINE (Docker/PC) on your LAN. Speech won't work until terms are accepted.")
+        }
+
+        SettingsDivider()
+
+        // === Text-to-Speech (Android system settings) ===
         val ttsSpeechRate by viewModel.ttsSpeechRate.collectAsState()
         val ttsPitch by viewModel.ttsPitch.collectAsState()
         val ttsEngine by viewModel.ttsEngine.collectAsState()
         val availableEngines by viewModel.availableEngines.collectAsState()
 
-        SectionHeader("Text-to-Speech")
+        SectionHeader("Android System TTS")
 
         Text(
             text = "Speech Rate: ${"%.1f".format(ttsSpeechRate)}x",
@@ -176,8 +252,14 @@ fun SettingsScreen(
         // === Speech Recognition ===
         SectionHeader("Speech Recognition")
         val sttLanguage by viewModel.sttLanguage.collectAsState()
-        SettingsTextField("Language (e.g. ja-JP, en-US)", sttLanguage) { lang ->
+        SettingsTextField("STT Language (e.g. ja-JP, en-US)", sttLanguage) { lang ->
             viewModel.saveSttLanguage(lang)
+        }
+        SettingsHint("Leave empty to use device default language")
+
+        val ttsLanguageVal by viewModel.ttsLanguage.collectAsState()
+        SettingsTextField("TTS Language (e.g. ja-JP, en-US)", ttsLanguageVal) { lang ->
+            viewModel.saveTtsLanguage(lang)
         }
         SettingsHint("Leave empty to use device default language")
 
@@ -185,8 +267,12 @@ fun SettingsScreen(
 
         // === Wake Word ===
         SectionHeader("Wake Word")
+        val hotwordEnabled by viewModel.hotwordEnabled.collectAsState()
+        SettingsToggle("Enable Wake Word", hotwordEnabled) { viewModel.saveHotwordEnabled(it) }
+        SettingsHint("Off = wake word detection disabled, mic only activates from mic button")
+
         val wakeWord by viewModel.wakeWord.collectAsState()
-        SettingsTextField("Wake Word", wakeWord) { word ->
+        SettingsTextField("Wake Word Phrase", wakeWord) { word ->
             viewModel.saveWakeWord(word)
         }
         SettingsHint("The phrase the app listens for. Restart the app after changing.")

@@ -7,8 +7,9 @@ import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.voice.pipeline.VoicePipeline
 import com.opensmarthome.speaker.voice.stt.AndroidSttProvider
 import com.opensmarthome.speaker.voice.stt.SpeechToText
-import com.opensmarthome.speaker.voice.tts.AndroidTtsProvider
+import com.opensmarthome.speaker.data.preferences.SecurePreferences
 import com.opensmarthome.speaker.voice.tts.TextToSpeech
+import com.opensmarthome.speaker.voice.tts.TtsManager
 import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
@@ -28,11 +29,11 @@ object VoiceModule {
 
     @Provides
     @Singleton
-    fun provideTextToSpeech(@ApplicationContext context: Context): TextToSpeech {
-        val provider = AndroidTtsProvider(context)
-        provider.initialize()
-        return provider
-    }
+    fun provideTextToSpeech(
+        @ApplicationContext context: Context,
+        preferences: AppPreferences,
+        securePreferences: SecurePreferences
+    ): TextToSpeech = TtsManager(context, preferences, securePreferences)
 
     @Provides
     @Singleton

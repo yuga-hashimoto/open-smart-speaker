@@ -13,9 +13,12 @@ import com.opensmarthome.speaker.data.preferences.AppPreferences
 import com.opensmarthome.speaker.data.preferences.PreferenceKeys
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.voice.stt.AndroidSttProvider
 import com.opensmarthome.speaker.voice.stt.SpeechToText
 import com.opensmarthome.speaker.voice.stt.SttResult
+import com.opensmarthome.speaker.voice.tts.AndroidTtsProvider
 import com.opensmarthome.speaker.voice.tts.TextToSpeech
+import com.opensmarthome.speaker.service.VoiceService
 import com.opensmarthome.speaker.voice.wakeword.WakeWordDetector
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
@@ -83,16 +86,30 @@ class VoicePipeline(
     }
 
     suspend fun startListening() {
-        // Barge-in: if speaking, stop TTS and start listening
+        // Barge-in handling
         if (_state.value is VoicePipelineState.Speaking) {
+            val bargeInEnabled = preferences.observe(PreferenceKeys.BARGE_IN_ENABLED).first() ?: true
+            if (!bargeInEnabled) {
+                Timber.d("Barge-in disabled, ignoring mic tap during speech")
+                return
+            }
             tts.stop()
         }
         stt.stopListening()
         _partialText.value = ""
         _lastResponse.value = ""
 
+        // Apply STT settings from preferences (the binding is lost across calls)
+        applySttPreferences()
+        applyTtsLanguagePreference()
+
+        // Pause wake word detection to release microphone (OpenClaw broadcast pattern)
+        VoiceService.pauseHotword(context)
+
         requestAudioFocus()
         playListeningBeep()
+        // Wait for beep to finish and mic to be fully released
+        delay(500)
 
         _state.value = VoicePipelineState.Listening
         resetWatchdog()
@@ -114,6 +131,7 @@ class VoicePipeline(
                         _state.value = VoicePipelineState.Error(result.message)
                         abandonAudioFocus()
                         delay(2000)
+                        resumeWakeWord()
                         _state.value = VoicePipelineState.Idle
                         return@collect
                     }
@@ -125,6 +143,7 @@ class VoicePipeline(
             _state.value = VoicePipelineState.Error(e.message ?: "STT error")
             abandonAudioFocus()
             delay(2000)
+            resumeWakeWord()
             _state.value = VoicePipelineState.Idle
             return
         }
@@ -134,6 +153,7 @@ class VoicePipeline(
             processUserInput(finalText)
         } else {
             abandonAudioFocus()
+            resumeWakeWord()
             Timber.d("No speech detected, returning to Idle")
             _state.value = VoicePipelineState.Idle
         }
@@ -217,12 +237,14 @@ class VoicePipeline(
                             startListening()
                         } else {
                             abandonAudioFocus()
+                            resumeWakeWord()
                             _state.value = VoicePipelineState.Idle
                         }
                         return
                     }
                     else -> {
                         abandonAudioFocus()
+                        resumeWakeWord()
                         _state.value = VoicePipelineState.Idle
                         return
                     }
@@ -230,6 +252,7 @@ class VoicePipeline(
             }
 
             abandonAudioFocus()
+            resumeWakeWord()
             _state.value = VoicePipelineState.Idle
         } catch (e: Exception) {
             Timber.e(e, "Voice pipeline error")
@@ -241,6 +264,7 @@ class VoicePipeline(
             abandonAudioFocus()
             _state.value = VoicePipelineState.Error(e.message ?: "Error")
             delay(4000)
+            resumeWakeWord()
             _state.value = VoicePipelineState.Idle
         }
     }
@@ -262,6 +286,7 @@ class VoicePipeline(
     fun stopSpeaking() {
         tts.stop()
         abandonAudioFocus()
+        resumeWakeWord()
         _state.value = VoicePipelineState.Idle
     }
 
@@ -322,6 +347,32 @@ class VoicePipeline(
             toneGenerator?.startTone(ToneGenerator.TONE_PROP_ACK, 100)
         } catch (e: Exception) {
             Timber.w("Could not play listening beep: ${e.message}")
+        }
+    }
+
+    // --- Wake Word Resume ---
+
+    private fun resumeWakeWord() {
+        VoiceService.resumeHotword(context)
+    }
+
+    // --- Preference Application ---
+
+    private suspend fun applySttPreferences() {
+        val stt = this.stt as? AndroidSttProvider ?: return
+        val sttLang = preferences.observe(PreferenceKeys.STT_LANGUAGE).first()?.takeIf { it.isNotBlank() }
+        val silence = preferences.observe(PreferenceKeys.SILENCE_TIMEOUT_MS).first() ?: 1500L
+        stt.language = sttLang
+        stt.silenceTimeoutMs = silence
+        Timber.d("STT prefs applied: lang=$sttLang, silence=${silence}ms")
+    }
+
+    private suspend fun applyTtsLanguagePreference() {
+        val lang = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()?.takeIf { it.isNotBlank() } ?: return
+        when (val t = this.tts) {
+            is com.opensmarthome.speaker.voice.tts.TtsManager -> t.setLanguage(lang)
+            is AndroidTtsProvider -> t.setLanguage(lang)
+            else -> { /* other providers pull lang from prefs at speak time */ }
         }
     }
 

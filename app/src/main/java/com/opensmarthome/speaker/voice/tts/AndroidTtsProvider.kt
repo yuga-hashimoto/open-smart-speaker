@@ -117,7 +117,18 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
         val cleanText = TtsUtils.stripMarkdownForSpeech(text)
         if (cleanText.isBlank()) return
 
-        val timeoutMs = (30_000L + cleanText.length * 15L).coerceAtMost(120_000L)
+        // Split long responses into sentence-bounded chunks for better prosody + timeout handling
+        val chunks = TtsUtils.splitIntoChunks(cleanText)
+        Timber.d("TTS: ${chunks.size} chunk(s), totalChars=${cleanText.length}")
+
+        for ((i, chunk) in chunks.withIndex()) {
+            val queueMode = if (i == 0) AndroidTts.QUEUE_FLUSH else AndroidTts.QUEUE_ADD
+            speakSingle(chunk, queueMode)
+        }
+    }
+
+    private suspend fun speakSingle(text: String, queueMode: Int) {
+        val timeoutMs = (30_000L + text.length * 15L).coerceAtMost(120_000L)
 
         withTimeoutOrNull(timeoutMs) {
             suspendCancellableCoroutine { cont ->
@@ -126,7 +137,7 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
                 val listener = object : UtteranceProgressListener() {
                     override fun onStart(id: String?) {
                         _isSpeaking.value = true
-                        Timber.d("TTS speaking: ${cleanText.take(40)}...")
+                        Timber.d("TTS speaking: ${text.take(40)}...")
                     }
                     override fun onDone(id: String?) {
                         _isSpeaking.value = false
@@ -146,7 +157,7 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
 
                 if (isInitialized) {
                     tts?.setOnUtteranceProgressListener(listener)
-                    val result = tts?.speak(cleanText, AndroidTts.QUEUE_FLUSH, null, utteranceId)
+                    val result = tts?.speak(text, queueMode, null, utteranceId)
                     if (result != AndroidTts.SUCCESS) {
                         Timber.e("TTS speak() failed: $result")
                         _isSpeaking.value = false
@@ -156,7 +167,7 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
                     Timber.d("TTS not ready, queuing speak")
                     pendingSpeak = {
                         tts?.setOnUtteranceProgressListener(listener)
-                        tts?.speak(cleanText, AndroidTts.QUEUE_FLUSH, null, utteranceId)
+                        tts?.speak(text, queueMode, null, utteranceId)
                     }
                 }
 

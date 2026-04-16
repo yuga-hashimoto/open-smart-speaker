@@ -89,6 +89,42 @@ class SettingsViewModel @Inject constructor(
     private val _sttLanguage = MutableStateFlow("")
     val sttLanguage: StateFlow<String> = _sttLanguage.asStateFlow()
 
+    // TTS language
+    private val _ttsLanguage = MutableStateFlow("")
+    val ttsLanguage: StateFlow<String> = _ttsLanguage.asStateFlow()
+
+    // Hotword enabled
+    private val _hotwordEnabled = MutableStateFlow(true)
+    val hotwordEnabled: StateFlow<Boolean> = _hotwordEnabled.asStateFlow()
+
+    // TTS provider
+    private val _ttsProvider = MutableStateFlow("android")
+    val ttsProvider: StateFlow<String> = _ttsProvider.asStateFlow()
+
+    // OpenAI TTS
+    private val _openAiTtsApiKey = MutableStateFlow("")
+    val openAiTtsApiKey: StateFlow<String> = _openAiTtsApiKey.asStateFlow()
+    private val _openAiTtsVoice = MutableStateFlow("alloy")
+    val openAiTtsVoice: StateFlow<String> = _openAiTtsVoice.asStateFlow()
+    private val _openAiTtsModel = MutableStateFlow("tts-1")
+    val openAiTtsModel: StateFlow<String> = _openAiTtsModel.asStateFlow()
+
+    // ElevenLabs
+    private val _elevenLabsApiKey = MutableStateFlow("")
+    val elevenLabsApiKey: StateFlow<String> = _elevenLabsApiKey.asStateFlow()
+    private val _elevenLabsVoiceId = MutableStateFlow("21m00Tcm4TlvDq8ikWAM")
+    val elevenLabsVoiceId: StateFlow<String> = _elevenLabsVoiceId.asStateFlow()
+    private val _elevenLabsModel = MutableStateFlow("eleven_multilingual_v2")
+    val elevenLabsModel: StateFlow<String> = _elevenLabsModel.asStateFlow()
+
+    // VOICEVOX
+    private val _voicevoxBaseUrl = MutableStateFlow("http://localhost:50021")
+    val voicevoxBaseUrl: StateFlow<String> = _voicevoxBaseUrl.asStateFlow()
+    private val _voicevoxSpeakerId = MutableStateFlow(3)
+    val voicevoxSpeakerId: StateFlow<Int> = _voicevoxSpeakerId.asStateFlow()
+    private val _voicevoxTermsAccepted = MutableStateFlow(false)
+    val voicevoxTermsAccepted: StateFlow<Boolean> = _voicevoxTermsAccepted.asStateFlow()
+
     init {
         viewModelScope.launch { preferences.observe(PreferenceKeys.HA_BASE_URL).collect { _haBaseUrl.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.OPENCLAW_GATEWAY_URL).collect { _openClawUrl.value = it ?: "" } }
@@ -107,6 +143,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferences.observe(PreferenceKeys.SILENCE_TIMEOUT_MS).collect { _silenceTimeoutMs.value = it ?: 1500L } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.MEDIA_BUTTON_ENABLED).collect { _mediaButtonEnabled.value = it ?: false } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.STT_LANGUAGE).collect { _sttLanguage.value = it ?: "" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_LANGUAGE).collect { _ttsLanguage.value = it ?: "" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.HOTWORD_ENABLED).collect { _hotwordEnabled.value = it ?: true } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_PROVIDER).collect { _ttsProvider.value = it ?: "android" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.OPENAI_TTS_VOICE).collect { _openAiTtsVoice.value = it ?: "alloy" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.OPENAI_TTS_MODEL).collect { _openAiTtsModel.value = it ?: "tts-1" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.ELEVENLABS_VOICE_ID).collect { _elevenLabsVoiceId.value = it ?: "21m00Tcm4TlvDq8ikWAM" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.ELEVENLABS_MODEL).collect { _elevenLabsModel.value = it ?: "eleven_multilingual_v2" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.VOICEVOX_BASE_URL).collect { _voicevoxBaseUrl.value = it ?: "http://localhost:50021" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.VOICEVOX_STYLE_ID).collect { _voicevoxSpeakerId.value = it ?: 3 } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.VOICEVOX_TERMS_ACCEPTED).collect { _voicevoxTermsAccepted.value = it ?: false } }
+        _openAiTtsApiKey.value = securePreferences.getString(SecurePreferences.KEY_OPENAI_TTS_API_KEY)
+        _elevenLabsApiKey.value = securePreferences.getString(SecurePreferences.KEY_ELEVENLABS_API_KEY)
 
         _haToken.value = securePreferences.getString(SecurePreferences.KEY_HA_TOKEN)
         _switchBotSecret.value = securePreferences.getString("switchbot_secret")
@@ -154,21 +202,21 @@ class SettingsViewModel @Inject constructor(
     fun saveTtsSpeechRate(rate: Float) {
         viewModelScope.launch {
             preferences.set(PreferenceKeys.TTS_SPEECH_RATE, rate)
-            (tts as? AndroidTtsProvider)?.setSpeechRate(rate)
+            (tts as? com.opensmarthome.speaker.voice.tts.TtsManager)?.setSpeechRate(rate)
         }
     }
 
     fun saveTtsPitch(pitch: Float) {
         viewModelScope.launch {
             preferences.set(PreferenceKeys.TTS_PITCH, pitch)
-            (tts as? AndroidTtsProvider)?.setPitch(pitch)
+            (tts as? com.opensmarthome.speaker.voice.tts.TtsManager)?.setPitch(pitch)
         }
     }
 
     fun saveTtsEngine(engine: String) {
         viewModelScope.launch {
             preferences.set(PreferenceKeys.TTS_ENGINE, engine)
-            (tts as? AndroidTtsProvider)?.reinitialize(engine)
+            (tts as? com.opensmarthome.speaker.voice.tts.TtsManager)?.reinitialize(engine)
         }
     }
 
@@ -200,5 +248,51 @@ class SettingsViewModel @Inject constructor(
     // STT language
     fun saveSttLanguage(lang: String) {
         viewModelScope.launch { preferences.set(PreferenceKeys.STT_LANGUAGE, lang) }
+    }
+
+    // TTS language
+    fun saveTtsLanguage(lang: String) {
+        viewModelScope.launch {
+            preferences.set(PreferenceKeys.TTS_LANGUAGE, lang)
+            if (lang.isNotBlank()) {
+                (tts as? com.opensmarthome.speaker.voice.tts.TtsManager)?.setLanguage(lang)
+            }
+        }
+    }
+
+    // Hotword enabled
+    fun saveHotwordEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.set(PreferenceKeys.HOTWORD_ENABLED, enabled) }
+    }
+
+    // TTS Provider
+    fun saveTtsProvider(provider: String) {
+        viewModelScope.launch { preferences.set(PreferenceKeys.TTS_PROVIDER, provider) }
+    }
+
+    fun saveOpenAiTts(apiKey: String, voice: String, model: String) {
+        viewModelScope.launch {
+            securePreferences.putString(SecurePreferences.KEY_OPENAI_TTS_API_KEY, apiKey)
+            preferences.set(PreferenceKeys.OPENAI_TTS_VOICE, voice)
+            preferences.set(PreferenceKeys.OPENAI_TTS_MODEL, model)
+            _openAiTtsApiKey.value = apiKey
+        }
+    }
+
+    fun saveElevenLabs(apiKey: String, voiceId: String, model: String) {
+        viewModelScope.launch {
+            securePreferences.putString(SecurePreferences.KEY_ELEVENLABS_API_KEY, apiKey)
+            preferences.set(PreferenceKeys.ELEVENLABS_VOICE_ID, voiceId)
+            preferences.set(PreferenceKeys.ELEVENLABS_MODEL, model)
+            _elevenLabsApiKey.value = apiKey
+        }
+    }
+
+    fun saveVoiceVox(baseUrl: String, speakerId: Int, termsAccepted: Boolean) {
+        viewModelScope.launch {
+            preferences.set(PreferenceKeys.VOICEVOX_BASE_URL, baseUrl)
+            preferences.set(PreferenceKeys.VOICEVOX_STYLE_ID, speakerId)
+            preferences.set(PreferenceKeys.VOICEVOX_TERMS_ACCEPTED, termsAccepted)
+        }
     }
 }

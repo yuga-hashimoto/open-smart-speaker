@@ -17,13 +17,12 @@ import java.io.File
 
 /**
  * Vosk-based wake word detector.
+ * Reference: OpenClaw Assistant HotwordService.kt
  *
- * Requires Vosk model files to be present at [modelDir].
- * Uses Vosk's Recognizer to detect partial speech results containing the wake word keyword.
- *
- * Note: Vosk Android library must be included as a local AAR or from Maven.
- * The Vosk API is accessed via reflection to avoid compile-time dependency issues
- * with varying Vosk package names across versions.
+ * Key patterns from OpenClaw:
+ * - Pause hotword detection when STT session is active (prevent mic conflict)
+ * - Resume after session ends
+ * - Exponential backoff on failure
  */
 class VoskWakeWordDetector(
     private val config: WakeWordConfig,
@@ -37,6 +36,8 @@ class VoskWakeWordDetector(
     private var listeningJob: Job? = null
     private var audioRecord: AudioRecord? = null
     private var onDetectedCallback: (() -> Unit)? = null
+    @Volatile
+    private var isPaused = false
 
     // Vosk objects held as Any to avoid compile-time dependency
     private var model: Any? = null
@@ -53,12 +54,12 @@ class VoskWakeWordDetector(
         private const val MAX_RETRY_ATTEMPTS = 5
         private const val RETRY_BACKOFF_BASE_MS = 1000L
         private const val RETRY_BACKOFF_MAX_MS = 10000L
-        private const val WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
     override fun start(onDetected: () -> Unit) {
         if (_isListening.value) return
         onDetectedCallback = onDetected
+        isPaused = false
 
         listeningJob = scope.launch {
             var retryCount = 0
@@ -82,20 +83,47 @@ class VoskWakeWordDetector(
     }
 
     override fun stop() {
+        // Order matters: set flags FIRST so the audio loop exits cleanly,
+        // then release the AudioRecord to unblock any in-flight read().
+        isPaused = true
+        _isListening.value = false
         listeningJob?.cancel()
         listeningJob = null
         releaseAudio()
+    }
+
+    /**
+     * Pause wake word detection to release the microphone for STT.
+     * Reference: OpenClaw Assistant ACTION_PAUSE_HOTWORD broadcast pattern.
+     */
+    fun pause() {
+        Timber.d("Vosk: pausing wake word detection")
+        isPaused = true
         _isListening.value = false
+        // Cancel the listening job to force-stop the blocking read loop
+        listeningJob?.cancel()
+        listeningJob = null
+        releaseAudio()
+    }
+
+    /**
+     * Resume wake word detection after STT session ends.
+     * Reference: OpenClaw Assistant ACTION_RESUME_HOTWORD broadcast pattern.
+     */
+    fun resume() {
+        if (!isPaused) return
+        Timber.d("Vosk: resuming wake word detection")
+        isPaused = false
+        if (onDetectedCallback != null) {
+            start(onDetectedCallback!!)
+        }
     }
 
     private fun initializeVosk() {
         if (model != null) return
 
         if (!modelDir.exists() || !modelDir.isDirectory) {
-            throw IllegalStateException(
-                "Vosk model not found at: ${modelDir.absolutePath}. " +
-                "Download a model from https://alphacephei.com/vosk/models"
-            )
+            throw IllegalStateException("Vosk model not found at: ${modelDir.absolutePath}")
         }
 
         try {
@@ -108,9 +136,7 @@ class VoskWakeWordDetector(
 
             Timber.d("Vosk model loaded from: ${modelDir.absolutePath}")
         } catch (e: ClassNotFoundException) {
-            throw IllegalStateException(
-                "Vosk library not found. Add vosk-android to your dependencies.", e
-            )
+            throw IllegalStateException("Vosk library not found.", e)
         }
     }
 
@@ -135,32 +161,79 @@ class VoskWakeWordDetector(
 
         audioRecord!!.startRecording()
         _isListening.value = true
-        Timber.d("Vosk wake word listening started for: '${config.keyword}'")
+        Timber.d("Vosk wake word listening for: '${config.keyword}'")
 
         val buffer = ShortArray(bufferSize / 2)
         val rec = recognizer ?: return
         val recClass = rec.javaClass
-        val acceptMethod = recClass.getMethod("AcceptWaveform", ByteArray::class.java, Int::class.java)
-        val resultMethod = recClass.getMethod("Result")
-        val partialMethod = recClass.getMethod("PartialResult")
 
-        while (_isListening.value) {
-            val read = audioRecord?.read(buffer, 0, buffer.size) ?: break
-            if (read <= 0) continue
-
-            val byteBuffer = ByteArray(read * 2)
-            for (i in 0 until read) {
-                byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
-                byteBuffer[i * 2 + 1] = (buffer[i].toInt() shr 8 and 0xFF).toByte()
+        // Vosk 0.3.47 uses lowercase method names: acceptWaveForm, getResult, getPartialResult
+        val acceptMethod = try {
+            recClass.getMethod("acceptWaveForm", ByteArray::class.java, Int::class.javaPrimitiveType)
+        } catch (e: NoSuchMethodException) {
+            try {
+                recClass.getMethod("AcceptWaveform", ByteArray::class.java, Int::class.javaPrimitiveType)
+            } catch (e2: NoSuchMethodException) {
+                // Try short[] variant
+                recClass.getMethod("acceptWaveForm", ShortArray::class.java, Int::class.javaPrimitiveType)
             }
+        }
 
-            val accepted = acceptMethod.invoke(rec, byteBuffer, byteBuffer.size) as Boolean
-            val jsonResult = if (accepted) {
-                resultMethod.invoke(rec) as String
-            } else {
-                partialMethod.invoke(rec) as String
+        val resultMethod = try {
+            recClass.getMethod("getResult")
+        } catch (e: NoSuchMethodException) {
+            recClass.getMethod("Result")
+        }
+
+        val partialMethod = try {
+            recClass.getMethod("getPartialResult")
+        } catch (e: NoSuchMethodException) {
+            recClass.getMethod("PartialResult")
+        }
+
+        Timber.d("Vosk methods resolved: accept=${acceptMethod.name}, result=${resultMethod.name}, partial=${partialMethod.name}")
+
+        try {
+            while (_isListening.value && !isPaused) {
+                val ar = audioRecord ?: break
+                val read = try {
+                    ar.read(buffer, 0, buffer.size)
+                } catch (e: IllegalStateException) {
+                    Timber.d("Vosk: AudioRecord read threw (likely released) — exiting loop")
+                    break
+                }
+                // Negative value = error (e.g. ERROR_DEAD_OBJECT after release).
+                // Break instead of continue to avoid tight infinite loop that holds mic.
+                if (read < 0) {
+                    Timber.d("Vosk: AudioRecord read returned error $read — exiting loop")
+                    break
+                }
+                if (read == 0) continue
+
+                // Check if we're using byte[] or short[] variant
+                val accepted = if (acceptMethod.parameterTypes[0] == ShortArray::class.java) {
+                    acceptMethod.invoke(rec, buffer, read) as Boolean
+                } else {
+                    val byteBuffer = ByteArray(read * 2)
+                    for (i in 0 until read) {
+                        byteBuffer[i * 2] = (buffer[i].toInt() and 0xFF).toByte()
+                        byteBuffer[i * 2 + 1] = (buffer[i].toInt() shr 8 and 0xFF).toByte()
+                    }
+                    acceptMethod.invoke(rec, byteBuffer, byteBuffer.size) as Boolean
+                }
+
+                val jsonResult = if (accepted) {
+                    resultMethod.invoke(rec) as String
+                } else {
+                    partialMethod.invoke(rec) as String
+                }
+                checkForWakeWord(jsonResult)
             }
-            checkForWakeWord(jsonResult)
+        } catch (e: Exception) {
+            Timber.w(e, "Vosk audio loop exited with exception")
+        } finally {
+            releaseAudio()
+            _isListening.value = false
         }
     }
 
@@ -173,7 +246,8 @@ class VoskWakeWordDetector(
 
             if (text.isNotBlank() && keywordPattern.containsMatchIn(text)) {
                 Timber.d("Wake word detected in: '$text'")
-                _isListening.value = false
+                // Pause before triggering callback to release mic
+                pause()
                 onDetectedCallback?.invoke()
             }
         } catch (e: Exception) {
