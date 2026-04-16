@@ -99,6 +99,57 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `dispatchShuffle sends shuffle_set with bool parameter`() = runTest {
+        val deviceManager = mockk<DeviceManager>()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        val cmdSlot = slot<DeviceCommand>()
+        coEvery { deviceManager.executeCommand(capture(cmdSlot)) } returns CommandResult(success = true)
+
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val vm = HomeViewModel(deviceManager, ss, te)
+
+        vm.dispatchShuffle("media_player.lr", true)
+        advanceUntilIdle()
+        assertThat(cmdSlot.captured.action).isEqualTo("shuffle_set")
+        assertThat(cmdSlot.captured.parameters["shuffle"]).isEqualTo(true)
+    }
+
+    @Test
+    fun `dispatchRepeat sends repeat_set with HA string value`() = runTest {
+        val deviceManager = mockk<DeviceManager>()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        val cmdSlot = slot<DeviceCommand>()
+        coEvery { deviceManager.executeCommand(capture(cmdSlot)) } returns CommandResult(success = true)
+
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val vm = HomeViewModel(deviceManager, ss, te)
+
+        vm.dispatchRepeat("media_player.br", RepeatMode.ALL)
+        advanceUntilIdle()
+        assertThat(cmdSlot.captured.action).isEqualTo("repeat_set")
+        assertThat(cmdSlot.captured.parameters["repeat"]).isEqualTo("all")
+    }
+
+    @Test
+    fun `RepeatMode next cycles off all one off`() {
+        assertThat(RepeatMode.OFF.next()).isEqualTo(RepeatMode.ALL)
+        assertThat(RepeatMode.ALL.next()).isEqualTo(RepeatMode.ONE)
+        assertThat(RepeatMode.ONE.next()).isEqualTo(RepeatMode.OFF)
+    }
+
+    @Test
+    fun `RepeatMode fromHa is case-insensitive and falls back to off`() {
+        assertThat(RepeatMode.fromHa("one")).isEqualTo(RepeatMode.ONE)
+        assertThat(RepeatMode.fromHa("ALL")).isEqualTo(RepeatMode.ALL)
+        assertThat(RepeatMode.fromHa(null)).isEqualTo(RepeatMode.OFF)
+        assertThat(RepeatMode.fromHa("bogus")).isEqualTo(RepeatMode.OFF)
+    }
+
+    @Test
     fun `dispatchMediaVolume clamps out-of-range values`() = runTest {
         val deviceManager = mockk<DeviceManager>()
         every { deviceManager.devices } returns MutableStateFlow(emptyMap())

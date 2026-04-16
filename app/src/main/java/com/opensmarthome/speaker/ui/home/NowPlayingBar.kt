@@ -15,6 +15,9 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -33,6 +36,25 @@ import com.opensmarthome.speaker.ui.theme.SpeakerSurfaceElevated
 import com.opensmarthome.speaker.ui.theme.SpeakerTextPrimary
 import com.opensmarthome.speaker.ui.theme.SpeakerTextSecondary
 
+/** HA `repeat` attribute: off / one (current track) / all (queue). */
+enum class RepeatMode(val haValue: String) {
+    OFF("off"), ONE("one"), ALL("all");
+
+    fun next(): RepeatMode = when (this) {
+        OFF -> ALL
+        ALL -> ONE
+        ONE -> OFF
+    }
+
+    companion object {
+        fun fromHa(raw: String?): RepeatMode = when (raw?.lowercase()) {
+            "one" -> ONE
+            "all" -> ALL
+            else -> OFF
+        }
+    }
+}
+
 data class NowPlayingInfo(
     val deviceId: String,
     val deviceName: String,
@@ -40,7 +62,11 @@ data class NowPlayingInfo(
     val mediaArtist: String?,
     val isPlaying: Boolean,
     /** Current volume on 0.0-1.0 scale, matching HA `volume_level` attribute. Null = unknown. */
-    val volumeLevel: Float? = null
+    val volumeLevel: Float? = null,
+    /** HA `shuffle` attribute. Null = not reported. */
+    val shuffle: Boolean? = null,
+    /** HA `repeat` attribute. Null = not reported. */
+    val repeatMode: RepeatMode? = null
 )
 
 /** Service actions the bar dispatches to its host. Names match HA media_player services. */
@@ -56,6 +82,8 @@ fun NowPlayingBar(
     nowPlaying: NowPlayingInfo,
     onMediaAction: (MediaAction) -> Unit = {},
     onVolumeChange: (Float) -> Unit = {},
+    onShuffleToggle: (Boolean) -> Unit = {},
+    onRepeatChange: (RepeatMode) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -88,6 +116,25 @@ fun NowPlayingBar(
                             style = MaterialTheme.typography.bodySmall,
                             color = SpeakerTextSecondary,
                             maxLines = 1
+                        )
+                    }
+                }
+                nowPlaying.shuffle?.let { enabled ->
+                    IconButton(onClick = { onShuffleToggle(!enabled) }) {
+                        Icon(
+                            Icons.Filled.Shuffle,
+                            contentDescription = if (enabled) "Shuffle on" else "Shuffle off",
+                            tint = if (enabled) DeviceMediaPlaying else SpeakerTextSecondary
+                        )
+                    }
+                }
+                nowPlaying.repeatMode?.let { mode ->
+                    IconButton(onClick = { onRepeatChange(mode.next()) }) {
+                        Icon(
+                            imageVector = if (mode == RepeatMode.ONE) Icons.Filled.RepeatOne
+                            else Icons.Filled.Repeat,
+                            contentDescription = "Repeat ${mode.haValue}",
+                            tint = if (mode == RepeatMode.OFF) SpeakerTextSecondary else DeviceMediaPlaying
                         )
                     }
                 }
