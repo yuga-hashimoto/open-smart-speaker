@@ -95,6 +95,10 @@ class SettingsViewModel @Inject constructor(
     private val _sttLanguage = MutableStateFlow("")
     val sttLanguage: StateFlow<String> = _sttLanguage.asStateFlow()
 
+    // STT provider ("android" | "vosk" | "whisper")
+    private val _sttProviderType = MutableStateFlow("android")
+    val sttProviderType: StateFlow<String> = _sttProviderType.asStateFlow()
+
     // TTS language
     private val _ttsLanguage = MutableStateFlow("")
     val ttsLanguage: StateFlow<String> = _ttsLanguage.asStateFlow()
@@ -160,6 +164,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferences.observe(PreferenceKeys.SILENCE_TIMEOUT_MS).collect { _silenceTimeoutMs.value = it ?: 1500L } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.MEDIA_BUTTON_ENABLED).collect { _mediaButtonEnabled.value = it ?: false } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.STT_LANGUAGE).collect { _sttLanguage.value = it ?: "" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.STT_PROVIDER_TYPE).collect { _sttProviderType.value = it ?: "android" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_LANGUAGE).collect { _ttsLanguage.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.HOTWORD_ENABLED).collect { _hotwordEnabled.value = it ?: true } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.FILLER_PHRASES_ENABLED).collect { _fillerPhrasesEnabled.value = it ?: false } }
@@ -224,6 +229,10 @@ class SettingsViewModel @Inject constructor(
 
     fun saveBatterySaverEnabled(enabled: Boolean) {
         viewModelScope.launch { preferences.set(PreferenceKeys.BATTERY_SAVER_ENABLED, enabled) }
+    }
+
+    fun saveSttProviderType(type: String) {
+        viewModelScope.launch { preferences.set(PreferenceKeys.STT_PROVIDER_TYPE, type) }
     }
 
     // TTS settings

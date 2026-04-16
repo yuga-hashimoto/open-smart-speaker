@@ -91,7 +91,7 @@ Make it feel like Alexa/Google Home first.
 ## Phase 14 — Priority 1: Smart speaker production gaps
 Roadmapがチェック済みでも、実機でアレクサ相当にはならない。以下は実装ゼロ or 薄い:
 
-- [ ] P14.1: Offline STT provider — WhisperSttProvider (whisper.cpp via JNI) or SherpaSttProvider; SpeechToText interface already exists; pluggable via settings. Ref: whisper.cpp, sherpa-onnx, SmolChat-Android
+- [ ] P14.1: Offline STT provider — **scaffolding done**: SttProviderType enum (ANDROID / VOSK / WHISPER) + `STT_PROVIDER_TYPE` preference + DelegatingSttProvider that routes by preference at startListening time; OfflineSttStub emits a spoken "coming soon" Error so pipeline's ErrorClassifier surfaces it; Settings UI shows the three options with "coming soon" badges on offline. Actual whisper.cpp / Vosk JNI wiring still TODO. Ref: whisper.cpp, sherpa-onnx, SmolChat-Android
 - [ ] P14.2: VAD / endpoint detection — silence threshold, min-speech / max-silence windows; expose as settings; feed into STT endpoint-of-speech. Ref: sherpa-onnx silero-vad binding
 - [x] P14.3: Wake word customization UI — Sensitivity slider (0.0-1.0) in SettingsScreen alongside existing keyword text field; WAKE_WORD_SENSITIVITY preference; VoiceService loads into WakeWordConfig; VoskWakeWordDetector uses sensitivity to gate partial-result matching (threshold 0.5 = partial vs final-only). Unit tests cover the gate. Keyword customization was already shipped
 - [ ] P14.4: Media deeper control — **volume + shuffle + repeat done**: volume slider (0-100 %), shuffle toggle, repeat cycle (off→all→one) via HA `volume_set` / `shuffle_set` / `repeat_set`. Queue/playlist list-view still TODO. Ref: home-assistant/android media controls
