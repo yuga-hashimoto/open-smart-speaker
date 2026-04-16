@@ -73,6 +73,10 @@ fun SettingsScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
+        // === Voice Health (diagnostics) ===
+        VoiceHealthSection()
+        SettingsDivider()
+
         // === Voice Interaction ===
         SectionHeader("Voice Interaction")
         val continuousMode by viewModel.continuousMode.collectAsState()
@@ -87,6 +91,12 @@ fun SettingsScreen(
         SettingsHint("Auto-restart listening after response finishes")
         SettingsToggle("Thinking Sound", thinkingSound) { viewModel.saveThinkingSound(it) }
         SettingsHint("Play a beep when processing starts")
+        val fillerEnabled by viewModel.fillerPhrasesEnabled.collectAsState()
+        SettingsToggle("Filler Phrases", fillerEnabled) { viewModel.saveFillerPhrasesEnabled(it) }
+        SettingsHint("Speak short phrases like \"少々お待ちください\" while the AI is thinking")
+        val resumeLast by viewModel.resumeLastSession.collectAsState()
+        SettingsToggle("Resume Last Session", resumeLast) { viewModel.saveResumeLastSession(it) }
+        SettingsHint("Restore previous conversation history on app start")
         SettingsToggle("Wake Word Interrupts TTS", bargeInEnabled) { viewModel.saveBargeInEnabled(it) }
         SettingsToggle("Media Button Trigger", mediaButtonEnabled) { viewModel.saveMediaButtonEnabled(it) }
         SettingsHint("Use Bluetooth headset button to start voice input")

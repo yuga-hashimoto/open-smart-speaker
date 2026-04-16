@@ -67,4 +67,10 @@ object PreferenceKeys {
 
     // Setup
     val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
+
+    // Filler phrases (keep user engaged during LLM processing)
+    val FILLER_PHRASES_ENABLED = booleanPreferencesKey("filler_phrases_enabled")
+
+    // Resume last session (restore conversation history from Room on launch)
+    val RESUME_LAST_SESSION = booleanPreferencesKey("resume_last_session")
 }

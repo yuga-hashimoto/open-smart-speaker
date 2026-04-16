@@ -97,6 +97,14 @@ class SettingsViewModel @Inject constructor(
     private val _hotwordEnabled = MutableStateFlow(true)
     val hotwordEnabled: StateFlow<Boolean> = _hotwordEnabled.asStateFlow()
 
+    // Filler phrases
+    private val _fillerPhrasesEnabled = MutableStateFlow(false)
+    val fillerPhrasesEnabled: StateFlow<Boolean> = _fillerPhrasesEnabled.asStateFlow()
+
+    // Resume last session
+    private val _resumeLastSession = MutableStateFlow(false)
+    val resumeLastSession: StateFlow<Boolean> = _resumeLastSession.asStateFlow()
+
     // TTS provider
     private val _ttsProvider = MutableStateFlow("android")
     val ttsProvider: StateFlow<String> = _ttsProvider.asStateFlow()
@@ -145,6 +153,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferences.observe(PreferenceKeys.STT_LANGUAGE).collect { _sttLanguage.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_LANGUAGE).collect { _ttsLanguage.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.HOTWORD_ENABLED).collect { _hotwordEnabled.value = it ?: true } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.FILLER_PHRASES_ENABLED).collect { _fillerPhrasesEnabled.value = it ?: false } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.RESUME_LAST_SESSION).collect { _resumeLastSession.value = it ?: false } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_PROVIDER).collect { _ttsProvider.value = it ?: "android" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.OPENAI_TTS_VOICE).collect { _openAiTtsVoice.value = it ?: "alloy" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.OPENAI_TTS_MODEL).collect { _openAiTtsModel.value = it ?: "tts-1" } }
@@ -263,6 +273,16 @@ class SettingsViewModel @Inject constructor(
     // Hotword enabled
     fun saveHotwordEnabled(enabled: Boolean) {
         viewModelScope.launch { preferences.set(PreferenceKeys.HOTWORD_ENABLED, enabled) }
+    }
+
+    // Filler phrases
+    fun saveFillerPhrasesEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.set(PreferenceKeys.FILLER_PHRASES_ENABLED, enabled) }
+    }
+
+    // Resume last session
+    fun saveResumeLastSession(enabled: Boolean) {
+        viewModelScope.launch { preferences.set(PreferenceKeys.RESUME_LAST_SESSION, enabled) }
     }
 
     // TTS Provider

@@ -9,6 +9,10 @@ import android.os.Build
 import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.assistant.model.AssistantSession
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
+import com.opensmarthome.speaker.data.db.MessageDao
+import com.opensmarthome.speaker.data.db.MessageEntity
+import com.opensmarthome.speaker.data.db.SessionDao
+import com.opensmarthome.speaker.data.db.SessionEntity
 import com.opensmarthome.speaker.data.preferences.AppPreferences
 import com.opensmarthome.speaker.data.preferences.PreferenceKeys
 import com.opensmarthome.speaker.tool.ToolCall
@@ -42,6 +46,8 @@ class VoicePipeline(
     private val toolExecutor: ToolExecutor,
     private val moshi: Moshi,
     private val preferences: AppPreferences,
+    private val sessionDao: SessionDao? = null,
+    private val messageDao: MessageDao? = null,
     private val wakeWordDetector: WakeWordDetector? = null
 ) {
     private val _state = MutableStateFlow<VoicePipelineState>(VoicePipelineState.Idle)
@@ -57,6 +63,86 @@ class VoicePipeline(
     private val conversationHistory = mutableListOf<AssistantMessage>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var watchdogJob: Job? = null
+    private var persistedSessionId: String? = null
+
+    init {
+        // Lazy restore: actual load happens on first startListening() to avoid blocking init
+        scope.launch { tryRestoreLastSession() }
+    }
+
+    private suspend fun tryRestoreLastSession() {
+        val resume = preferences.observe(PreferenceKeys.RESUME_LAST_SESSION).first() ?: false
+        if (!resume || sessionDao == null || messageDao == null) return
+        try {
+            val session = sessionDao.getAll().firstOrNull() ?: return
+            val messages = messageDao.getBySessionId(session.id)
+            if (messages.isEmpty()) return
+            val restored = messages.mapNotNull { e ->
+                when (e.role) {
+                    "user" -> AssistantMessage.User(content = e.content)
+                    "assistant" -> AssistantMessage.Assistant(content = e.content)
+                    "system" -> AssistantMessage.System(content = e.content)
+                    else -> null
+                }
+            }
+            conversationHistory.clear()
+            conversationHistory.addAll(restored)
+            persistedSessionId = session.id
+            Timber.d("Restored ${restored.size} messages from last session ${session.id}")
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to restore last session")
+        }
+    }
+
+    private suspend fun persistUserMessage(content: String) {
+        if (sessionDao == null || messageDao == null) return
+        val sessionId = ensurePersistedSessionId() ?: return
+        try {
+            messageDao.insert(
+                MessageEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    sessionId = sessionId,
+                    role = "user",
+                    content = content,
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to persist user message")
+        }
+    }
+
+    private suspend fun persistAssistantMessage(content: String) {
+        if (sessionDao == null || messageDao == null) return
+        val sessionId = ensurePersistedSessionId() ?: return
+        try {
+            messageDao.insert(
+                MessageEntity(
+                    id = java.util.UUID.randomUUID().toString(),
+                    sessionId = sessionId,
+                    role = "assistant",
+                    content = content,
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to persist assistant message")
+        }
+    }
+
+    private suspend fun ensurePersistedSessionId(): String? {
+        if (sessionDao == null) return null
+        persistedSessionId?.let { return it }
+        val providerId = currentSession?.providerId ?: "unknown"
+        val newId = java.util.UUID.randomUUID().toString()
+        try {
+            sessionDao.insert(SessionEntity(id = newId, providerId = providerId, createdAt = System.currentTimeMillis()))
+            persistedSessionId = newId
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to create persisted session")
+        }
+        return persistedSessionId
+    }
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
@@ -127,6 +213,7 @@ class VoicePipeline(
                     }
                     is SttResult.Error -> {
                         Timber.w("STT error: ${result.message}")
+                        playErrorBeep()
                         _lastResponse.value = "Could not hear you. Tap the mic to try again."
                         _state.value = VoicePipelineState.Error(result.message)
                         abandonAudioFocus()
@@ -169,6 +256,9 @@ class VoicePipeline(
         // Play thinking sound if enabled
         playThinkingSound()
 
+        // Start filler phrases job (speaks initial ack + wait phrases if processing takes long)
+        val fillerJob = startFillerPhrasesJob()
+
         try {
             val provider = router.resolveProvider()
             Timber.d("Provider resolved: ${provider.id}")
@@ -181,6 +271,7 @@ class VoicePipeline(
             val userMessage = AssistantMessage.User(content = text)
             conversationHistory.add(userMessage)
             trimConversationHistory()
+            persistUserMessage(text)
 
             val tools = toolExecutor.availableTools()
             var toolRounds = 0
@@ -214,7 +305,12 @@ class VoicePipeline(
                             continue
                         }
 
+                        // Cancel any in-progress filler phrases before speaking the response
+                        fillerJob.cancel()
+                        tts.stop()
+
                         _lastResponse.value = response.content
+                        persistAssistantMessage(response.content)
                         Timber.d("Speaking response: ${response.content.take(50)}...")
 
                         // Check if TTS is enabled
@@ -256,6 +352,7 @@ class VoicePipeline(
             _state.value = VoicePipelineState.Idle
         } catch (e: Exception) {
             Timber.e(e, "Voice pipeline error")
+            fillerJob.cancel()
             _lastResponse.value = when {
                 e.message?.contains("No available") == true ->
                     "No AI provider configured. Go to Settings to set up OpenClaw or download an on-device model."
@@ -266,6 +363,36 @@ class VoicePipeline(
             delay(4000)
             resumeWakeWord()
             _state.value = VoicePipelineState.Idle
+        } finally {
+            fillerJob.cancel()
+        }
+    }
+
+    /**
+     * Starts a background job that speaks filler/wait phrases while the LLM is processing.
+     * Cancelled automatically when the response is ready or an error occurs.
+     * Reference: OpenClaw Assistant OpenClawSession.scheduleInitialFillerPhrase / playWaitPhrase
+     */
+    private fun startFillerPhrasesJob(): Job {
+        return scope.launch {
+            val enabled = preferences.observe(PreferenceKeys.FILLER_PHRASES_ENABLED).first() ?: false
+            if (!enabled) return@launch
+
+            val lang = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()
+
+            // Initial acknowledgment after 1.5s
+            delay(1500)
+            try {
+                tts.speak(com.opensmarthome.speaker.voice.FillerPhrases.initialPhrase(lang))
+            } catch (_: Exception) { /* cancelled or other */ }
+
+            // Subsequent wait phrases every 6-8s
+            while (isActive) {
+                delay(6000 + (0..2000).random().toLong())
+                try {
+                    tts.speak(com.opensmarthome.speaker.voice.FillerPhrases.waitPhrase(lang))
+                } catch (_: Exception) { /* cancelled */ }
+            }
         }
     }
 
@@ -293,6 +420,17 @@ class VoicePipeline(
     fun clearHistory() {
         conversationHistory.clear()
         currentSession = null
+        val sid = persistedSessionId
+        persistedSessionId = null
+        if (sid != null && sessionDao != null) {
+            scope.launch {
+                try {
+                    sessionDao.deleteById(sid)
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to delete persisted session")
+                }
+            }
+        }
     }
 
     // --- Audio Focus ---
@@ -347,6 +485,17 @@ class VoicePipeline(
             toneGenerator?.startTone(ToneGenerator.TONE_PROP_ACK, 100)
         } catch (e: Exception) {
             Timber.w("Could not play listening beep: ${e.message}")
+        }
+    }
+
+    private fun playErrorBeep() {
+        try {
+            if (toneGenerator == null) {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+            }
+            toneGenerator?.startTone(ToneGenerator.TONE_PROP_NACK, 150)
+        } catch (e: Exception) {
+            Timber.w("Could not play error beep: ${e.message}")
         }
     }
 

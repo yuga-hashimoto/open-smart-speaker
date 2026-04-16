@@ -2,6 +2,8 @@ package com.opensmarthome.speaker.di
 
 import android.content.Context
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
+import com.opensmarthome.speaker.data.db.MessageDao
+import com.opensmarthome.speaker.data.db.SessionDao
 import com.opensmarthome.speaker.data.preferences.AppPreferences
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.voice.pipeline.VoicePipeline
@@ -44,7 +46,9 @@ object VoiceModule {
         router: ConversationRouter,
         toolExecutor: ToolExecutor,
         moshi: Moshi,
-        preferences: AppPreferences
+        preferences: AppPreferences,
+        sessionDao: SessionDao,
+        messageDao: MessageDao
     ): VoicePipeline = VoicePipeline(
         context = context,
         stt = stt,
@@ -52,6 +56,8 @@ object VoiceModule {
         router = router,
         toolExecutor = toolExecutor,
         moshi = moshi,
-        preferences = preferences
+        preferences = preferences,
+        sessionDao = sessionDao,
+        messageDao = messageDao
     )
 }
