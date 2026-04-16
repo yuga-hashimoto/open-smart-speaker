@@ -66,6 +66,7 @@ class VoicePipeline(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var watchdogJob: Job? = null
     private var persistedSessionId: String? = null
+    private val errorClassifier = ErrorClassifier()
 
     init {
         // Lazy restore: actual load happens on first startListening() to avoid blocking init
@@ -216,8 +217,9 @@ class VoicePipeline(
                     is SttResult.Error -> {
                         Timber.w("STT error: ${result.message}")
                         playErrorBeep()
-                        _lastResponse.value = "Could not hear you. Tap the mic to try again."
-                        _state.value = VoicePipelineState.Error(result.message)
+                        val recovery = errorClassifier.classify(result.message)
+                        _lastResponse.value = recovery.userSpokenMessage
+                        _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)
                         abandonAudioFocus()
                         delay(2000)
                         resumeWakeWord()
@@ -228,8 +230,9 @@ class VoicePipeline(
             }
         } catch (e: Exception) {
             Timber.e(e, "STT failed")
-            _lastResponse.value = "Voice recognition unavailable."
-            _state.value = VoicePipelineState.Error(e.message ?: "STT error")
+            val recovery = errorClassifier.classify(e.message, e)
+            _lastResponse.value = recovery.userSpokenMessage
+            _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)
             abandonAudioFocus()
             delay(2000)
             resumeWakeWord()
@@ -362,14 +365,11 @@ class VoicePipeline(
         } catch (e: Exception) {
             Timber.e(e, "Voice pipeline error")
             fillerJob.cancel()
-            _lastResponse.value = when {
-                e.message?.contains("No available") == true ->
-                    "No AI provider configured. Go to Settings to set up OpenClaw or download an on-device model."
-                else -> "Something went wrong: ${e.message}"
-            }
+            val recovery = errorClassifier.classify(e.message, e)
+            _lastResponse.value = recovery.userSpokenMessage
             abandonAudioFocus()
-            _state.value = VoicePipelineState.Error(e.message ?: "Error")
-            delay(4000)
+            _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)
+            delay(if (recovery.canRetry) 3000 else 5000)
             resumeWakeWord()
             _state.value = VoicePipelineState.Idle
         } finally {
