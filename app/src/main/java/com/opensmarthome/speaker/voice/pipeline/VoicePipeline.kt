@@ -290,7 +290,10 @@ class VoicePipeline(
         val fillerJob = startFillerPhrasesJob()
 
         try {
-            val provider = router.resolveProvider()
+            // Pass the user input so Auto policy can escalate heavy tasks
+            // (long input, vision, code review) to a remote provider when
+            // one is registered.
+            val provider = router.resolveProvider(userInput = text)
             Timber.d("Provider resolved: ${provider.id}")
             if (currentSession == null) {
                 Timber.d("Creating new session...")

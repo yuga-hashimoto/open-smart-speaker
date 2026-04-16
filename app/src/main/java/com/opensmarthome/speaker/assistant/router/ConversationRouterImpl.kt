@@ -45,23 +45,41 @@ class ConversationRouterImpl @Inject constructor() : ConversationRouter {
         _policy.value = policy
     }
 
-    override suspend fun resolveProvider(): AssistantProvider {
+    override suspend fun resolveProvider(userInput: String?): AssistantProvider {
         return when (val currentPolicy = _policy.value) {
             is RoutingPolicy.Manual -> {
                 _availableProviders.value.find { it.id == currentPolicy.providerId }
                     ?.takeIf { runCatching { it.isAvailable() }.getOrDefault(false) }
                     ?: throw NoAvailableProviderException("Manual provider ${currentPolicy.providerId} unavailable")
             }
-            is RoutingPolicy.Auto -> resolveAuto()
+            is RoutingPolicy.Auto -> resolveAuto(userInput)
             is RoutingPolicy.Failover -> resolveFailover(currentPolicy.ordered)
             is RoutingPolicy.LowestLatency -> resolveLowestLatency()
         }.also { _activeProvider.value = it }
     }
 
-    private suspend fun resolveAuto(): AssistantProvider {
-        return _availableProviders.value.firstOrNull { provider ->
+    private suspend fun resolveAuto(userInput: String?): AssistantProvider {
+        val available = _availableProviders.value.filter { provider ->
             runCatching { provider.isAvailable() }.getOrDefault(false)
-        } ?: throw NoAvailableProviderException("No available providers")
+        }
+        if (available.isEmpty()) throw NoAvailableProviderException("No available providers")
+
+        // Prefer a remote provider when HeavyTaskDetector decides the local
+        // model isn't a good fit (long input, heavy keywords, vision gap).
+        if (userInput != null) {
+            val local = available.firstOrNull { it.capabilities.isLocal }
+            if (local != null) {
+                val decision = HeavyTaskDetector.decide(userInput, local.capabilities)
+                if (decision.escalate) {
+                    val remote = available.firstOrNull { !it.capabilities.isLocal }
+                    if (remote != null) {
+                        Timber.d("Escalating to ${remote.id}: ${decision.reason}")
+                        return remote
+                    }
+                }
+            }
+        }
+        return available.first()
     }
 
     private suspend fun resolveFailover(ordered: List<String>): AssistantProvider {

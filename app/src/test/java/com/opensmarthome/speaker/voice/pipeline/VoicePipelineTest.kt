@@ -95,7 +95,7 @@ class VoicePipelineTest {
 
     @Test
     fun `processUserInput sets state to Processing then Idle`() = runTest {
-        coEvery { router.resolveProvider() } returns provider
+        coEvery { router.resolveProvider(any()) } returns provider
         coEvery { provider.startSession(any()) } returns AssistantSession(providerId = "test")
         coEvery { provider.send(any(), any(), any()) } returns
             AssistantMessage.Assistant(content = "Hello!")
@@ -110,7 +110,7 @@ class VoicePipelineTest {
 
     @Test
     fun `processUserInput handles error gracefully`() = runTest {
-        coEvery { router.resolveProvider() } throws RuntimeException("No providers")
+        coEvery { router.resolveProvider(any()) } throws RuntimeException("No providers")
 
         pipeline.processUserInput("test")
         testDispatcher.scheduler.advanceTimeBy(5000)

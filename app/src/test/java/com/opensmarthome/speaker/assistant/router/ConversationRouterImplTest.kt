@@ -131,15 +131,53 @@ class ConversationRouterImplTest {
         assertEquals("p1", router.activeProvider.value?.id)
     }
 
+    @Test
+    fun `auto escalates heavy task to remote when local is vision-blind`() = runTest {
+        val local = createFakeProvider("local", available = true, isLocal = true, supportsVision = false)
+        val remote = createFakeProvider("remote", available = true, isLocal = false)
+        router.registerProvider(local)
+        router.registerProvider(remote)
+
+        val resolved = router.resolveProvider(userInput = "What's in this photo?")
+        assertEquals("remote", resolved.id)
+    }
+
+    @Test
+    fun `auto stays on local for simple queries`() = runTest {
+        val local = createFakeProvider("local", available = true, isLocal = true)
+        val remote = createFakeProvider("remote", available = true, isLocal = false)
+        router.registerProvider(local)
+        router.registerProvider(remote)
+
+        val resolved = router.resolveProvider(userInput = "what time is it")
+        assertEquals("local", resolved.id)
+    }
+
+    @Test
+    fun `auto stays on local when no remote is available even for heavy task`() = runTest {
+        val local = createFakeProvider("local", available = true, isLocal = true)
+        router.registerProvider(local)
+
+        val resolved = router.resolveProvider(userInput = "please write an essay about climate change")
+        assertEquals("local", resolved.id)
+    }
+
     private fun createFakeProvider(
         id: String,
         available: Boolean = true,
-        latency: Long = 100L
+        latency: Long = 100L,
+        isLocal: Boolean = false,
+        supportsVision: Boolean = false
     ): AssistantProvider = object : AssistantProvider {
         override val id: String = id
         override val displayName: String = "Fake $id"
         override val capabilities = ProviderCapabilities(
-            supportsStreaming = true, supportsTools = true, maxContextTokens = 4096, modelName = "fake"
+            supportsStreaming = true,
+            supportsTools = true,
+            maxContextTokens = 4096,
+            modelName = "fake",
+            supportsVision = supportsVision,
+            isLocal = isLocal
         )
         override suspend fun startSession(config: Map<String, String>) = AssistantSession(providerId = id)
         override suspend fun endSession(session: AssistantSession) {}

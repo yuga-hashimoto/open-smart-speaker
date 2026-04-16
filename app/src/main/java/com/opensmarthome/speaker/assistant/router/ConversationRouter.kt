@@ -12,5 +12,11 @@ interface ConversationRouter {
     suspend fun unregisterProvider(providerId: String)
     suspend fun selectProvider(providerId: String)
     suspend fun setPolicy(policy: RoutingPolicy)
-    suspend fun resolveProvider(): AssistantProvider
+
+    /**
+     * Resolve the provider to use for the next turn. Optional [userInput] lets
+     * the Auto policy consult HeavyTaskDetector and prefer a remote provider
+     * when the request is too heavy for the local model.
+     */
+    suspend fun resolveProvider(userInput: String? = null): AssistantProvider
 }

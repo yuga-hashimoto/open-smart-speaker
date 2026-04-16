@@ -81,7 +81,7 @@ class ChatViewModel @Inject constructor(
             _conversationState.value = ConversationState.Thinking
 
             try {
-                val provider = router.resolveProvider()
+                val provider = router.resolveProvider(userInput = text)
                 if (session == null) {
                     session = provider.startSession()
                 }
