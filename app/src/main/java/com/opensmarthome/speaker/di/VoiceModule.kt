@@ -27,8 +27,11 @@ object VoiceModule {
 
     @Provides
     @Singleton
-    fun provideTextToSpeech(@ApplicationContext context: Context): TextToSpeech =
-        AndroidTtsProvider(context)
+    fun provideTextToSpeech(@ApplicationContext context: Context): TextToSpeech {
+        val provider = AndroidTtsProvider(context)
+        provider.initialize()
+        return provider
+    }
 
     @Provides
     @Singleton

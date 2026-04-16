@@ -3,8 +3,8 @@ package com.opensmarthome.speaker.assistant.provider.embedded
 data class EmbeddedLlmConfig(
     val modelPath: String = "",
     val contextSize: Int = 1024,
-    val threads: Int = Runtime.getRuntime().availableProcessors().coerceIn(4, 8),
-    val gpuLayers: Int = 0,
+    val threads: Int = 4, // performance cores only (off-grid-mobile-ai recommendation)
+    val gpuLayers: Int = 0, // Android CPU only (off-grid-mobile-ai default)
     val temperature: Float = 0.7f,
     val maxTokens: Int = 128,
     val systemPrompt: String = DEFAULT_SYSTEM_PROMPT

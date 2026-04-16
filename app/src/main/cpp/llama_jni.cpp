@@ -3,6 +3,7 @@
 #include <vector>
 #include <android/log.h>
 #include "llama.h"
+#include "ggml.h"
 
 #define TAG "LlamaCppBridge"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
@@ -28,6 +29,7 @@ Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_native
 
     auto model_params = llama_model_default_params();
     model_params.n_gpu_layers = gpuLayers;
+    model_params.use_mmap = true;
 
     auto * lctx = new LlamaContext();
     lctx->n_ctx = contextSize;
@@ -45,6 +47,13 @@ Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_native
     ctx_params.n_ctx = contextSize;
     ctx_params.n_threads = threads;
     ctx_params.n_threads_batch = threads;
+    ctx_params.n_batch = 512;
+    ctx_params.n_ubatch = 512;
+    ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_AUTO;
+    ctx_params.type_k = GGML_TYPE_Q8_0;
+    ctx_params.type_v = GGML_TYPE_Q8_0;
+
+    LOGI("Context params: batch=512, flash_attn=true, kv_cache=q8_0");
 
     lctx->ctx = llama_init_from_model(lctx->model, ctx_params);
     if (!lctx->ctx) {
@@ -113,6 +122,11 @@ static std::string generate_impl(LlamaContext *lctx, const char *prompt_str, int
         int len = llama_token_to_piece(vocab, new_token, buf, sizeof(buf), 0, true);
         if (len > 0) {
             result.append(buf, len);
+            // Stop at Gemma turn marker
+            if (result.find("<end_of_turn>") != std::string::npos) {
+                result = result.substr(0, result.find("<end_of_turn>"));
+                break;
+            }
         }
 
         // Decode next token

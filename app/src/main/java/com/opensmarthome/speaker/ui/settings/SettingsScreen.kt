@@ -136,10 +136,78 @@ fun SettingsScreen(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
+        // TTS Section
+        val ttsSpeechRate by viewModel.ttsSpeechRate.collectAsState()
+        val ttsPitch by viewModel.ttsPitch.collectAsState()
+        val ttsEngine by viewModel.ttsEngine.collectAsState()
+        val availableEngines by viewModel.availableEngines.collectAsState()
+
+        SectionHeader("Text-to-Speech")
+
+        Text(
+            text = "Speech Rate: ${"%.1f".format(ttsSpeechRate)}x",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        androidx.compose.material3.Slider(
+            value = ttsSpeechRate,
+            onValueChange = { viewModel.saveTtsSpeechRate(it) },
+            valueRange = 0.5f..2.0f,
+            steps = 5,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+
+        Text(
+            text = "Pitch: ${"%.1f".format(ttsPitch)}x",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        androidx.compose.material3.Slider(
+            value = ttsPitch,
+            onValueChange = { viewModel.saveTtsPitch(it) },
+            valueRange = 0.5f..2.0f,
+            steps = 5,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+
+        if (availableEngines.isNotEmpty()) {
+            Text(
+                text = "TTS Engine: ${
+                    availableEngines.find { it.packageName == ttsEngine }?.label
+                        ?: ttsEngine.ifEmpty { "System Default" }
+                }",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+            )
+            availableEngines.forEach { engine ->
+                val isSelected = engine.packageName == ttsEngine
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { viewModel.saveTtsEngine(engine.packageName) },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    colors = if (isSelected) {
+                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    } else {
+                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+                    }
+                ) {
+                    Text(
+                        engine.label,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
         // Info
         Text(
-            text = "On-Device LLM: Place a .task model file in the app's files/models/ directory. " +
-                "The app will auto-detect and load it on startup.",
+            text = "On-Device LLM: The app automatically downloads and loads a Gemma model on first launch.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 8.dp)

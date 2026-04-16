@@ -23,7 +23,7 @@ class ModelManager(private val context: Context) {
 
     fun listAvailableModels(): List<ModelInfo> {
         return getModelsDirectory().listFiles()
-            ?.filter { it.extension in listOf("bin", "task", "tflite", "gguf") }
+            ?.filter { it.extension in listOf("bin", "task", "tflite", "gguf", "litertlm") }
             ?.map { ModelInfo(path = it.absolutePath, name = it.nameWithoutExtension, sizeBytes = it.length()) }
             ?: emptyList()
     }

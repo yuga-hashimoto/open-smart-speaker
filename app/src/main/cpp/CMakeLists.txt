@@ -21,4 +21,5 @@ find_library(log-lib log)
 target_link_libraries(llama_jni llama ${log-lib})
 target_include_directories(llama_jni PRIVATE
     llama.cpp/include
+    llama.cpp/ggml/include
 )

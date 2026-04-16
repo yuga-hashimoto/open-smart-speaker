@@ -23,16 +23,17 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
 
-        externalNativeBuild {
-            cmake {
-                arguments += listOf(
-                    "-DANDROID_ARM_NEON=TRUE",
-                    "-DCMAKE_BUILD_TYPE=Release",
-                    "-DCMAKE_C_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG",
-                    "-DCMAKE_CXX_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG"
-                )
-            }
-        }
+        // externalNativeBuild (llama.cpp) disabled — using MediaPipe
+        // externalNativeBuild {
+        //     cmake {
+        //         arguments += listOf(
+        //             "-DANDROID_ARM_NEON=TRUE",
+        //             "-DCMAKE_BUILD_TYPE=Release",
+        //             "-DCMAKE_C_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG",
+        //             "-DCMAKE_CXX_FLAGS=-O3 -march=armv8.2-a+fp16+dotprod -DNDEBUG"
+        //         )
+        //     }
+        // }
     }
 
     buildTypes {
@@ -45,18 +46,18 @@ android {
         }
     }
 
-    // NDK build for llama.cpp JNI - requires NDK installation
-    // Install NDK: Android Studio > SDK Manager > SDK Tools > NDK
-    val ndkDir = file("${android.sdkDirectory}/ndk/27.0.12077973")
-    if (ndkDir.exists()) {
-        externalNativeBuild {
-            cmake {
-                path = file("src/main/cpp/CMakeLists.txt")
-                version = "3.22.1"
-            }
-        }
-        ndkVersion = "27.0.12077973"
-    }
+    // llama.cpp JNI disabled — using MediaPipe LLM Inference (GPU accelerated)
+    // To re-enable llama.cpp, uncomment below and install NDK 27.0.12077973
+    // val ndkDir = file("${android.sdkDirectory}/ndk/27.0.12077973")
+    // if (ndkDir.exists()) {
+    //     externalNativeBuild {
+    //         cmake {
+    //             path = file("src/main/cpp/CMakeLists.txt")
+    //             version = "3.22.1"
+    //         }
+    //     }
+    //     ndkVersion = "27.0.12077973"
+    // }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -65,6 +66,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf("-Xskip-metadata-version-check")
     }
 
     buildFeatures {
@@ -131,8 +133,9 @@ dependencies {
     // MQTT
     implementation(libs.paho.mqtt)
 
-    // On-device LLM (MediaPipe)
+    // On-device LLM (LiteRT-LM for Gemma 4 + MediaPipe for Gemma 3)
     implementation(libs.mediapipe.genai)
+    implementation(libs.litertlm.android)
 
     // Logging
     implementation(libs.timber)

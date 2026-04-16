@@ -69,9 +69,16 @@ class MainActivity : ComponentActivity() {
                         ModeScaffold()
                     }
                     else -> {
+                        val models by modelDownloader.availableModels.collectAsState()
+                        val selected by modelDownloader.selectedModel.collectAsState()
+
                         ModelSetupScreen(
                             downloadState = modelDownloader.state,
-                            onRetry = { scope.launch { modelDownloader.ensureModelAvailable() } }
+                            selectedModel = selected,
+                            availableModels = models,
+                            onSelectModel = { modelDownloader.selectModel(it) },
+                            onStartDownload = { scope.launch { modelDownloader.downloadSelectedModel() } },
+                            onRetry = { scope.launch { modelDownloader.downloadSelectedModel() } }
                         )
                     }
                 }
@@ -79,8 +86,14 @@ class MainActivity : ComponentActivity() {
         }
 
         requestPermissionsAndStart()
-        // Start model download
-        scope.launch { modelDownloader.ensureModelAvailable() }
+        scope.launch {
+            if (modelDownloader.isModelDownloaded()) {
+                modelDownloader.ensureModelAvailable()
+            } else {
+                // Fetch available models from HuggingFace API
+                modelDownloader.fetchAvailableModels()
+            }
+        }
     }
 
     override fun onResume() {

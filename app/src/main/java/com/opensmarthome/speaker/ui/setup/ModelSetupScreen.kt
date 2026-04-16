@@ -7,15 +7,22 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Psychology
@@ -31,11 +38,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.opensmarthome.speaker.assistant.provider.embedded.AvailableModel
 import com.opensmarthome.speaker.assistant.provider.embedded.ModelDownloadState
 import com.opensmarthome.speaker.ui.theme.SpeakerBackground
 import com.opensmarthome.speaker.ui.theme.SpeakerPrimary
+import com.opensmarthome.speaker.ui.theme.SpeakerSurface
 import com.opensmarthome.speaker.ui.theme.SpeakerTextPrimary
 import com.opensmarthome.speaker.ui.theme.SpeakerTextSecondary
 import com.opensmarthome.speaker.ui.theme.VoiceError
@@ -44,6 +55,10 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun ModelSetupScreen(
     downloadState: StateFlow<ModelDownloadState>,
+    selectedModel: AvailableModel?,
+    availableModels: List<AvailableModel>,
+    onSelectModel: (AvailableModel) -> Unit,
+    onStartDownload: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -62,96 +77,159 @@ fun ModelSetupScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(48.dp)
+            modifier = Modifier.padding(24.dp).fillMaxSize(),
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 Icons.Filled.Psychology,
                 contentDescription = null,
                 tint = SpeakerPrimary,
-                modifier = Modifier.size(80.dp).alpha(
+                modifier = Modifier.size(56.dp).alpha(
                     if (state is ModelDownloadState.Downloading) iconAlpha else 1f
                 )
-            )
-
-            Spacer(Modifier.height(32.dp))
-
-            Text(
-                text = when (state) {
-                    is ModelDownloadState.NotStarted -> "Setting up AI..."
-                    is ModelDownloadState.Checking -> "Checking model..."
-                    is ModelDownloadState.Downloading -> "Downloading AI Model"
-                    is ModelDownloadState.Ready -> "Ready!"
-                    is ModelDownloadState.Error -> "Setup Failed"
-                },
-                style = MaterialTheme.typography.headlineLarge,
-                color = SpeakerTextPrimary,
-                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(16.dp))
 
             when (val s = state) {
-                is ModelDownloadState.Downloading -> {
+                is ModelDownloadState.NotStarted -> {
                     Text(
-                        text = "Gemma 4 E2B — ${s.downloadedMb}MB / ${if (s.totalMb > 0) "${s.totalMb}MB" else "..."}",
+                        text = "Select AI Model",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = SpeakerTextPrimary
+                    )
+                    Spacer(Modifier.height(4.dp))
+
+                    if (availableModels.isEmpty()) {
+                        Text("Loading models from HuggingFace...", color = SpeakerTextSecondary)
+                        Spacer(Modifier.height(16.dp))
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(0.4f).height(4.dp),
+                            color = SpeakerPrimary, trackColor = SpeakerSurface
+                        )
+                    } else {
+                        Text(
+                            "${availableModels.size} models available",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SpeakerTextSecondary
+                        )
+                        Spacer(Modifier.height(12.dp))
+
+                        LazyColumn(
+                            modifier = Modifier.weight(1f, fill = false).fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(availableModels) { model ->
+                                ModelCard(
+                                    model = model,
+                                    isSelected = model.id == selectedModel?.id,
+                                    onClick = { onSelectModel(model) }
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        if (selectedModel != null) {
+                            Button(
+                                onClick = onStartDownload,
+                                colors = ButtonDefaults.buttonColors(containerColor = SpeakerPrimary),
+                                modifier = Modifier.fillMaxWidth(0.7f).height(48.dp)
+                            ) {
+                                Text("Download (${selectedModel.sizeMb}MB)")
+                            }
+                        }
+                    }
+                }
+
+                is ModelDownloadState.Checking -> {
+                    Text("Checking...", style = MaterialTheme.typography.headlineSmall, color = SpeakerTextPrimary)
+                    Spacer(Modifier.height(16.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(0.4f).height(4.dp),
+                        color = SpeakerPrimary, trackColor = SpeakerSurface
+                    )
+                }
+
+                is ModelDownloadState.Downloading -> {
+                    Text("Downloading", style = MaterialTheme.typography.headlineSmall, color = SpeakerTextPrimary)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "${selectedModel?.displayName ?: "Model"} — ${s.downloadedMb}MB / ${s.totalMb}MB",
                         style = MaterialTheme.typography.bodyMedium,
                         color = SpeakerTextSecondary
                     )
                     Spacer(Modifier.height(16.dp))
                     LinearProgressIndicator(
                         progress = { s.progress },
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .height(6.dp),
-                        color = SpeakerPrimary,
-                        trackColor = SpeakerBackground,
+                        modifier = Modifier.fillMaxWidth(0.7f).height(6.dp),
+                        color = SpeakerPrimary, trackColor = SpeakerSurface
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "${(s.progress * 100).toInt()}%",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = SpeakerPrimary
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Text(
-                        text = "This only happens once. Keep the app open.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SpeakerTextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                is ModelDownloadState.Checking, is ModelDownloadState.NotStarted -> {
+                    Spacer(Modifier.height(8.dp))
+                    Text("${(s.progress * 100).toInt()}%", style = MaterialTheme.typography.titleMedium, color = SpeakerPrimary)
                     Spacer(Modifier.height(16.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(0.4f).height(4.dp),
-                        color = SpeakerPrimary,
-                        trackColor = SpeakerBackground
-                    )
+                    Text("Keep the app open", style = MaterialTheme.typography.bodySmall, color = SpeakerTextSecondary)
                 }
+
                 is ModelDownloadState.Error -> {
-                    Text(
-                        text = s.message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = VoiceError,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("Failed", style = MaterialTheme.typography.headlineSmall, color = VoiceError)
+                    Spacer(Modifier.height(8.dp))
+                    Text(s.message, style = MaterialTheme.typography.bodyMedium, color = VoiceError, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(24.dp))
-                    Button(
-                        onClick = onRetry,
-                        colors = ButtonDefaults.buttonColors(containerColor = SpeakerPrimary)
-                    ) {
+                    Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = SpeakerPrimary)) {
                         Text("Try Again")
                     }
                 }
+
                 is ModelDownloadState.Ready -> {
-                    Text(
-                        text = "AI model ready. Starting...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SpeakerTextSecondary
-                    )
+                    Text("Ready!", style = MaterialTheme.typography.headlineSmall, color = SpeakerPrimary)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ModelCard(
+    model: AvailableModel,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor = if (isSelected) SpeakerPrimary else SpeakerSurface
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .border(if (isSelected) 2.dp else 1.dp, borderColor, RoundedCornerShape(10.dp))
+            .background(SpeakerSurface)
+            .clickable { onClick() }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .border(2.dp, if (isSelected) SpeakerPrimary else SpeakerTextSecondary, CircleShape)
+                .padding(3.dp)
+                .then(if (isSelected) Modifier.background(SpeakerPrimary, CircleShape) else Modifier)
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = model.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = SpeakerTextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${model.sizeMb}MB",
+                style = MaterialTheme.typography.bodySmall,
+                color = SpeakerTextSecondary
+            )
         }
     }
 }

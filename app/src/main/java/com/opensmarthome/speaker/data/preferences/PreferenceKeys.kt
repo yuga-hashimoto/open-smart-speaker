@@ -1,8 +1,14 @@
 package com.opensmarthome.speaker.data.preferences
 
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 object PreferenceKeys {
+    // TTS
+    val TTS_SPEECH_RATE = floatPreferencesKey("tts_speech_rate")
+    val TTS_PITCH = floatPreferencesKey("tts_pitch")
+    val TTS_ENGINE = stringPreferencesKey("tts_engine")
+    val TTS_LANGUAGE = stringPreferencesKey("tts_language")
     val HA_BASE_URL = stringPreferencesKey("ha_base_url")
     val HA_TOKEN = stringPreferencesKey("ha_token")
     val OPENCLAW_GATEWAY_URL = stringPreferencesKey("openclaw_gateway_url")

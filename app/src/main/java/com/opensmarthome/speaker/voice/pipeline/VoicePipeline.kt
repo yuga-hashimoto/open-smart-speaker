@@ -108,14 +108,17 @@ class VoicePipeline(
             return
         }
 
+        Timber.d("STT finalText='$finalText' (blank=${finalText.isBlank()})")
         if (finalText.isNotBlank()) {
             processUserInput(finalText)
         } else {
+            Timber.d("No speech detected, returning to Idle")
             _state.value = VoicePipelineState.Idle
         }
     }
 
     suspend fun processUserInput(text: String) {
+        Timber.d("processUserInput called with: '$text'")
         _state.value = VoicePipelineState.Processing
         _partialText.value = text
         _lastResponse.value = ""
@@ -123,8 +126,11 @@ class VoicePipeline(
 
         try {
             val provider = router.resolveProvider()
+            Timber.d("Provider resolved: ${provider.id}")
             if (currentSession == null) {
+                Timber.d("Creating new session...")
                 currentSession = provider.startSession()
+                Timber.d("Session created")
             }
 
             val userMessage = AssistantMessage.User(content = text)
