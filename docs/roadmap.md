@@ -34,7 +34,7 @@ Make the local LLM a proper agent with multi-step reasoning.
 - [x] P1.1: System prompt with persona and tool instructions
 - [x] P1.2: Full conversation history in prompt (with context window management)
 - [x] P1.3: Agent loop — LLM can call tools and continue reasoning
-- [ ] P1.4: Chat template system (support multiple model formats)
+- [x] P1.4: Chat template system (Gemma, Qwen, Llama3, ChatML)
 - [x] P1.5: Tool call parsing improvements (structured JSON output)
 
 ### Phase 2: Android System Tools
