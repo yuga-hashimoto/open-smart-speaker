@@ -184,6 +184,41 @@ object ThermostatMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * Covers / blinds / curtains / garage: "open the blinds", "close the
+ * garage", "カーテンを開けて", "ブラインドを閉めて" → execute_command
+ * device_type=cover, action=open_cover/close_cover. Conservative —
+ * anchored to explicit cover nouns so it doesn't swallow other opens.
+ */
+object CoverMatcher : FastPathMatcher {
+    private val openPatterns = listOf(
+        Regex("""open\s+(?:the\s+)?(?:blind|blinds|curtain|curtains|shade|shades|shutter|shutters|garage|garage\s+door|gate)"""),
+        Regex("""(?:カーテン|ブラインド|シャッター|シャッタ|シェード|ガレージ|雨戸)\s*(?:を)?\s*(?:開けて|開いて|あけて)""")
+    )
+    private val closePatterns = listOf(
+        Regex("""close\s+(?:the\s+)?(?:blind|blinds|curtain|curtains|shade|shades|shutter|shutters|garage|garage\s+door|gate)"""),
+        Regex("""(?:カーテン|ブラインド|シャッター|シャッタ|シェード|ガレージ|雨戸)\s*(?:を)?\s*(?:閉めて|閉じて|しめて)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (openPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "cover", "action" to "open_cover"),
+                spokenConfirmation = "Opening."
+            )
+        }
+        if (closePatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "cover", "action" to "close_cover"),
+                spokenConfirmation = "Closing."
+            )
+        }
+        return null
+    }
+}
+
 /** "lights on/off", "電気つけて/消して", "set brightness 50", "明るさ50%" */
 object LightsMatcher : FastPathMatcher {
     private val onPatterns = listOf(

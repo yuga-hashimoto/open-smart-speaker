@@ -62,6 +62,9 @@ class DefaultFastPathRouter(
             TimeQueryMatcher,
             VolumeMatcher,
             ThermostatMatcher,
+            // CoverMatcher must precede LaunchAppMatcher because "open the blinds"
+            // would otherwise fall through to LaunchAppMatcher's guard.
+            CoverMatcher,
             // EverythingOffMatcher must precede LightsMatcher because "lights off" partially overlaps "off".
             EverythingOffMatcher,
             LightsMatcher,
