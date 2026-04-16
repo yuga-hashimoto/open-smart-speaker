@@ -70,6 +70,8 @@ OpenClaw-level autonomy.
 - [ ] P5.2: Proactive suggestions (time-based, context-based)
 - [ ] P5.3: Routine/automation creation (user-defined workflows)
 - [ ] P5.4: Screen control / accessibility service integration
+- [x] P5.5: Skills system (SKILL.md + XML prompt injection, stolen from OpenClaw)
+- [x] P5.6: Location tool (ACCESS_FINE_LOCATION, OpenClaw location.get)
 
 ### Continuous: Maintenance
 ロードマップ項目がない場合、以下を実施する:

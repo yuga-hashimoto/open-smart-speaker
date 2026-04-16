@@ -19,12 +19,17 @@ import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
 import com.opensmarthome.speaker.tool.info.OpenMeteoWeatherProvider
 import com.opensmarthome.speaker.tool.info.SearchToolExecutor
 import com.opensmarthome.speaker.tool.info.WeatherToolExecutor
+import com.opensmarthome.speaker.assistant.skills.AssetSkillLoader
+import com.opensmarthome.speaker.assistant.skills.SkillRegistry
+import com.opensmarthome.speaker.assistant.skills.SkillToolExecutor
 import com.opensmarthome.speaker.tool.system.AndroidAppLauncher
 import com.opensmarthome.speaker.tool.system.AndroidCalendarProvider
+import com.opensmarthome.speaker.tool.system.AndroidLocationProvider
 import com.opensmarthome.speaker.tool.system.AndroidNotificationProvider
 import com.opensmarthome.speaker.tool.system.AndroidTimerManager
 import com.opensmarthome.speaker.tool.system.AndroidVolumeManager
 import com.opensmarthome.speaker.tool.system.CalendarToolExecutor
+import com.opensmarthome.speaker.tool.system.LocationToolExecutor
 import com.opensmarthome.speaker.tool.system.NotificationToolExecutor
 import com.opensmarthome.speaker.tool.system.SystemToolExecutor
 import com.squareup.moshi.Moshi
@@ -73,11 +78,21 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideSkillRegistry(@ApplicationContext context: Context): SkillRegistry {
+        val registry = SkillRegistry()
+        val loader = AssetSkillLoader(context)
+        registry.registerAll(loader.loadAll())
+        return registry
+    }
+
+    @Provides
+    @Singleton
     fun provideToolExecutor(
         deviceManager: DeviceManager,
         moshi: Moshi,
         @ApplicationContext context: Context,
-        client: OkHttpClient
+        client: OkHttpClient,
+        skillRegistry: SkillRegistry
     ): ToolExecutor = CompositeToolExecutor(
         listOf(
             DeviceToolExecutor(deviceManager, moshi),
@@ -97,7 +112,11 @@ object DeviceModule {
             ),
             CalendarToolExecutor(
                 AndroidCalendarProvider(context)
-            )
+            ),
+            LocationToolExecutor(
+                AndroidLocationProvider(context)
+            ),
+            SkillToolExecutor(skillRegistry)
         )
     )
 }
