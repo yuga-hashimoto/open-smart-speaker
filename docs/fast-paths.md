@@ -1,0 +1,45 @@
+# Fast paths
+
+Utterances handled directly by [`FastPathRouter`](../app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathRouter.kt)
+without round-tripping through the LLM. Target latency: <200ms from final
+STT result to tool execution.
+
+All matchers are language-aware (English + Japanese where applicable).
+Order in `DEFAULT_MATCHERS` is significant; precedence comments live next
+to the list.
+
+## Catalog
+
+| Matcher | Sample utterances | Tool | Notes |
+|---|---|---|---|
+| `CancelAllTimersMatcher` | "cancel all timers", "stop timers", "タイマー全部止めて" | `cancel_all_timers` | Precedes TimerMatcher |
+| `TimerMatcher` | "set timer for 5 minutes", "5分タイマー" | `set_timer` | EN+JP |
+| `TimeQueryMatcher` | "what time is it", "今何時" | `get_datetime` | |
+| `VolumeMatcher` | "volume up/down", "set volume to 50", "mute", "unmute", "ミュート" | `set_volume` | |
+| `ThermostatMatcher` | "set thermostat to 22", "エアコン25度" | `execute_command` device_type=climate | Clamps 10..32°C |
+| `EverythingOffMatcher` | "turn off everything", "全部消して" | `execute_command` device_type=light off | Conservative — needs explicit "everything"/"all" |
+| `LightsMatcher` | "lights on", "電気つけて", "dim the lights", "set brightness 50", "明るさ80%", "bedroom lights off" | `execute_command` device_type=light | Room-scoped variants supported |
+| `MediaControlMatcher` | "pause music", "next track", "再生して", "前の曲" | `execute_command` device_type=media_player | |
+| `RunRoutineMatcher` | "run X routine", "Xルーチンを実行" | `run_routine` | Requires explicit "routine"/"ルーチン" keyword |
+| `LaunchAppMatcher` | "open camera", "launch maps", "Chromeを開いて" | `launch_app` | Skips light/timer keywords |
+| `FindDeviceMatcher` | "find my tablet", "デバイスを探して" | `find_device` | Rings + vibrates 10s |
+| `GoodnightMatcher` | "goodnight", "I'm going to bed", "おやすみ", "寝ます" | `goodnight` (composite) | Lights off + media pause + cancel timers |
+| `ArriveHomeMatcher` | "I'm home", "ただいま" | `arrive_home` (composite) | Lights on + volume 50 |
+| `LeaveHomeMatcher` | "I'm leaving", "行ってきます" | `leave_home` (composite) | Lights off + media pause |
+| `MorningBriefingMatcher` | "morning briefing", "朝のサマリー" | `morning_briefing` (composite) | Weather + news + calendar |
+| `EveningBriefingMatcher` | "evening briefing", "wind down", "夜のサマリー" | `evening_briefing` (composite) | Notifications + calendar + timers |
+| `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` | |
+| `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
+| `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
+| `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
+| `DatetimeMatcher` | "what's today's date", "今日は何日" | `get_datetime` | |
+| `GreetingMatcher` | "thanks", "hello", "ありがとう", "おはよう", "ごめん" | (speak-only) | Canned reply, no tool |
+| `HelpMatcher` | "help", "what can you do", "できることを教えて" | (speak-only) | Capability summary |
+
+## Adding a new matcher
+
+1. Append the `object` to [`FastPathMatchers.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathMatchers.kt)
+2. Add it to `DEFAULT_MATCHERS` in `FastPathRouter.kt` respecting precedence
+3. Add tests in `FastPathRouterTest.kt`
+4. Run `./gradlew testDebugUnitTest --tests "com.opensmarthome.speaker.voice.fastpath.*"`
+5. Update this catalog

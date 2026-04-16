@@ -11,6 +11,7 @@ Tablet-first Android smart speaker with on-device LLM agent, inspired by Alexa a
 ## Reference
 
 - **[Tools](tools.md)** — every LLM-callable tool and its parameters
+- **[Fast paths](fast-paths.md)** — voice utterances handled without the LLM
 - **[Providers](providers.md)** — AssistantProvider implementations
 - **[Skills](skills.md)** — authoring `SKILL.md` files
 - **[Permissions](permissions.md)** — runtime + special permissions
