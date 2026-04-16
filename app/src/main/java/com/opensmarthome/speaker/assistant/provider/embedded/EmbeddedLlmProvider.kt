@@ -43,7 +43,8 @@ class EmbeddedLlmProvider(
         supportsTools = true,
         maxContextTokens = config.contextSize,
         modelName = File(config.modelPath).nameWithoutExtension,
-        supportsVision = detectVisionSupport(File(config.modelPath).nameWithoutExtension)
+        supportsVision = detectVisionSupport(File(config.modelPath).nameWithoutExtension),
+        isLocal = true
     )
 
     private fun detectVisionSupport(modelName: String): Boolean {

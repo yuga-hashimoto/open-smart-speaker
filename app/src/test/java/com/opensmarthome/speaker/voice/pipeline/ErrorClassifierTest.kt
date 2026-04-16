@@ -74,4 +74,46 @@ class ErrorClassifierTest {
         val r = classifier.classify(null, cause)
         assertThat(r.category).isEqualTo(ErrorClassifier.Category.PERMISSION)
     }
+
+    @Test
+    fun `local kind never blames network for network-shaped errors`() {
+        // A local (embedded) LLM has no network dependency for inference.
+        // If classifier sees 'connection' (e.g. from an unrelated tool) while
+        // the active provider is LOCAL, we must not tell the user 'Network hiccup'.
+        val r = classifier.classify(
+            "Unable to resolve host api.example.com",
+            kind = ErrorClassifier.ProviderKind.LOCAL
+        )
+        assertThat(r.category).isNotEqualTo(ErrorClassifier.Category.NETWORK)
+        assertThat(r.userSpokenMessage.lowercase()).doesNotContain("network")
+        assertThat(r.userSpokenMessage.lowercase()).doesNotContain("internet")
+    }
+
+    @Test
+    fun `local kind surfaces local-engine failure category`() {
+        val r = classifier.classify(
+            "connection reset",
+            kind = ErrorClassifier.ProviderKind.LOCAL
+        )
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.LOCAL_ENGINE)
+        assertThat(r.canRetry).isTrue()
+    }
+
+    @Test
+    fun `remote kind keeps network classification`() {
+        val r = classifier.classify(
+            "Unable to resolve host api.example.com",
+            kind = ErrorClassifier.ProviderKind.REMOTE
+        )
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.NETWORK)
+    }
+
+    @Test
+    fun `local model load failure is a local-engine failure`() {
+        val r = classifier.classify(
+            "Failed to load GGUF model file",
+            kind = ErrorClassifier.ProviderKind.LOCAL
+        )
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.LOCAL_ENGINE)
+    }
 }

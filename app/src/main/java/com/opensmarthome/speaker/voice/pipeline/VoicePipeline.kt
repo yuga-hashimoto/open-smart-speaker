@@ -72,6 +72,12 @@ class VoicePipeline(
     private var persistedSessionId: String? = null
     private val errorClassifier = ErrorClassifier()
 
+    private fun currentProviderKind(): ErrorClassifier.ProviderKind {
+        val active = router.activeProvider.value ?: return ErrorClassifier.ProviderKind.UNKNOWN
+        return if (active.capabilities.isLocal) ErrorClassifier.ProviderKind.LOCAL
+        else ErrorClassifier.ProviderKind.REMOTE
+    }
+
     init {
         // Lazy restore: actual load happens on first startListening() to avoid blocking init
         scope.launch { tryRestoreLastSession() }
@@ -221,7 +227,10 @@ class VoicePipeline(
                     is SttResult.Error -> {
                         Timber.w("STT error: ${result.message}")
                         playErrorBeep()
-                        val recovery = errorClassifier.classify(result.message)
+                        val recovery = errorClassifier.classify(
+                            result.message,
+                            kind = currentProviderKind()
+                        )
                         _lastResponse.value = recovery.userSpokenMessage
                         _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)
                         abandonAudioFocus()
@@ -234,7 +243,7 @@ class VoicePipeline(
             }
         } catch (e: Exception) {
             Timber.e(e, "STT failed")
-            val recovery = errorClassifier.classify(e.message, e)
+            val recovery = errorClassifier.classify(e.message, e, kind = currentProviderKind())
             _lastResponse.value = recovery.userSpokenMessage
             _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)
             abandonAudioFocus()
@@ -380,7 +389,7 @@ class VoicePipeline(
         } catch (e: Exception) {
             Timber.e(e, "Voice pipeline error")
             fillerJob.cancel()
-            val recovery = errorClassifier.classify(e.message, e)
+            val recovery = errorClassifier.classify(e.message, e, kind = currentProviderKind())
             _lastResponse.value = recovery.userSpokenMessage
             abandonAudioFocus()
             _state.value = VoicePipelineState.Error(recovery.userSpokenMessage)

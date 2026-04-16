@@ -4,8 +4,9 @@ package com.opensmarthome.speaker.voice.pipeline
  * Classifies an error message / exception cause into a user-facing category
  * with short, spoken-friendly copy. Avoids technical jargon.
  *
- * Inspired by Ava's isSTTError pattern — match common phrases in the
- * underlying error to pick the right recovery message.
+ * Offline-first: if the active provider is LOCAL (embedded LLM / on-device),
+ * network-shaped errors are remapped to a local-engine category so users never
+ * get "Network hiccup" copy for a purely local failure.
  */
 class ErrorClassifier {
 
@@ -20,22 +21,39 @@ class ErrorClassifier {
         STT_FAILURE,
         LLM_TIMEOUT,
         NETWORK,
+        LOCAL_ENGINE,
         PERMISSION,
         TOOL_FAILURE,
         UNKNOWN
     }
 
-    fun classify(raw: String?, cause: Throwable? = null): Recovery {
+    /**
+     * Whether the currently active provider runs on-device (LOCAL) or needs
+     * the internet (REMOTE). When UNKNOWN, we fall back to keyword-only heuristics.
+     */
+    enum class ProviderKind { LOCAL, REMOTE, UNKNOWN }
+
+    fun classify(
+        raw: String?,
+        cause: Throwable? = null,
+        kind: ProviderKind = ProviderKind.UNKNOWN
+    ): Recovery {
         val lower = (raw?.lowercase().orEmpty() + " " +
             cause?.message?.lowercase().orEmpty())
             .replace('_', ' ') // ERROR_NO_MATCH → "error no match"
 
-        return when {
+        val base = when {
             contains(lower, "no available", "no provider", "model not", "llm not") ->
                 Recovery(
                     Category.NO_PROVIDER,
                     "I don't have an AI model ready yet. Open settings to download one.",
                     canRetry = false
+                )
+            contains(lower, "gguf", "failed to load model", "model load", "out of memory") ->
+                Recovery(
+                    Category.LOCAL_ENGINE,
+                    "The on-device model had trouble. Let me try again.",
+                    canRetry = true
                 )
             contains(lower, "index out of range", "no match", "speech timeout", "list index") ->
                 Recovery(
@@ -73,6 +91,19 @@ class ErrorClassifier {
                 canRetry = true
             )
         }
+
+        // Offline-first: suppress NETWORK copy when we know the active
+        // provider is purely on-device. Tool-level errors for network tools
+        // (weather, search) go through TOOL_FAILURE instead, so we don't lose
+        // signal — we just stop blaming the network for LLM-side issues.
+        if (kind == ProviderKind.LOCAL && base.category == Category.NETWORK) {
+            return Recovery(
+                Category.LOCAL_ENGINE,
+                "The on-device model had trouble. Let me try again.",
+                canRetry = true
+            )
+        }
+        return base
     }
 
     private fun contains(haystack: String, vararg needles: String): Boolean =
