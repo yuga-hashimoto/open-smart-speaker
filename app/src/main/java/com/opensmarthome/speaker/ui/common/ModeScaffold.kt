@@ -65,6 +65,7 @@ fun ModeScaffold(
     val voiceState by viewModel.voiceState.collectAsState()
     val sttText by viewModel.partialText.collectAsState()
     val responseText by viewModel.lastResponse.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 2 }
     var showSettings by remember { mutableStateOf(false) }
     var showNightClock by remember { mutableStateOf(false) }
@@ -111,9 +112,9 @@ fun ModeScaffold(
             }
         }
 
-        // Connection badge (top-left)
+        // Connection badge (top-left) — reflects real connectivity now.
         ConnectionBadge(
-            status = ConnectionStatus.CONNECTED,
+            status = if (isOnline) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED,
             providerCount = 0,
             modifier = Modifier
                 .align(Alignment.TopStart)
