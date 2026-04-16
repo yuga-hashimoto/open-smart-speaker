@@ -43,6 +43,7 @@ class DefaultFastPathRouter(
             TimeQueryMatcher,
             VolumeMatcher,
             LightsMatcher,
+            MediaControlMatcher,
             DatetimeMatcher,
             HelpMatcher
         )
@@ -190,6 +191,44 @@ object LightsMatcher : FastPathMatcher {
                 ),
                 spokenConfirmation = "Lights off."
             )
+        }
+        return null
+    }
+}
+
+/**
+ * "pause music", "play", "next track", "前の曲", etc.
+ *
+ * Targets all media_player devices (no favorite-device concept yet); users
+ * with multiple speakers should disambiguate by name via the LLM path.
+ */
+object MediaControlMatcher : FastPathMatcher {
+    private data class Pattern(val regex: Regex, val haAction: String, val spoken: String)
+
+    private val patterns = listOf(
+        Pattern(Regex("""(?:pause|stop)\s+(?:music|media|song|audio|track)"""), "media_pause", "Paused."),
+        Pattern(Regex("""(?:play|resume)\s+(?:music|media|song|audio)"""), "media_play", "Playing."),
+        Pattern(Regex("""(?:skip|next)\s*(?:track|song)?"""), "media_next_track", "Next."),
+        Pattern(Regex("""(?:previous|prev|last)\s*(?:track|song)"""), "media_previous_track", "Previous."),
+        // Japanese
+        Pattern(Regex("""(?:音楽|曲|再生)\s*(?:を)?\s*(?:止めて|ストップ|一時停止)"""), "media_pause", "一時停止しました。"),
+        Pattern(Regex("""(?:音楽|曲)\s*(?:を)?\s*(?:再生|かけて|流して)"""), "media_play", "再生します。"),
+        Pattern(Regex("""次\s*の\s*曲"""), "media_next_track", "次の曲を流します。"),
+        Pattern(Regex("""前\s*の\s*曲"""), "media_previous_track", "前の曲を流します。")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.regex.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "execute_command",
+                    arguments = mapOf(
+                        "device_type" to "media_player",
+                        "action" to p.haAction
+                    ),
+                    spokenConfirmation = p.spoken
+                )
+            }
         }
         return null
     }

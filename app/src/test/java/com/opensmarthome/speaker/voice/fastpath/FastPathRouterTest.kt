@@ -119,6 +119,32 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `pause music fast-path`() {
+        val m = router.match("pause music")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("action")).isEqualTo("media_pause")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+    }
+
+    @Test
+    fun `next track fast-path`() {
+        val m = router.match("next track")
+        assertThat(m?.arguments?.get("action")).isEqualTo("media_next_track")
+    }
+
+    @Test
+    fun `japanese pause fast-path`() {
+        val m = router.match("音楽を止めて")
+        assertThat(m?.arguments?.get("action")).isEqualTo("media_pause")
+    }
+
+    @Test
+    fun `japanese next song`() {
+        val m = router.match("次の曲")
+        assertThat(m?.arguments?.get("action")).isEqualTo("media_next_track")
+    }
+
+    @Test
     fun `help utterance returns speak-only match`() {
         val m = router.match("help")
         assertThat(m).isNotNull()

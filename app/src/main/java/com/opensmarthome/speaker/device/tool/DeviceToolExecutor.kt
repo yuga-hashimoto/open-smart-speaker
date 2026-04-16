@@ -41,10 +41,11 @@ class DeviceToolExecutor(
         ),
         ToolSchema(
             name = "execute_command",
-            description = "Execute a command on a smart home device (turn_on, turn_off, toggle, set_brightness, set_temperature, etc.)",
+            description = "Execute a command on a smart home device. Provide either device_id for a single device, or device_type to apply to all devices of that type (e.g. all lights, all media players).",
             parameters = mapOf(
-                "device_id" to ToolParameter("string", "The device ID", required = true),
-                "action" to ToolParameter("string", "The action to perform", required = true),
+                "device_id" to ToolParameter("string", "The device ID (optional if device_type is provided)", required = false),
+                "device_type" to ToolParameter("string", "Device type to target as a group: light, switch, climate, media_player, cover, fan (optional if device_id is provided)", required = false),
+                "action" to ToolParameter("string", "The action to perform (turn_on, turn_off, toggle, media_play, media_pause, media_next_track, media_previous_track, set_brightness, set_temperature, etc.)", required = true),
                 "parameters" to ToolParameter("object", "Additional parameters as JSON", required = false)
             )
         ),
@@ -112,20 +113,42 @@ class DeviceToolExecutor(
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun executeCommand(call: ToolCall): ToolResult {
-        val deviceId = call.arguments["device_id"] as? String
-            ?: return ToolResult(call.id, false, "", "Missing device_id")
         val action = call.arguments["action"] as? String
             ?: return ToolResult(call.id, false, "", "Missing action")
         val params = call.arguments["parameters"] as? Map<String, Any?> ?: emptyMap()
+        val deviceId = call.arguments["device_id"] as? String
+        val deviceType = call.arguments["device_type"] as? String
 
-        val result = deviceManager.executeCommand(
-            DeviceCommand(deviceId = deviceId, action = action, parameters = params)
-        )
-        return if (result.success) {
-            ToolResult(call.id, true, "Command $action executed on $deviceId successfully")
-        } else {
-            ToolResult(call.id, false, "", result.message ?: "Command failed")
+        if (!deviceId.isNullOrBlank()) {
+            val result = deviceManager.executeCommand(
+                DeviceCommand(deviceId = deviceId, action = action, parameters = params)
+            )
+            return if (result.success) {
+                ToolResult(call.id, true, "Command $action executed on $deviceId successfully")
+            } else {
+                ToolResult(call.id, false, "", result.message ?: "Command failed")
+            }
         }
+
+        if (!deviceType.isNullOrBlank()) {
+            val type = DeviceType.fromString(deviceType)
+            val targets = deviceManager.getDevicesByType(type)
+            if (targets.isEmpty()) {
+                return ToolResult(call.id, false, "", "No devices of type $deviceType")
+            }
+            var successes = 0
+            var failures = 0
+            for (device in targets) {
+                val r = deviceManager.executeCommand(
+                    DeviceCommand(deviceId = device.id, action = action, parameters = params)
+                )
+                if (r.success) successes++ else failures++
+            }
+            val text = "Command $action: $successes ok, $failures failed (${targets.size} ${deviceType}s)"
+            return ToolResult(call.id, successes > 0, text)
+        }
+
+        return ToolResult(call.id, false, "", "Provide device_id or device_type")
     }
 
     private fun executeGetRooms(): ToolResult {
