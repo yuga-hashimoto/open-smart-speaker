@@ -218,6 +218,45 @@ object FanMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "TV on" / "TV off" / "turn on the TV" / "テレビをつけて" / "テレビを消して"
+ * → execute_command device_type=media_player. Anchored to the TV /
+ * television / テレビ noun.
+ *
+ * MediaControlMatcher already handles play/pause for a generic media
+ * player; this one targets the physical TV on-off.
+ */
+object TvMatcher : FastPathMatcher {
+    private val onPatterns = listOf(
+        Regex("""(?:turn\s+)?(?:the\s+)?(?:tv|television)\s+on"""),
+        Regex("""(?:tv|television)\s+on"""),
+        Regex("""テレビ\s*(?:を)?\s*(?:つけて|オン)""")
+    )
+    private val offPatterns = listOf(
+        Regex("""(?:turn\s+)?(?:the\s+)?(?:tv|television)\s+off"""),
+        Regex("""(?:tv|television)\s+off"""),
+        Regex("""テレビ\s*(?:を)?\s*(?:消して|オフ|切って)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (onPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "media_player", "action" to "turn_on"),
+                spokenConfirmation = "TV on."
+            )
+        }
+        if (offPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "media_player", "action" to "turn_off"),
+                spokenConfirmation = "TV off."
+            )
+        }
+        return null
+    }
+}
+
 /** "lights on/off", "電気つけて/消して", "set brightness 50", "明るさ50%" */
 object LightsMatcher : FastPathMatcher {
     private val onPatterns = listOf(

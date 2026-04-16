@@ -18,6 +18,7 @@ to the list.
 | `VolumeMatcher` | "volume up/down", "set volume to 50", "mute", "unmute", "ミュート" | `set_volume` | |
 | `ThermostatMatcher` | "set thermostat to 22", "エアコン25度" | `execute_command` device_type=climate | Clamps 10..32°C |
 | `FanMatcher` | "fan on", "fan off", "ファンをつけて", "扇風機を消して" | `execute_command` device_type=fan | |
+| `TvMatcher` | "TV on", "turn the TV off", "テレビをつけて", "テレビを消して" | `execute_command` device_type=media_player | Physical on/off; play/pause is in MediaControlMatcher |
 | `EverythingOffMatcher` | "turn off everything", "全部消して" | `execute_command` device_type=light off | Conservative — needs explicit "everything"/"all" |
 | `LightsMatcher` | "lights on", "電気つけて", "dim the lights", "set brightness 50", "明るさ80%", "bedroom lights off" | `execute_command` device_type=light | Room-scoped variants supported |
 | `MediaControlMatcher` | "pause music", "next track", "再生して", "前の曲" | `execute_command` device_type=media_player | |

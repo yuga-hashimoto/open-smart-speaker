@@ -745,4 +745,39 @@ class FastPathRouterTest {
         val m = router.match("turn the lights off")
         assertThat(m?.arguments?.get("device_type")).isEqualTo("light")
     }
+
+    @Test
+    fun `tv on fast-path`() {
+        val m = router.match("TV on")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
+    }
+
+    @Test
+    fun `turn the tv off`() {
+        val m = router.match("turn the TV off")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `television long form`() {
+        val m = router.match("turn the television on")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
+    }
+
+    @Test
+    fun `japanese tv on`() {
+        val m = router.match("テレビをつけて")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
+    }
+
+    @Test
+    fun `japanese tv off`() {
+        val m = router.match("テレビを消して")
+        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
 }
