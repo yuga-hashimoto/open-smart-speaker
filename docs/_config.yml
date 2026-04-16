@@ -1,0 +1,5 @@
+title: OpenSmartSpeaker
+description: Tablet-first Android smart speaker with on-device LLM agent.
+theme: jekyll-theme-cayman
+show_downloads: false
+markdown: GFM

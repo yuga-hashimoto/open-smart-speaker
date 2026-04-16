@@ -86,7 +86,7 @@ Make it feel like Alexa/Google Home first.
 - [x] P13.5: SECURITY.md with threat model + responsible disclosure
 - [x] P13.6: CODE_OF_CONDUCT.md (Contributor Covenant 2.1)
 - [x] P13.7: README overhaul — value prop, hardware guide, tool list, architecture diagram, inspiration credits
-- [ ] P13.8: Docs site covering architecture, SKILL.md authoring, tool list
+- [x] P13.8: Docs site — docs/index.md landing + topic pages (tools, providers, skills, permissions); docs/_config.yml enables GitHub Pages with jekyll-theme-cayman
 
 ---
 
