@@ -26,6 +26,8 @@ import com.opensmarthome.speaker.tool.info.WeatherToolExecutor
 import com.opensmarthome.speaker.assistant.skills.AssetSkillLoader
 import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.assistant.skills.SkillToolExecutor
+import com.opensmarthome.speaker.assistant.routine.InMemoryRoutineStore
+import com.opensmarthome.speaker.assistant.routine.RoutineToolExecutor
 import com.opensmarthome.speaker.data.db.MemoryDao
 import com.opensmarthome.speaker.tool.memory.MemoryToolExecutor
 import com.opensmarthome.speaker.tool.system.AndroidAppLauncher
@@ -102,8 +104,19 @@ object DeviceModule {
         client: OkHttpClient,
         skillRegistry: SkillRegistry,
         memoryDao: MemoryDao
-    ): ToolExecutor = CompositeToolExecutor(
-        listOf(
+    ): ToolExecutor {
+        val routineStore = InMemoryRoutineStore()
+        val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
+        // RoutineToolExecutor needs a reference to the full tool executor so
+        // saved routines can invoke any other tool. We build composite first,
+        // then inject it back via a proxy lambda-free wrapper.
+        val delegatingExecutor = object : ToolExecutor {
+            override suspend fun availableTools() = compositeHolder[0]!!.availableTools()
+            override suspend fun execute(call: com.opensmarthome.speaker.tool.ToolCall) =
+                compositeHolder[0]!!.execute(call)
+        }
+        val composite = CompositeToolExecutor(
+            listOf(
             DeviceToolExecutor(deviceManager, moshi),
             SystemToolExecutor(
                 AndroidTimerManager(context),
@@ -133,7 +146,11 @@ object DeviceModule {
                 AndroidContactsProvider(context)
             ),
             MemoryToolExecutor(memoryDao),
+            RoutineToolExecutor(routineStore, delegatingExecutor),
             SkillToolExecutor(skillRegistry)
+            )
         )
-    )
+        compositeHolder[0] = composite
+        return composite
+    }
 }

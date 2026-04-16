@@ -68,7 +68,7 @@ OpenClaw-level autonomy.
 
 - [x] P5.1: Multi-tool chaining (AgentPlan + PlanExecutor)
 - [x] P5.2: Proactive suggestions (time-based rules, extensible engine)
-- [ ] P5.3: Routine/automation creation (user-defined workflows)
+- [x] P5.3: Routine/automation creation (named tool-chain workflows)
 - [ ] P5.4: Screen control / accessibility service integration
 - [x] P5.5: Skills system (SKILL.md + XML prompt injection, stolen from OpenClaw)
 - [x] P5.6: Location tool (ACCESS_FINE_LOCATION, OpenClaw location.get)
