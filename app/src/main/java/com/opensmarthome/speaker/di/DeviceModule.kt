@@ -15,6 +15,7 @@ import com.opensmarthome.speaker.device.tool.DeviceToolExecutor
 import com.opensmarthome.speaker.homeassistant.client.HomeAssistantClient
 import com.opensmarthome.speaker.tool.CompositeToolExecutor
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.tool.info.CalculatorToolExecutor
 import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
 import com.opensmarthome.speaker.tool.info.HtmlWebFetcher
 import com.opensmarthome.speaker.tool.info.InMemoryKnowledgeStore
@@ -186,6 +187,7 @@ object DeviceModule {
             ),
             WebFetchToolExecutor(HtmlWebFetcher(client)),
             UnitConverterToolExecutor(),
+            CalculatorToolExecutor(),
             NewsToolExecutor(
                 RssNewsProvider(client)
             ),

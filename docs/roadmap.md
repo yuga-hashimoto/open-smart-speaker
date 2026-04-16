@@ -56,6 +56,7 @@ Give the agent access to information.
 - [x] P3.4: Knowledge/FAQ tool (user-defined Q&A, in-memory KnowledgeStore)
 - [x] P3.5: Web fetch tool (HtmlWebFetcher — readable text from any URL, OpenClaw web.fetch)
 - [x] P3.6: Unit converter tool (length/mass/temperature/volume, zero-dep)
+- [x] P3.7: Calculator tool (safe arithmetic evaluator, shunting-yard RPN, no script engine)
 
 ### Phase 4: Agent Memory & Context
 Make the agent persistent and contextual.
