@@ -132,6 +132,31 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideTimerManager(
+        @ApplicationContext context: Context
+    ): com.opensmarthome.speaker.tool.system.TimerManager =
+        AndroidTimerManager(context)
+
+    @Provides
+    @Singleton
+    fun provideNotificationProvider(
+        @ApplicationContext context: Context
+    ): com.opensmarthome.speaker.tool.system.NotificationProvider =
+        AndroidNotificationProvider(context)
+
+    @Provides
+    @Singleton
+    fun provideAmbientSnapshotBuilder(
+        timerManager: com.opensmarthome.speaker.tool.system.TimerManager,
+        notificationProvider: com.opensmarthome.speaker.tool.system.NotificationProvider
+    ): com.opensmarthome.speaker.ui.ambient.AmbientSnapshotBuilder =
+        com.opensmarthome.speaker.ui.ambient.AmbientSnapshotBuilder(
+            timerManager = timerManager,
+            notificationProvider = notificationProvider
+        )
+
+    @Provides
+    @Singleton
     fun provideFastPathRouter(): FastPathRouter = DefaultFastPathRouter()
 
     @Provides
@@ -232,7 +257,9 @@ object DeviceModule {
         documentChunkDao: DocumentChunkDao,
         cameraProviderHolder: CameraProviderHolder,
         screenRecorderHolder: ScreenRecorderHolder,
-        toolUsageStats: PersistentToolUsageStats
+        toolUsageStats: PersistentToolUsageStats,
+        timerManager: com.opensmarthome.speaker.tool.system.TimerManager,
+        notificationProvider: com.opensmarthome.speaker.tool.system.NotificationProvider
     ): ToolExecutor {
         val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
@@ -249,7 +276,7 @@ object DeviceModule {
             executors = listOf(
             DeviceToolExecutor(deviceManager, moshi),
             SystemToolExecutor(
-                AndroidTimerManager(context),
+                timerManager,
                 AndroidVolumeManager(context),
                 AndroidAppLauncher(context)
             ),
@@ -267,9 +294,7 @@ object DeviceModule {
                 RssNewsProvider(client)
             ),
             KnowledgeToolExecutor(InMemoryKnowledgeStore()),
-            NotificationToolExecutor(
-                AndroidNotificationProvider(context)
-            ),
+            NotificationToolExecutor(notificationProvider),
             CalendarToolExecutor(
                 AndroidCalendarProvider(context)
             ),

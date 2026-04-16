@@ -5,12 +5,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,17 +39,19 @@ fun AmbientScreen(
     modifier: Modifier = Modifier,
     viewModel: AmbientViewModel = hiltViewModel()
 ) {
-    var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
-    val weatherState by viewModel.weatherState.collectAsState()
-    val temperature by viewModel.temperature.collectAsState()
-    val humidity by viewModel.humidity.collectAsState()
+    val snapshot by viewModel.snapshot.collectAsState()
+    var tick by remember { mutableStateOf(0) }
 
+    // Refresh local clock every second (independent of the snapshot refresh rate
+    // which is driven by DeviceManager's 30s poll).
     LaunchedEffect(Unit) {
         while (true) {
-            currentTime = LocalDateTime.now()
+            tick++
             delay(1000L)
         }
     }
+
+    val now = remember(tick) { LocalDateTime.now() }
 
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
@@ -52,41 +59,109 @@ fun AmbientScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+            text = snapshot.greeting(),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = now.format(DateTimeFormatter.ofPattern("HH:mm")),
             style = MaterialTheme.typography.displayLarge
         )
         Text(
-            text = currentTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd (E)")),
+            text = now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd (E)")),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        if (weatherState.isNotBlank()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Cloud, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                    Text(
-                        text = weatherState.replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                if (temperature.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Thermostat, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                        Text(text = "${temperature}°", style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-                if (humidity.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.WaterDrop, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                        Text(text = "${humidity}%", style = MaterialTheme.typography.titleMedium)
-                    }
-                }
+        WeatherStrip(snapshot)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CountsStrip(snapshot)
+
+        if (snapshot.recentDeviceActivity.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            DeviceActivityCard(snapshot)
+        }
+    }
+}
+
+@Composable
+private fun WeatherStrip(snapshot: AmbientSnapshot) {
+    val hasAny = snapshot.weatherCondition?.isNotBlank() == true ||
+        snapshot.temperatureC != null ||
+        snapshot.humidityPercent != null
+    if (!hasAny) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        snapshot.weatherCondition?.takeIf { it.isNotBlank() }?.let { cond ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Cloud, null, modifier = Modifier.padding(end = 4.dp))
+                Text(cond.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        snapshot.temperatureC?.let { t ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Thermostat, null, modifier = Modifier.padding(end = 4.dp))
+                Text("${"%.1f".format(t)}°", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        snapshot.humidityPercent?.let { h ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.WaterDrop, null, modifier = Modifier.padding(end = 4.dp))
+                Text("$h%", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CountsStrip(snapshot: AmbientSnapshot) {
+    if (snapshot.activeTimerCount == 0 && snapshot.activeNotificationCount == 0) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        if (snapshot.activeTimerCount > 0) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Timer, null, modifier = Modifier.padding(end = 4.dp))
+                Text(
+                    text = "${snapshot.activeTimerCount} timer${if (snapshot.activeTimerCount != 1) "s" else ""}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+        if (snapshot.activeNotificationCount > 0) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.NotificationsActive, null, modifier = Modifier.padding(end = 4.dp))
+                Text(
+                    text = "${snapshot.activeNotificationCount} notification${if (snapshot.activeNotificationCount != 1) "s" else ""}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceActivityCard(snapshot: AmbientSnapshot) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Lightbulb, null, modifier = Modifier.padding(end = 8.dp))
+                Text("Active devices", style = MaterialTheme.typography.titleMedium)
+            }
+            Spacer(Modifier.height(8.dp))
+            snapshot.recentDeviceActivity.forEach { line ->
+                Text(
+                    text = "${line.name} · ${line.state}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
