@@ -70,6 +70,9 @@ class DefaultFastPathRouter(
             RunRoutineMatcher,
             LaunchAppMatcher,
             FindDeviceMatcher,
+            // GoodnightMatcher must precede the GreetingMatcher's "good night"
+            // pleasantry rule so the destructive routine wins.
+            GoodnightMatcher,
             // Briefing matchers must precede WeatherMatcher / NewsMatcher
             // so 'good morning briefing' / 'evening briefing' win.
             MorningBriefingMatcher,

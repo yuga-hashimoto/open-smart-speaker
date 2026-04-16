@@ -354,6 +354,32 @@ object FindDeviceMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "goodnight", "good night", "おやすみ" — composite shutdown that turns off
+ * lights, pauses media, and cancels timers in one shot.
+ *
+ * Matches the standalone form so it doesn't fire on every casual sign-off.
+ * Distinct from GreetingMatcher's "good evening" / "good night" pleasantry —
+ * GoodnightMatcher is in the matcher list before that one to win precedence.
+ */
+object GoodnightMatcher : FastPathMatcher {
+    private val englishRegex = Regex(
+        """^\s*good[\s-]?night(?:\s+(?:please|now|everyone))?\s*[!?.]*\s*$"""
+    )
+    private val japaneseRegex = Regex("""^\s*おやすみ(?:なさい)?\s*[!?.]*\s*$""")
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishRegex.containsMatchIn(normalized) || japaneseRegex.containsMatchIn(normalized)) {
+            return FastPathMatch(
+                toolName = "goodnight",
+                arguments = emptyMap(),
+                spokenConfirmation = "Goodnight."
+            )
+        }
+        return null
+    }
+}
+
 /** "morning briefing" → composite weather + news + calendar */
 object MorningBriefingMatcher : FastPathMatcher {
     private val patterns = listOf(
