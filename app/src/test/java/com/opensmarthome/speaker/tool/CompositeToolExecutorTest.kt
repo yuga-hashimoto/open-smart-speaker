@@ -56,4 +56,54 @@ class CompositeToolExecutorTest {
         assertThat(result.success).isFalse()
         assertThat(result.error).contains("Unknown tool")
     }
+
+    @Test
+    fun `execute refreshes tool list when tool not yet known`() = runTest {
+        // Do NOT call availableTools first — this simulates the LLM firing a
+        // tool call before anyone has enumerated tools. The composite should
+        // self-refresh and still route correctly.
+        val expected = ToolResult("1", true, "ok")
+        coEvery { executor1.execute(any()) } returns expected
+
+        val result = composite.execute(ToolCall("1", "tool_a", emptyMap()))
+
+        assertThat(result.success).isTrue()
+        assertThat(result.data).isEqualTo("ok")
+    }
+
+    @Test
+    fun `recorder sees each invocation with success flag`() = runTest {
+        val calls = mutableListOf<Pair<String, Boolean>>()
+        val recorder = com.opensmarthome.speaker.tool.analytics.ToolUsageRecorder { name, success ->
+            calls.add(name to success)
+        }
+        val withStats = com.opensmarthome.speaker.tool.CompositeToolExecutor(
+            listOf(executor1, executor2),
+            stats = recorder
+        )
+        coEvery { executor1.execute(any()) } returns ToolResult("1", true, "ok")
+        coEvery { executor2.execute(any()) } returns ToolResult("2", false, "", "boom")
+
+        withStats.execute(ToolCall("1", "tool_a", emptyMap()))
+        withStats.execute(ToolCall("2", "tool_c", emptyMap()))
+
+        assertThat(calls).containsExactly("tool_a" to true, "tool_c" to false).inOrder()
+    }
+
+    @Test
+    fun `recorder receives unknown-tool invocations too`() = runTest {
+        val calls = mutableListOf<Pair<String, Boolean>>()
+        val recorder = com.opensmarthome.speaker.tool.analytics.ToolUsageRecorder { name, success ->
+            calls.add(name to success)
+        }
+        val withStats = com.opensmarthome.speaker.tool.CompositeToolExecutor(
+            listOf(executor1, executor2),
+            stats = recorder
+        )
+
+        val result = withStats.execute(ToolCall("x", "never_heard_of", emptyMap()))
+
+        assertThat(result.success).isFalse()
+        assertThat(calls).containsExactly("never_heard_of" to false)
+    }
 }
