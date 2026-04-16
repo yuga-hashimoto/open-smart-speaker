@@ -454,17 +454,27 @@ object GoodnightMatcher : FastPathMatcher {
     private val englishRegex = Regex(
         """^\s*good[\s-]?night(?:\s+(?:please|now|everyone))?\s*[!?.]*\s*$"""
     )
+    private val sleepRegex = Regex(
+        """^\s*(?:i'?m|im)\s+(?:going\s+to\s+(?:sleep|bed)|off\s+to\s+bed)\s*[!?.]*\s*$"""
+    )
+    private val timeToSleepRegex = Regex(
+        """^\s*time\s+(?:to|for)\s+(?:sleep|bed)\s*[!?.]*\s*$"""
+    )
     private val japaneseRegex = Regex("""^\s*おやすみ(?:なさい)?\s*[!?.]*\s*$""")
+    private val japaneseSleepRegex = Regex("""^\s*寝ます\s*[!?.]*\s*$""")
 
     override fun tryMatch(normalized: String): FastPathMatch? {
-        if (englishRegex.containsMatchIn(normalized) || japaneseRegex.containsMatchIn(normalized)) {
-            return FastPathMatch(
-                toolName = "goodnight",
-                arguments = emptyMap(),
-                spokenConfirmation = "Goodnight."
-            )
-        }
-        return null
+        val matched = englishRegex.containsMatchIn(normalized) ||
+            sleepRegex.containsMatchIn(normalized) ||
+            timeToSleepRegex.containsMatchIn(normalized) ||
+            japaneseRegex.containsMatchIn(normalized) ||
+            japaneseSleepRegex.containsMatchIn(normalized)
+        if (!matched) return null
+        return FastPathMatch(
+            toolName = "goodnight",
+            arguments = emptyMap(),
+            spokenConfirmation = "Goodnight."
+        )
     }
 }
 
