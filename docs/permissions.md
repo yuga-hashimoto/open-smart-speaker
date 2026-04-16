@@ -14,6 +14,9 @@ can ask for, with the tools each one unlocks.
 | `SEND_SMS` | send_sms | optional |
 | `CAMERA` | take_photo | optional |
 | `READ_MEDIA_IMAGES` (or `READ_EXTERNAL_STORAGE` on pre-T) | list_recent_photos | optional |
+| `VIBRATE` | find_device | optional, granted by default — no runtime prompt |
+| `RECORD_AUDIO` (foreground service) | wake-word + STT continuous capture | yes |
+| `POST_NOTIFICATIONS` | foreground service banner on Android 13+ | optional, requested at first launch |
 
 ## Special grants
 
@@ -23,6 +26,8 @@ Requested via a Settings intent because they can't be granted at runtime.
 |---|---|---|
 | Notification listener | list_notifications, clear_notifications | `ACTION_NOTIFICATION_LISTENER_SETTINGS` |
 | Accessibility | read_screen | `ACCESSIBILITY_SETTINGS` |
+| MediaProjection (per-session) | start_screen_recording / stop_screen_recording | Activity result contract — re-prompts each session |
+| Voice interaction service | system-wide voice trigger | App must be set as the system voice assistant |
 
 ## UI
 
