@@ -552,6 +552,31 @@ object NewsMatcher : FastPathMatcher {
 }
 
 /**
+ * "list devices", "what devices do I have", "デバイス一覧" →
+ * get_devices_by_type with type=light as a sane default. Diagnostic
+ * fast-path so the user can quickly check what's connected.
+ */
+object ListDevicesMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""^\s*list\s+(?:my\s+)?devices?\s*[!?.]*\s*$"""),
+        Regex("""what\s+(?:devices?|smart\s+home)\s+do\s+i\s+have"""),
+        Regex("""^\s*デバイス(?:一覧|の一覧|を見せて)?\s*[!?.]*\s*$""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "get_devices_by_type",
+                    arguments = mapOf("type" to "light")
+                )
+            }
+        }
+        return null
+    }
+}
+
+/**
  * "what do you remember", "list memories", "覚えていること" → list_memory
  * with no prefix. Returns whatever's in the memory store so the LLM (or
  * the user, via the speak-back) can audit it.
