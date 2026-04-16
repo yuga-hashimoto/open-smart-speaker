@@ -76,7 +76,7 @@ OpenClaw-level autonomy.
 ### Phase 6: Deeper OpenClaw Parity
 Close remaining gaps vs. OpenClaw Android node.
 
-- [ ] P6.1: SMS send tool (OpenClaw sms.send)
+- [x] P6.1: SMS send tool (OpenClaw sms.send)
 - [ ] P6.2: Camera capture tool (OpenClaw camera.snap)
 - [ ] P6.3: Screen recording (OpenClaw screen.record via MediaProjection)
 - [x] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
