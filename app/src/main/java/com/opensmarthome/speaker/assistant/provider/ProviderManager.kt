@@ -4,6 +4,7 @@ import android.content.Context
 import com.opensmarthome.speaker.assistant.provider.embedded.EmbeddedLlmConfig
 import com.opensmarthome.speaker.assistant.provider.embedded.EmbeddedLlmProvider
 import com.opensmarthome.speaker.assistant.provider.embedded.ModelManager
+import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.assistant.provider.openai.OpenAiCompatibleConfig
 import com.opensmarthome.speaker.assistant.provider.openai.OpenAiCompatibleProvider
 import com.opensmarthome.speaker.assistant.provider.openclaw.OpenClawConfig
@@ -31,7 +32,8 @@ class ProviderManager @Inject constructor(
     private val preferences: AppPreferences,
     private val securePreferences: SecurePreferences,
     private val client: OkHttpClient,
-    private val moshi: Moshi
+    private val moshi: Moshi,
+    private val skillRegistry: SkillRegistry
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val modelManager = ModelManager(context)
@@ -51,7 +53,8 @@ class ProviderManager @Inject constructor(
                 val modelPath = models.first().path
                 val provider = EmbeddedLlmProvider(
                     context = context,
-                    config = EmbeddedLlmConfig(modelPath = modelPath)
+                    config = EmbeddedLlmConfig(modelPath = modelPath),
+                    skillRegistry = skillRegistry
                 )
                 router.registerProvider(provider)
                 Timber.d("Registered EmbeddedLlmProvider with model: ${models.first().name}")

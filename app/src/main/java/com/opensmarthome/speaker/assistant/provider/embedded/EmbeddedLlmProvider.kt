@@ -12,6 +12,7 @@ import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.assistant.model.AssistantSession
 import com.opensmarthome.speaker.assistant.provider.AssistantProvider
 import com.opensmarthome.speaker.assistant.provider.ProviderCapabilities
+import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.tool.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +24,8 @@ import java.io.File
 
 class EmbeddedLlmProvider(
     private val context: Context,
-    private val config: EmbeddedLlmConfig
+    private val config: EmbeddedLlmConfig,
+    private val skillRegistry: SkillRegistry? = null
 ) : AssistantProvider {
 
     override val id: String = "embedded_llm"
@@ -88,12 +90,28 @@ class EmbeddedLlmProvider(
         conversation?.close()
         conversation = engine?.createConversation(
             ConversationConfig(
-                systemInstruction = Contents.of(this.config.systemPrompt),
+                systemInstruction = Contents.of(buildSystemInstruction()),
                 initialMessages = emptyList(),
                 channels = emptyList()
             )
         )
-        Timber.d("Conversation created")
+        Timber.d("Conversation created (skills=${skillRegistry?.all()?.size ?: 0})")
+    }
+
+    /**
+     * Build system instruction with optional skill XML injected.
+     * OpenClaw-style: skills are advertised; LLM requests bodies on demand via get_skill.
+     */
+    private fun buildSystemInstruction(): String {
+        val base = this.config.systemPrompt
+        val skillsXml = skillRegistry?.toPromptXml().orEmpty()
+        if (skillsXml.isBlank()) return base
+        return buildString {
+            append(base)
+            append("\n\n")
+            append(skillsXml)
+            append("\n\nWhen your task matches a skill's description, call `get_skill` with its name to load the full instructions.")
+        }
     }
 
     override suspend fun endSession(session: AssistantSession) {

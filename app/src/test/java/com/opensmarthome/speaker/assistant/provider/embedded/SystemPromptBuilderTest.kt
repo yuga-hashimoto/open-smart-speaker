@@ -106,6 +106,33 @@ class SystemPromptBuilderTest {
     }
 
     @Test
+    fun `buildPrompt injects skills XML when provided`() {
+        val messages = listOf(AssistantMessage.User(content = "Turn on the lights"))
+        val skillsXml = """<available_skills>
+  <skill>
+    <name>home-control</name>
+    <description>Controls smart home devices</description>
+  </skill>
+</available_skills>"""
+
+        val result = builder.build("System", messages, emptyList(), skillsXml = skillsXml)
+
+        assertThat(result).contains("<available_skills>")
+        assertThat(result).contains("home-control")
+        assertThat(result).contains("get_skill")
+    }
+
+    @Test
+    fun `buildPrompt omits skills section when empty`() {
+        val messages = listOf(AssistantMessage.User(content = "Hi"))
+
+        val result = builder.build("System", messages, emptyList(), skillsXml = "")
+
+        assertThat(result).doesNotContain("<available_skills>")
+        assertThat(result).doesNotContain("get_skill")
+    }
+
+    @Test
     fun `buildPrompt tool section includes JSON format instructions`() {
         val tools = listOf(
             ToolSchema(

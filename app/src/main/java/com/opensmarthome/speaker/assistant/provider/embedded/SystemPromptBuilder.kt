@@ -15,6 +15,7 @@ class SystemPromptBuilder {
         systemPrompt: String,
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>,
+        skillsXml: String = "",
         maxPromptChars: Int = DEFAULT_MAX_PROMPT_CHARS
     ): String {
         val sb = StringBuilder()
@@ -22,6 +23,13 @@ class SystemPromptBuilder {
         // System turn
         sb.append("<start_of_turn>user\n")
         sb.append(systemPrompt)
+
+        // Skills XML (OpenClaw pattern) — advertises available skills; LLM loads body on demand
+        if (skillsXml.isNotBlank()) {
+            sb.append("\n\n")
+            sb.append(skillsXml)
+            sb.append("\n\nWhen your task matches a skill's description, call `get_skill` with its name to load the full instructions.")
+        }
 
         // Tool definitions
         if (tools.isNotEmpty()) {
