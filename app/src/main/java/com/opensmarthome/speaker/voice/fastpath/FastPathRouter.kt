@@ -62,6 +62,7 @@ class DefaultFastPathRouter(
             TimeQueryMatcher,
             VolumeMatcher,
             ThermostatMatcher,
+            LockMatcher,
             // EverythingOffMatcher must precede LightsMatcher because "lights off" partially overlaps "off".
             EverythingOffMatcher,
             LightsMatcher,

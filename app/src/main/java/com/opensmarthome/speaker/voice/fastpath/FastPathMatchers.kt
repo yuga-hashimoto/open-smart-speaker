@@ -184,6 +184,41 @@ object ThermostatMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "lock the door" / "unlock the door" / "ドアをロック" / "玄関を解錠" →
+ * execute_command device_type=lock. Conservative pattern anchored to
+ * an explicit lock noun (door / front door / ドア / 玄関).
+ */
+object LockMatcher : FastPathMatcher {
+    private val lockPatterns = listOf(
+        Regex("""\block\s+(?:the\s+)?(?:door|front\s+door|back\s+door|gate)"""),
+        Regex("""(?:ドア|玄関|扉|ゲート)\s*(?:を)?\s*(?:ロック|施錠)""")
+    )
+    private val unlockPatterns = listOf(
+        Regex("""\bunlock\s+(?:the\s+)?(?:door|front\s+door|back\s+door|gate)"""),
+        Regex("""(?:ドア|玄関|扉|ゲート)\s*(?:を)?\s*(?:アンロック|解錠)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        // Check unlock before lock because "unlock" contains "lock".
+        if (unlockPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "lock", "action" to "unlock"),
+                spokenConfirmation = "Unlocked."
+            )
+        }
+        if (lockPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "execute_command",
+                arguments = mapOf("device_type" to "lock", "action" to "lock"),
+                spokenConfirmation = "Locked."
+            )
+        }
+        return null
+    }
+}
+
 /** "lights on/off", "電気つけて/消して", "set brightness 50", "明るさ50%" */
 object LightsMatcher : FastPathMatcher {
     private val onPatterns = listOf(
