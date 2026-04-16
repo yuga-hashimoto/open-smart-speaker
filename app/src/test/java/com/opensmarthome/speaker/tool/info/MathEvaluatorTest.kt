@@ -77,7 +77,49 @@ class MathEvaluatorTest {
 
     @Test
     fun `unknown function is EvalError`() {
-        val r = eval.eval("log(10)")
+        val r = eval.eval("frobnicate(10)")
+        assertThat(r).isInstanceOf(MathEvaluator.Result.EvalError::class.java)
+    }
+
+    @Test
+    fun `sin of pi over 2 is 1`() {
+        val r = eval.eval("sin(pi / 2)") as MathEvaluator.Result.Ok
+        assertThat(r.value).isWithin(0.0001).of(1.0)
+    }
+
+    @Test
+    fun `cos of 0 is 1`() {
+        val r = eval.eval("cos(0)") as MathEvaluator.Result.Ok
+        assertThat(r.value).isWithin(0.0001).of(1.0)
+    }
+
+    @Test
+    fun `tan of pi over 4 is 1`() {
+        val r = eval.eval("tan(pi / 4)") as MathEvaluator.Result.Ok
+        assertThat(r.value).isWithin(0.0001).of(1.0)
+    }
+
+    @Test
+    fun `log base 10`() {
+        val r = eval.eval("log(100)") as MathEvaluator.Result.Ok
+        assertThat(r.value).isWithin(0.0001).of(2.0)
+    }
+
+    @Test
+    fun `ln of e is 1`() {
+        val r = eval.eval("ln(e)") as MathEvaluator.Result.Ok
+        assertThat(r.value).isWithin(0.0001).of(1.0)
+    }
+
+    @Test
+    fun `ln of non-positive is EvalError`() {
+        val r = eval.eval("ln(-1)")
+        assertThat(r).isInstanceOf(MathEvaluator.Result.EvalError::class.java)
+    }
+
+    @Test
+    fun `log of zero is EvalError`() {
+        val r = eval.eval("log(0)")
         assertThat(r).isInstanceOf(MathEvaluator.Result.EvalError::class.java)
     }
 }

@@ -1,11 +1,19 @@
 package com.opensmarthome.speaker.tool.info
 
+import kotlin.math.PI
+import kotlin.math.E
+import kotlin.math.cos
+import kotlin.math.ln
+import kotlin.math.log10
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 /**
  * Safely evaluates arithmetic expressions: + - * / ^ % and parentheses.
- * Supports a small set of functions: sqrt, abs, round, floor, ceil.
+ * Supports: sqrt, abs, round, floor, ceil, sin, cos, tan, ln, log.
+ * Supports constants: pi, e.
  *
  * Uses shunting-yard + RPN evaluation. No reflection, no script engine,
  * no unsafe eval — can't execute arbitrary code.
@@ -60,7 +68,18 @@ class MathEvaluator {
                 c.isLetter() -> {
                     val start = i
                     while (i < expr.length && expr[i].isLetter()) i++
-                    tokens.add(Token.Func(expr.substring(start, i).lowercase()))
+                    val name = expr.substring(start, i).lowercase()
+                    // Named constants are tokenized as numbers
+                    val constant = when (name) {
+                        "pi" -> PI
+                        "e" -> E
+                        else -> null
+                    }
+                    if (constant != null) {
+                        tokens.add(Token.Num(constant))
+                    } else {
+                        tokens.add(Token.Func(name))
+                    }
                 }
                 c in "+-*/^%" -> {
                     tokens.add(Token.Op(c)); i++
@@ -179,6 +198,11 @@ class MathEvaluator {
                         "round" -> kotlin.math.round(arg)
                         "floor" -> kotlin.math.floor(arg)
                         "ceil" -> kotlin.math.ceil(arg)
+                        "sin" -> sin(arg)
+                        "cos" -> cos(arg)
+                        "tan" -> tan(arg)
+                        "ln" -> if (arg <= 0) throw RuntimeException("ln of non-positive") else ln(arg)
+                        "log" -> if (arg <= 0) throw RuntimeException("log of non-positive") else log10(arg)
                         else -> throw RuntimeException("Unknown function: ${t.name}")
                     }
                     stack.addFirst(v)

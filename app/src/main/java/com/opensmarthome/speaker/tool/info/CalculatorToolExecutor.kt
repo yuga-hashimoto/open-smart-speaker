@@ -14,7 +14,7 @@ class CalculatorToolExecutor(
     override suspend fun availableTools(): List<ToolSchema> = listOf(
         ToolSchema(
             name = "calculate",
-            description = "Safely evaluate an arithmetic expression. Supports + - * / % ^ with parentheses and sqrt, abs, round, floor, ceil functions. Example: '(5+3) * sqrt(16)'.",
+            description = "Safely evaluate a math expression. Operators: + - * / % ^ and parentheses. Functions: sqrt abs round floor ceil sin cos tan ln log. Constants: pi, e. Trig functions use radians. Example: 'sin(pi/2) + log(100)'.",
             parameters = mapOf(
                 "expression" to ToolParameter("string", "Arithmetic expression", required = true)
             )
