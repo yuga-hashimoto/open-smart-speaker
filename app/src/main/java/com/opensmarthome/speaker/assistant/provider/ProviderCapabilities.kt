@@ -4,5 +4,7 @@ data class ProviderCapabilities(
     val supportsStreaming: Boolean,
     val supportsTools: Boolean,
     val maxContextTokens: Int,
-    val modelName: String
+    val modelName: String,
+    val supportsVision: Boolean = false,
+    val supportsAudio: Boolean = false
 )
