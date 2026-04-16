@@ -69,6 +69,9 @@ class LatencyRecorder(
         snapshot.count { it > span.budgetMs }
     }
 
+    /** Total measurements recorded across all spans (lifetime). */
+    fun totalMeasurements(): Long = totalCount.get()
+
     private fun recordSample(span: Span, durationMs: Long) {
         val deque = samplesByEvent.getOrPut(span) { ArrayDeque() }
         synchronized(deque) {
