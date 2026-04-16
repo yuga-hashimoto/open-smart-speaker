@@ -30,6 +30,7 @@ to the list.
 | `EveningBriefingMatcher` | "evening briefing", "wind down", "夜のサマリー" | `evening_briefing` (composite) | Notifications + calendar + timers |
 | `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` | |
 | `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
+| `LocationMatcher` | "where am I", "what's my location", "ここはどこ", "現在地を教えて" | `get_location` | Distinct from FindDeviceMatcher |
 | `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
 | `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
 | `DatetimeMatcher` | "what's today's date", "今日は何日" | `get_datetime` | |

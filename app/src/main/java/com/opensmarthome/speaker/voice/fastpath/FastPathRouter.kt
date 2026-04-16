@@ -81,6 +81,7 @@ class DefaultFastPathRouter(
             EveningBriefingMatcher,
             WeatherMatcher,
             NewsMatcher,
+            LocationMatcher,
             ListMemoryMatcher,
             ListDevicesMatcher,
             DatetimeMatcher,

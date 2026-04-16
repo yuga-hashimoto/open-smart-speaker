@@ -297,6 +297,38 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `where am I calls get_location`() {
+        val m = router.match("where am I")
+        assertThat(m?.toolName).isEqualTo("get_location")
+    }
+
+    @Test
+    fun `whats my location fast-path`() {
+        val m = router.match("what's my location")
+        assertThat(m?.toolName).isEqualTo("get_location")
+    }
+
+    @Test
+    fun `japanese where am I`() {
+        val m = router.match("ここはどこ")
+        assertThat(m?.toolName).isEqualTo("get_location")
+    }
+
+    @Test
+    fun `japanese current location`() {
+        val m = router.match("現在地を教えて")
+        assertThat(m?.toolName).isEqualTo("get_location")
+    }
+
+    @Test
+    fun `where am I does not collide with find device`() {
+        // FindDeviceMatcher fires on "find/where is my phone/tablet/device".
+        // "where am I" must NOT route to find_device.
+        val m = router.match("where am I")
+        assertThat(m?.toolName).isNotEqualTo("find_device")
+    }
+
+    @Test
     fun `what do you remember calls list_memory`() {
         val m = router.match("what do you remember")
         assertThat(m?.toolName).isEqualTo("list_memory")

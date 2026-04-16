@@ -585,6 +585,35 @@ object ListDevicesMatcher : FastPathMatcher {
 }
 
 /**
+ * "where am I", "what's my location", "ここはどこ" → get_location.
+ *
+ * Distinct from FindDeviceMatcher which rings the device. This one
+ * answers a location query.
+ */
+object LocationMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""where\s+am\s+i\s*[!?.]*\s*$"""),
+        Regex("""what'?s\s+my\s+location"""),
+        Regex("""what\s+city\s+am\s+i\s+in"""),
+        Regex("""(?:get|tell\s+me)\s+(?:my\s+)?(?:current\s+)?location""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""ここ\s*(?:は)?\s*どこ"""),
+        Regex("""現在(?:地|位置)\s*(?:を|は)?\s*(?:教えて|どこ)?"""),
+        Regex("""(?:私|僕)\s*(?:は)?\s*どこ\s*(?:に)?\s*(?:いる|いますか)?""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(toolName = "get_location", arguments = emptyMap())
+        }
+        return null
+    }
+}
+
+/**
  * "what do you remember", "list memories", "覚えていること" → list_memory
  * with no prefix. Returns whatever's in the memory store so the LLM (or
  * the user, via the speak-back) can audit it.
