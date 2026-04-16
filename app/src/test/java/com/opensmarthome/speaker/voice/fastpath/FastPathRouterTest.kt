@@ -375,6 +375,35 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `bedroom lights off scopes to room`() {
+        val m = router.match("turn off the bedroom lights")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("room")).isEqualTo("bedroom")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `kitchen lights on scopes to room`() {
+        val m = router.match("kitchen lights on")
+        assertThat(m?.arguments?.get("room")).isEqualTo("kitchen")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
+    }
+
+    @Test
+    fun `japanese room lights on`() {
+        val m = router.match("リビングの電気つけて")
+        assertThat(m?.arguments?.get("room")).isEqualTo("リビング")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
+    }
+
+    @Test
+    fun `bare lights off still works`() {
+        val m = router.match("turn the lights off")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+        assertThat(m?.arguments?.get("room")).isNull()
+    }
+
+    @Test
     fun `dim lights sets 30 percent brightness`() {
         val m = router.match("dim the lights")
         assertThat(m?.toolName).isEqualTo("execute_command")

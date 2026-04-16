@@ -194,6 +194,15 @@ object LightsMatcher : FastPathMatcher {
         Regex("""(?:turn\s+)?(?:the\s+)?lights?\s+off"""),
         Regex("""(?:電気|ライト|明かり)\s*(?:を\s*)?(?:消して|けして|オフ)""")
     )
+    // Room-scoped: "turn off the bedroom lights", "kitchen lights on",
+    // "turn the bedroom lights off"
+    private val roomOffEnglishA = Regex("""turn\s+off\s+(?:the\s+)?(.+?)\s+lights?""")
+    private val roomOffEnglishB = Regex("""(?:turn\s+(?:the\s+)?|)(.+?)\s+lights?\s+off""")
+    private val roomOnEnglishA = Regex("""turn\s+on\s+(?:the\s+)?(.+?)\s+lights?""")
+    private val roomOnEnglishB = Regex("""(?:turn\s+(?:the\s+)?|)(.+?)\s+lights?\s+on""")
+    // Room-scoped JP: "寝室の電気消して" / "リビングの電気つけて"
+    private val roomOffJp = Regex("""(.+?)\s*の\s*(?:電気|ライト|明かり)\s*(?:を)?\s*(?:消して|けして|オフ)""")
+    private val roomOnJp = Regex("""(.+?)\s*の\s*(?:電気|ライト|明かり)\s*(?:を)?\s*(?:つけて|点けて|オン)""")
     private val brightnessSetEn = Regex(
         """(?:set\s+)?(?:lights?\s+)?(?:to\s+)?(\d{1,3})\s*(?:%|percent)\s*(?:brightness)?"""
     )
@@ -209,6 +218,30 @@ object LightsMatcher : FastPathMatcher {
     )
 
     override fun tryMatch(normalized: String): FastPathMatch? {
+        // Room-scoped EN: "turn off the bedroom lights" / "bedroom lights off".
+        // Must precede unscoped patterns since they can also match.
+        val trimmed = normalized.trim()
+        sequenceOf(roomOffEnglishA, roomOffEnglishB)
+            .mapNotNull { it.matchEntire(trimmed) }
+            .firstOrNull()?.let {
+                val room = it.groupValues[1].trim().removePrefix("the ")
+                if (room.isNotEmpty() && room != "the") return roomLightsMatch(room, on = false)
+            }
+        sequenceOf(roomOnEnglishA, roomOnEnglishB)
+            .mapNotNull { it.matchEntire(trimmed) }
+            .firstOrNull()?.let {
+                val room = it.groupValues[1].trim().removePrefix("the ")
+                if (room.isNotEmpty() && room != "the") return roomLightsMatch(room, on = true)
+            }
+        roomOffJp.find(normalized)?.let {
+            val room = it.groupValues[1].trim()
+            if (room.isNotEmpty()) return roomLightsMatch(room, on = false)
+        }
+        roomOnJp.find(normalized)?.let {
+            val room = it.groupValues[1].trim()
+            if (room.isNotEmpty()) return roomLightsMatch(room, on = true)
+        }
+
         if (onPatterns.any { it.containsMatchIn(normalized) }) {
             return FastPathMatch(
                 toolName = "execute_command",
@@ -235,6 +268,16 @@ object LightsMatcher : FastPathMatcher {
         if (brighterPatterns.any { it.containsMatchIn(normalized) }) return brightnessMatch(80)
         return null
     }
+
+    private fun roomLightsMatch(room: String, on: Boolean) = FastPathMatch(
+        toolName = "execute_command",
+        arguments = mapOf(
+            "device_type" to "light",
+            "action" to if (on) "turn_on" else "turn_off",
+            "room" to room
+        ),
+        spokenConfirmation = if (on) "$room lights on." else "$room lights off."
+    )
 
     private fun brightnessMatch(pct: Int) = FastPathMatch(
         toolName = "execute_command",
