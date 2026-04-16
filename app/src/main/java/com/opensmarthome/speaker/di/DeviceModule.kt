@@ -49,6 +49,8 @@ import com.opensmarthome.speaker.tool.system.AndroidSmsSender
 import com.opensmarthome.speaker.tool.system.AndroidTimerManager
 import com.opensmarthome.speaker.tool.system.AndroidVolumeManager
 import com.opensmarthome.speaker.tool.system.CalendarToolExecutor
+import com.opensmarthome.speaker.tool.system.CameraProviderHolder
+import com.opensmarthome.speaker.tool.system.CameraToolExecutor
 import com.opensmarthome.speaker.tool.system.ContactsToolExecutor
 import com.opensmarthome.speaker.tool.system.DeviceHealthToolExecutor
 import com.opensmarthome.speaker.tool.system.LocationToolExecutor
@@ -114,6 +116,10 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideCameraProviderHolder(): CameraProviderHolder = CameraProviderHolder()
+
+    @Provides
+    @Singleton
     fun provideSkillInstaller(
         @ApplicationContext context: Context,
         client: OkHttpClient,
@@ -134,7 +140,8 @@ object DeviceModule {
         skillInstaller: SkillInstaller,
         memoryDao: MemoryDao,
         routineDao: RoutineDao,
-        documentChunkDao: DocumentChunkDao
+        documentChunkDao: DocumentChunkDao,
+        cameraProviderHolder: CameraProviderHolder
     ): ToolExecutor {
         val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
@@ -185,6 +192,7 @@ object DeviceModule {
             SmsToolExecutor(
                 AndroidSmsSender(context)
             ),
+            CameraToolExecutor(cameraProviderHolder),
             ScreenToolExecutor(
                 AccessibilityScreenReader()
             ),

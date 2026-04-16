@@ -77,7 +77,7 @@ OpenClaw-level autonomy.
 Close remaining gaps vs. OpenClaw Android node.
 
 - [x] P6.1: SMS send tool (OpenClaw sms.send)
-- [ ] P6.2: Camera capture tool (OpenClaw camera.snap)
+- [x] P6.2: Camera capture tool skeleton (CameraProviderHolder + Activity-bound binding point)
 - [ ] P6.3: Screen recording (OpenClaw screen.record via MediaProjection)
 - [x] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
 - [x] P6.5: Battery / device.health tool (OpenClaw device.health)
