@@ -33,12 +33,14 @@ import com.opensmarthome.speaker.tool.memory.MemoryToolExecutor
 import com.opensmarthome.speaker.tool.system.AndroidAppLauncher
 import com.opensmarthome.speaker.tool.system.AndroidCalendarProvider
 import com.opensmarthome.speaker.tool.system.AndroidContactsProvider
+import com.opensmarthome.speaker.tool.system.AndroidDeviceHealthProvider
 import com.opensmarthome.speaker.tool.system.AndroidLocationProvider
 import com.opensmarthome.speaker.tool.system.AndroidNotificationProvider
 import com.opensmarthome.speaker.tool.system.AndroidTimerManager
 import com.opensmarthome.speaker.tool.system.AndroidVolumeManager
 import com.opensmarthome.speaker.tool.system.CalendarToolExecutor
 import com.opensmarthome.speaker.tool.system.ContactsToolExecutor
+import com.opensmarthome.speaker.tool.system.DeviceHealthToolExecutor
 import com.opensmarthome.speaker.tool.system.LocationToolExecutor
 import com.opensmarthome.speaker.tool.system.NotificationToolExecutor
 import com.opensmarthome.speaker.tool.system.SystemToolExecutor
@@ -144,6 +146,9 @@ object DeviceModule {
             ),
             ContactsToolExecutor(
                 AndroidContactsProvider(context)
+            ),
+            DeviceHealthToolExecutor(
+                AndroidDeviceHealthProvider(context)
             ),
             MemoryToolExecutor(memoryDao),
             RoutineToolExecutor(routineStore, delegatingExecutor),
