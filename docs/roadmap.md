@@ -92,7 +92,7 @@ Turn Phase 6 skeletons into working implementations; UX for permissions and onbo
 
 - [ ] P7.1: CameraX integration for CameraProvider (actual photo capture)
 - [ ] P7.2: MediaProjection integration for ScreenRecorder
-- [ ] P7.3: Permission onboarding flow (notification access, accessibility, camera, SMS, calendar, contacts, location, storage)
+- [x] P7.3: Permission catalog + manager (lists all tool permissions with rationale, detects current grant state)
 - [ ] P7.4: Settings screen for installed skills (enable/disable, delete)
 - [ ] P7.5: Settings screen for routines (view, create, delete) with voice-recording wizard
 - [x] P7.6: Tool usage analytics (local only — ToolUsageStats wired via CompositeToolExecutor)
