@@ -155,8 +155,20 @@ class ModelDownloader(private val context: Context) {
         val tempFile = File(modelsDir, "${model.filename}.downloading")
 
         try {
-            _state.value = ModelDownloadState.Downloading(0f, 0, model.sizeMb)
-            Timber.d("Downloading: ${model.displayName} from ${model.url}")
+            // Resume support: if a partial download exists from a prior run, start from
+            // its current length. HuggingFace honours Range: bytes=N-; responses are 206
+            // Partial Content when resuming, 200 OK when the server restarts from zero.
+            val resumeFrom = if (tempFile.exists()) tempFile.length() else 0L
+            _state.value = ModelDownloadState.Downloading(
+                progress = 0f,
+                downloadedMb = (resumeFrom / 1_048_576).toInt(),
+                totalMb = model.sizeMb
+            )
+            if (resumeFrom > 0) {
+                Timber.d("Resuming download: ${model.displayName} from byte $resumeFrom")
+            } else {
+                Timber.d("Downloading: ${model.displayName} from ${model.url}")
+            }
 
             val url = URL(model.url)
             val connection = url.openConnection() as HttpURLConnection
@@ -164,20 +176,33 @@ class ModelDownloader(private val context: Context) {
             connection.readTimeout = 60000
             connection.requestMethod = "GET"
             connection.setRequestProperty("User-Agent", "open-smart-speaker/1.0")
+            if (resumeFrom > 0) {
+                connection.setRequestProperty("Range", "bytes=$resumeFrom-")
+            }
             connection.instanceFollowRedirects = true
 
             val responseCode = connection.responseCode
-            if (responseCode != HttpURLConnection.HTTP_OK) {
+            val isPartial = responseCode == HttpURLConnection.HTTP_PARTIAL
+            if (responseCode != HttpURLConnection.HTTP_OK && !isPartial) {
                 _state.value = ModelDownloadState.Error("HTTP $responseCode")
                 return@withContext
             }
+            // Server ignored Range and returned the whole file — start fresh.
+            val appendToExisting = isPartial && resumeFrom > 0
 
-            val totalBytes = connection.contentLengthLong
+            // contentLengthLong on a 206 response is the remaining bytes — add the
+            // offset back to surface total-size progress to the user.
+            val remainingBytes = connection.contentLengthLong
+            val totalBytes = if (appendToExisting && remainingBytes > 0) {
+                remainingBytes + resumeFrom
+            } else {
+                remainingBytes
+            }
             val totalMb = if (totalBytes > 0) (totalBytes / 1_048_576).toInt() else model.sizeMb
-            var downloadedBytes = 0L
+            var downloadedBytes = if (appendToExisting) resumeFrom else 0L
 
             connection.inputStream.use { input ->
-                FileOutputStream(tempFile).use { output ->
+                FileOutputStream(tempFile, appendToExisting).use { output ->
                     val buffer = ByteArray(65536)
                     var bytesRead: Int
                     while (input.read(buffer).also { bytesRead = it } != -1) {
@@ -201,8 +226,8 @@ class ModelDownloader(private val context: Context) {
                 _state.value = ModelDownloadState.Error("Failed to save file")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Download failed")
-            tempFile.delete()
+            Timber.e(e, "Download failed (partial file kept at ${tempFile.length()} bytes for resume)")
+            // Intentionally keep the temp file so the next call can resume via Range request.
             _state.value = ModelDownloadState.Error("${e.message}")
         }
     }
