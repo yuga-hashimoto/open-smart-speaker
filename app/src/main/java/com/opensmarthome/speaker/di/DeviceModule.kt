@@ -166,6 +166,13 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideMemoryRepository(
+        dao: com.opensmarthome.speaker.data.db.MemoryDao
+    ): com.opensmarthome.speaker.tool.memory.MemoryRepository =
+        com.opensmarthome.speaker.tool.memory.MemoryRepository(dao)
+
+    @Provides
+    @Singleton
     fun provideToolExecutor(
         deviceManager: DeviceManager,
         moshi: Moshi,

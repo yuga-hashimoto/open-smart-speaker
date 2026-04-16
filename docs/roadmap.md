@@ -48,7 +48,7 @@ Make it feel like Alexa/Google Home first.
 ## Phase 9 — Priority 2: Surface existing OpenClaw engine capabilities in UI
 - [x] P9.1: Settings → Skills manager (SkillsViewModel + SkillsScreen: list, install-from-URL, delete)
 - [ ] P9.2: Settings → Routines manager (RoutineRepository)
-- [ ] P9.3: Settings → Memory browser (MemoryRepository)
+- [x] P9.3: Settings → Memory browser (MemoryViewModel + MemoryScreen: search, delete, clear-all)
 - [ ] P9.4: Settings → Documents / RAG (RagRepository)
 - [ ] P9.5: Settings → Analytics dashboard (AnalyticsRepository)
 - [ ] P9.6: Settings → Custom system prompt editor
