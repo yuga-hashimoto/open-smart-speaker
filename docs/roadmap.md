@@ -73,7 +73,7 @@ Make it feel like Alexa/Google Home first.
 - [ ] P12.1: Dead code sweep (VoicePipeline TTS/audio branches)
 - [ ] P12.2: CameraX integration (replaces skeleton)
 - [ ] P12.3: MediaProjection integration (replaces skeleton)
-- [ ] P12.4: SecurePreferences audit — no plaintext
+- [x] P12.4: SecurePreferences audit — SWITCHBOT_TOKEN moved from plaintext DataStore to SecurePreferences (was leaking); added KEY_SWITCHBOT_TOKEN/SECRET/MQTT_PASSWORD constants; removed silent fallback to plaintext SharedPreferences on keystore failure; deleted dead plaintext secret keys (HA_TOKEN, OPENCLAW_API_KEY, SWITCHBOT_SECRET, MQTT_PASSWORD from PreferenceKeys)
 - [x] P12.5: Unified OkHttp with sensible timeouts — TtsManager no longer builds its own client; all HTTP uses NetworkModule singleton (30s connect / 60s read / 30s write)
 - [ ] P12.6: Coverage report — aim 80% non-UI
 - [ ] P12.7: Android Lint baseline / zero warnings in tool/

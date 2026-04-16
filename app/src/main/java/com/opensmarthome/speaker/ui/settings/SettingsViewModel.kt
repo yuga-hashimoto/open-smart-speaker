@@ -138,7 +138,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferences.observe(PreferenceKeys.OPENCLAW_GATEWAY_URL).collect { _openClawUrl.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.LOCAL_LLM_BASE_URL).collect { _localLlmUrl.value = it ?: "http://localhost:8080" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.LOCAL_LLM_MODEL).collect { _localLlmModel.value = it ?: "gemma-4-e2b" } }
-        viewModelScope.launch { preferences.observe(PreferenceKeys.SWITCHBOT_TOKEN).collect { _switchBotToken.value = it ?: "" } }
+        // SwitchBot token is a credential — load from SecurePreferences, not plaintext DataStore
+        _switchBotToken.value = securePreferences.getString(SecurePreferences.KEY_SWITCHBOT_TOKEN)
         viewModelScope.launch { preferences.observe(PreferenceKeys.MQTT_BROKER_URL).collect { _mqttBrokerUrl.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD).collect { _wakeWord.value = it ?: "hey speaker" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.TTS_SPEECH_RATE).collect { _ttsSpeechRate.value = it ?: 1.0f } }
@@ -167,7 +168,7 @@ class SettingsViewModel @Inject constructor(
         _elevenLabsApiKey.value = securePreferences.getString(SecurePreferences.KEY_ELEVENLABS_API_KEY)
 
         _haToken.value = securePreferences.getString(SecurePreferences.KEY_HA_TOKEN)
-        _switchBotSecret.value = securePreferences.getString("switchbot_secret")
+        _switchBotSecret.value = securePreferences.getString(SecurePreferences.KEY_SWITCHBOT_SECRET)
         _availableEngines.value = TtsUtils.getAvailableEngines(application)
     }
 
@@ -193,8 +194,8 @@ class SettingsViewModel @Inject constructor(
 
     fun saveSwitchBotSettings(token: String, secret: String) {
         viewModelScope.launch {
-            preferences.set(PreferenceKeys.SWITCHBOT_TOKEN, token)
-            securePreferences.putString("switchbot_secret", secret)
+            securePreferences.putString(SecurePreferences.KEY_SWITCHBOT_TOKEN, token)
+            securePreferences.putString(SecurePreferences.KEY_SWITCHBOT_SECRET, secret)
             _switchBotToken.value = token
             _switchBotSecret.value = secret
         }

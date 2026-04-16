@@ -36,13 +36,11 @@ object PreferenceKeys {
     // STT
     val STT_LANGUAGE = stringPreferencesKey("stt_language")
 
-    // Home Assistant
+    // Home Assistant (secrets live in SecurePreferences; only URL is plaintext)
     val HA_BASE_URL = stringPreferencesKey("ha_base_url")
-    val HA_TOKEN = stringPreferencesKey("ha_token")
 
-    // OpenClaw
+    // OpenClaw (API key lives in SecurePreferences; only URL is plaintext)
     val OPENCLAW_GATEWAY_URL = stringPreferencesKey("openclaw_gateway_url")
-    val OPENCLAW_API_KEY = stringPreferencesKey("openclaw_api_key")
 
     // Local LLM
     val LOCAL_LLM_BASE_URL = stringPreferencesKey("local_llm_base_url")
@@ -52,14 +50,11 @@ object PreferenceKeys {
     val ROUTING_POLICY = stringPreferencesKey("routing_policy")
     val ACTIVE_PROVIDER_ID = stringPreferencesKey("active_provider_id")
 
-    // SwitchBot
-    val SWITCHBOT_TOKEN = stringPreferencesKey("switchbot_token")
-    val SWITCHBOT_SECRET = stringPreferencesKey("switchbot_secret")
+    // SwitchBot (token + secret live in SecurePreferences — both are credentials)
 
-    // MQTT
+    // MQTT (password lives in SecurePreferences; URL + username are plaintext)
     val MQTT_BROKER_URL = stringPreferencesKey("mqtt_broker_url")
     val MQTT_USERNAME = stringPreferencesKey("mqtt_username")
-    val MQTT_PASSWORD = stringPreferencesKey("mqtt_password")
 
     // Wake word
     val WAKE_WORD = stringPreferencesKey("wake_word")
