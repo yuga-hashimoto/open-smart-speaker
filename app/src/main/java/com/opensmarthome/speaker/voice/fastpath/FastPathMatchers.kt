@@ -681,12 +681,26 @@ object GreetingMatcher : FastPathMatcher {
     private data class Rule(val regex: Regex, val reply: String)
 
     private val rules = listOf(
-        Rule(Regex("""^\s*(?:thanks|thank\s+you|thx|ty)\s*[!?.]*\s*$"""), "You're welcome."),
+        // Thanks variants — covers "thanks", "thank you", "thank you so much",
+        // "thanks a lot", "many thanks", "thx", "ty", "appreciate it/that".
+        Rule(
+            Regex(
+                """^\s*(?:""" +
+                    """(?:many\s+)?thanks?(?:\s+(?:a\s+lot|so\s+much|very\s+much|again))?""" +
+                    """|thank\s+you(?:\s+(?:so\s+much|very\s+much|kindly))?""" +
+                    """|thx""" +
+                    """|ty""" +
+                    """|appreciate\s+(?:it|that|you)""" +
+                    """)\s*[!?.]*\s*$"""
+            ),
+            "You're welcome."
+        ),
         Rule(Regex("""^\s*(?:hi|hello|hey)(?:\s+there)?\s*[!?.]*\s*$"""), "Hi. What can I help with?"),
         Rule(Regex("""^\s*good\s+morning\s*[!?.]*\s*$"""), "Good morning."),
         Rule(Regex("""^\s*good\s+(?:evening|night)\s*[!?.]*\s*$"""), "Good evening."),
         Rule(Regex("""^\s*sorry\s*[!?.]*\s*$"""), "No problem."),
         Rule(Regex("""ありがとう"""), "どういたしまして。"),
+        Rule(Regex("""感謝"""), "どういたしまして。"),
         Rule(Regex("""こんにちは"""), "こんにちは。何かお手伝いできますか。"),
         Rule(Regex("""おはよう"""), "おはようございます。"),
         Rule(Regex("""こんばんは"""), "こんばんは。"),

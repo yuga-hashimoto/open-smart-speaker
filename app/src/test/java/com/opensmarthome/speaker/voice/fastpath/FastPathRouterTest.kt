@@ -227,6 +227,41 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `thank you so much gets speak-only reply`() {
+        val m = router.match("thank you so much")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `thanks a lot gets speak-only reply`() {
+        val m = router.match("thanks a lot")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `appreciate it gets speak-only reply`() {
+        val m = router.match("appreciate it")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `many thanks gets speak-only reply`() {
+        val m = router.match("many thanks")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `japanese kansha triggers welcome`() {
+        val m = router.match("感謝します")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).contains("どういたしまして")
+    }
+
+    @Test
     fun `hello gets greeting reply`() {
         val m = router.match("hello")
         assertThat(m?.toolName).isNull()
