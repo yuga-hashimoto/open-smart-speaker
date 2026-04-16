@@ -74,4 +74,41 @@ class HeavyTaskDetectorTest {
         val d = HeavyTaskDetector.decide("この写真に何が写っていますか", textOnlyLocal)
         assertThat(d.escalate).isTrue()
     }
+
+    @Test
+    fun `compare and contrast escalates`() {
+        val d = HeavyTaskDetector.decide("Compare and contrast jazz and blues", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+        assertThat(d.reason).contains("heavy keyword")
+    }
+
+    @Test
+    fun `write a function escalates`() {
+        val d = HeavyTaskDetector.decide("Write a function to sort a list", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+    }
+
+    @Test
+    fun `plan a trip escalates`() {
+        val d = HeavyTaskDetector.decide("Plan a trip to Kyoto for next month", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+    }
+
+    @Test
+    fun `deep dive escalates`() {
+        val d = HeavyTaskDetector.decide("Give me a deep dive on transformers", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+    }
+
+    @Test
+    fun `japanese travel plan escalates`() {
+        val d = HeavyTaskDetector.decide("京都への旅行計画を立てて", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+    }
+
+    @Test
+    fun `japanese function generation escalates`() {
+        val d = HeavyTaskDetector.decide("ソートする関数を書いてください", textOnlyLocal)
+        assertThat(d.escalate).isTrue()
+    }
 }

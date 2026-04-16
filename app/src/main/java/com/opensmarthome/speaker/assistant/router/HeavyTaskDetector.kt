@@ -21,15 +21,29 @@ object HeavyTaskDetector {
 
     /** English keywords that strongly imply long-form / heavy reasoning. */
     private val heavyKeywords = listOf(
-        "write an essay", "write an article", "translate this document",
-        "summarize this paper", "explain in detail", "step by step",
-        "refactor", "optimize", "debug this code", "code review"
+        "write an essay", "write an article", "write a story",
+        "translate this document", "summarize this paper",
+        "explain in detail", "step by step",
+        "refactor", "optimize", "debug this code", "code review",
+        // Multi-source reasoning / synthesis
+        "compare and contrast", "deep dive", "in depth analysis",
+        "research the", "do research on",
+        // Code generation explicitly asking for full programs
+        "write a function", "write a program", "implement an algorithm",
+        // Multi-step planning / itinerary
+        "plan a trip", "create an itinerary", "draft a proposal"
     )
 
     /** Japanese equivalents. */
     private val heavyKeywordsJa = listOf(
-        "論文を要約", "記事を書いて", "エッセイを書いて", "詳しく説明",
-        "翻訳してください", "コードレビュー"
+        "論文を要約", "記事を書いて", "エッセイを書いて", "物語を書いて",
+        "詳しく説明", "翻訳してください", "コードレビュー",
+        // Synthesis / analysis
+        "比較して", "詳細な分析", "深く調べて",
+        // Code generation
+        "関数を書いて", "プログラムを書いて", "アルゴリズムを実装",
+        // Planning
+        "旅行計画", "提案書を作"
     )
 
     data class Decision(
