@@ -52,6 +52,7 @@ class DefaultFastPathRouter(
             // RunRoutineMatcher must precede LaunchAppMatcher because "run X" overlaps.
             RunRoutineMatcher,
             LaunchAppMatcher,
+            WeatherMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             HelpMatcher
@@ -504,6 +505,31 @@ object HelpMatcher : FastPathMatcher {
         }
         if (japanesePatterns.any { it.containsMatchIn(normalized) }) {
             return FastPathMatch(toolName = null, spokenConfirmation = JA_HELP)
+        }
+        return null
+    }
+}
+
+/**
+ * "what's the weather", "weather today", "今日の天気" — dispatches get_weather
+ * with no location (server uses device location or sensible default).
+ */
+object WeatherMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:what'?s\s+)?the\s+weather"""),
+        Regex("""weather\s+(?:today|now|outside)?"""),
+        Regex("""(?:今日|きょう)\s*(?:の)?\s*(?:天気|てんき)"""),
+        Regex("""(?:天気|てんき)\s*(?:は|を教えて)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "get_weather",
+                    arguments = emptyMap()
+                )
+            }
         }
         return null
     }
