@@ -83,6 +83,7 @@ class DefaultFastPathRouter(
             NewsMatcher,
             ListMemoryMatcher,
             ListDevicesMatcher,
+            ListTimersMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             HelpMatcher

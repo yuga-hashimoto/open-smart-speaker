@@ -606,6 +606,32 @@ object ListMemoryMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "list timers", "what timers do I have", "show my timers", "タイマー一覧" → get_timers.
+ *
+ * Must precede CancelAllTimersMatcher? No — this matcher is registered
+ * AFTER CancelAllTimersMatcher in DEFAULT_MATCHERS, so "cancel all timers"
+ * still wins. We only fire on list/show/what queries.
+ */
+object ListTimersMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:list|show|see)\s+(?:my\s+|all\s+)?timers?"""),
+        Regex("""what\s+timers?\s+(?:do\s+i\s+have|are\s+(?:set|running|going))"""),
+        Regex("""(?:any|how\s+many)\s+timers?\s+(?:running|set|going|left)"""),
+        Regex("""タイマー\s*(?:の)?\s*(?:一覧|リスト|残り|何個)"""),
+        Regex("""残ってる\s*タイマー""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(toolName = "get_timers", arguments = emptyMap())
+            }
+        }
+        return null
+    }
+}
+
 /** "what's today's date" / "今日は何日" */
 object DatetimeMatcher : FastPathMatcher {
     private val patterns = listOf(

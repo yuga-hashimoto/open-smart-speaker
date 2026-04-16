@@ -163,6 +163,37 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `list timers fast-path`() {
+        val m = router.match("list timers")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `what timers do I have fast-path`() {
+        val m = router.match("what timers do I have")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `show my timers fast-path`() {
+        val m = router.match("show my timers")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `japanese list timers`() {
+        val m = router.match("タイマー一覧")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `cancel all still wins over list timers`() {
+        // Precedence guard: 'cancel all timers' must trigger cancel, not list.
+        val m = router.match("cancel all timers")
+        assertThat(m?.toolName).isEqualTo("cancel_all_timers")
+    }
+
+    @Test
     fun `pause music fast-path`() {
         val m = router.match("pause music")
         assertThat(m?.toolName).isEqualTo("execute_command")
