@@ -20,6 +20,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
 import javax.inject.Singleton
 
 @Module
@@ -36,8 +37,9 @@ object VoiceModule {
     fun provideTextToSpeech(
         @ApplicationContext context: Context,
         preferences: AppPreferences,
-        securePreferences: SecurePreferences
-    ): TextToSpeech = TtsManager(context, preferences, securePreferences)
+        securePreferences: SecurePreferences,
+        httpClient: OkHttpClient
+    ): TextToSpeech = TtsManager(context, preferences, securePreferences, httpClient)
 
     @Provides
     @Singleton

@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 
 /**
  * Routes TTS calls to the configured provider (Android / OpenAI / ElevenLabs / VOICEVOX).
@@ -22,19 +21,12 @@ import java.util.concurrent.TimeUnit
 class TtsManager(
     private val context: Context,
     private val preferences: AppPreferences,
-    private val securePreferences: SecurePreferences
+    private val securePreferences: SecurePreferences,
+    private val httpClient: OkHttpClient
 ) : TextToSpeech {
 
     private val _isSpeaking = MutableStateFlow(false)
     override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
-
-    private val httpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
-    }
 
     // Lazily create providers as needed
     private val androidProvider: AndroidTtsProvider by lazy {
