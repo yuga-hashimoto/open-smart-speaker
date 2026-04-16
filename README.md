@@ -1,87 +1,183 @@
-# open-smart-speaker
+# OpenSmartSpeaker
 
-An open-source Android smart speaker app that turns any tablet into a voice-controlled smart home hub. All AI processing runs on-device — no cloud services required.
+**Turn any Android tablet into a voice-first smart-home device with a local AI brain.**
 
-Say "Hey Speaker" and control your lights, switches, and home devices with your voice.
+Think "Alexa without the cloud, OpenClaw-level autonomy, all on-device."
 
-## Features
+Say a wake word, ask anything, and the agent responds with voice, controls smart-home
+devices, runs timers, fetches weather, reads your notifications, or follows user-taught
+skills — all without a network call unless you explicitly ask for one.
 
-- **On-device AI**: Runs Gemma 4 E2B locally via MediaPipe LLM Inference. No internet needed for conversations.
-- **Wake word activation**: Always listening for "Hey Speaker" using Vosk (auto-downloaded on first launch).
-- **Voice conversation**: Speak naturally. The app understands your intent, controls devices, and responds aloud.
-- **Smart home control**: Supports SwitchBot, Matter, MQTT (Shelly/Tasmota), and Home Assistant devices.
-- **Dashboard**: Visual grid of all connected devices with tap-to-toggle controls.
-- **Ambient display**: Large clock with temperature and humidity from connected sensors.
-- **Multiple AI backends**: Switch between on-device LLM, OpenClaw, or any OpenAI-compatible endpoint.
-- **Encrypted storage**: All tokens and secrets stored with AES256-GCM encryption.
+---
 
-## Supported Devices
+## Why this project
 
+Existing smart speakers force you to choose between:
+
+- **Cloud assistants** (Alexa / Google Home / Siri) — great UX but record your voice,
+  lock you into ecosystems, and die the moment the vendor's servers do.
+- **Power-user setups** (Home Assistant + ESPHome + Whisper + Piper) — private, but
+  require stitching 5 services together to match basic Alexa features.
+- **Agent frameworks** (OpenClaw, Hermes) — powerful on a laptop, unusable on a
+  kitchen countertop tablet.
+
+OpenSmartSpeaker is all three at once, on a single Android tablet you already own.
+
+---
+
+## What it does today
+
+### Smart-home device ("Alexa feel")
+- Custom wake word (Vosk) with always-on foreground service
+- Sub-200ms fast-path for common intents: `"lights on"`, `"volume up"`,
+  `"5分タイマー"`, `"what time is it"` — LLM bypass via `FastPathRouter`
+- Voice-first UI: breathing `VoiceOrb` shows pipeline state (listening / thinking /
+  speaking) with audio-level reactive scaling
+- Error recovery copy: `"I didn't catch that. Try again?"` not `"list index out of range"`
+- Filler phrases ("Got it", "One moment") while the LLM is working
+- Audio focus handling, barge-in, continuous conversation mode
+
+### Local AI agent ("OpenClaw feel")
+- On-device LLM via **LiteRT-LM** (Gemma 3n / 4 family) with GPU→CPU fallback and
+  hardware-tier-tuned context size / thread count
+- Pluggable chat templates (Gemma / Qwen / Llama3 / ChatML)
+- **ReAct agent loop** with multi-tool chaining (`AgentPlan`), up to 10 tool rounds
+- Context compaction keeps long conversations coherent
+- Device state auto-injected into every prompt (`<device_state>`)
+- **Skills system** — drop a `SKILL.md` into `assets/skills/<name>/` or install one
+  at runtime via `install_skill_from_url` (OpenClaw-style)
+- **50+ built-in LLM tools**:
+  - System: timer, volume, app launcher, datetime, notifications, calendar,
+    contacts, SMS, camera, photos, screen record, device health, location,
+    screen reader
+  - Info: weather (Open-Meteo), search (DuckDuckGo), news (RSS), web fetch,
+    unit converter, calculator, currency converter
+  - Memory: `remember`, `recall`, `search_memory`, `semantic_memory_search`, `forget`
+  - Documents: RAG ingest + retrieve with TF-IDF scoring
+  - Routines: user-defined multi-step workflows
+  - Skills: `get_skill`, `list_skills`, `install_skill_from_url`
+
+### Smart-home control
 | Protocol | Devices |
 |----------|---------|
-| SwitchBot | Bot, Curtain, Plug, Color Bulb, Strip Light, Ceiling Light, Lock, Meter |
-| Matter | Any Matter-certified device (via Android Matter API) |
-| MQTT | Shelly, Tasmota, and other MQTT-discoverable devices |
-| Home Assistant | All HA-managed devices (optional, for users with an HA server) |
+| **Home Assistant** | Everything HA exposes (lights, climate, covers, media, sensors) |
+| **SwitchBot** | Bot, Curtain, Plug, Bulb, Strip/Ceiling Light, Lock, Meter |
+| **Matter** | Android Matter API commissioning |
+| **MQTT** | Shelly, Tasmota, and any MQTT-discoverable device |
 
-## Requirements
+### Privacy / data
+- **All AI runs locally.** The LLM lives on your tablet, not a server.
+- **Secrets encrypted** via EncryptedSharedPreferences (AES256-GCM).
+- **Network calls minimized** and opt-in. See [SECURITY.md](SECURITY.md).
 
-- Android tablet (Android 9+, 8GB RAM recommended)
-- Smart home devices to control (SwitchBot, Matter, MQTT, or HA)
+---
 
-## Setup
+## Hardware recommendations
 
-1. Install the APK on your tablet
-2. Grant microphone permission
-3. Open **Settings** and configure your device providers:
-   - **SwitchBot**: Enter your API Token and Secret Key
-   - **MQTT**: Enter your broker URL (e.g. `tcp://192.168.1.100:1883`)
-   - **Home Assistant**: Enter base URL and Long-Lived Access Token (optional)
-4. For on-device AI: place a Gemma 4 E2B `.task` model file in the app's `files/models/` directory
-5. Say "Hey Speaker" or tap the microphone button
+| RAM | Model tier |
+|-----|-----------|
+| 3-4 GB | Gemma 3n E2B (Q4) ~1.2 GB |
+| 4-6 GB | Gemma 3n E2B / Qwen3 1.5B |
+| 6-8 GB | Gemma 3n E4B (Q4) ~2.5 GB |
+| 8+ GB  | Gemma 4 / Phi-4 Mini |
 
-## Building from Source
+`HardwareProfile` auto-detects RAM and tunes context / GPU layers / thread count.
+
+---
+
+## Setup (5 minutes)
+
+1. Install the APK (GitHub Releases or `./gradlew assembleDebug`)
+2. Grant microphone permission on first launch
+3. Model auto-downloads (~2 GB, public HuggingFace)
+4. Settings → configure device providers (SwitchBot / MQTT / HA / Matter)
+5. Say your wake word and start asking
+
+Optional permissions unlock more tools:
+- Calendar → `get_calendar_events`
+- Contacts → `search_contacts`
+- Location → `get_location`
+- Notification access → `list_notifications`
+- Accessibility service → `read_screen`
+- SMS → `send_sms` (with LLM confirmation prompt)
+- Photos → `list_recent_photos`
+- Camera → `take_photo`
+
+---
+
+## Development
+
+Kotlin 2.1 + Jetpack Compose + Material 3 + Hilt. Built against SDK 35.
 
 ```bash
-# Build
-./gradlew assembleDebug
-
-# Test (31 unit tests)
-./gradlew test
+./gradlew testDebugUnitTest   # 400+ unit tests
+./gradlew assembleDebug       # build APK
+./gradlew lint                # Android Lint
 ```
 
-Requires JDK 17 and Android SDK Platform 35.
+JUnit 5 + MockK + Truth + MockWebServer, ~80% coverage for non-UI code.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Tech Stack
-
-- **Kotlin 2.1.0** with Jetpack Compose and Material 3
-- **MediaPipe LLM Inference** for on-device AI (no NDK required)
-- **Vosk** for offline wake word detection
-- **OkHttp 4.12.0** for REST, SSE streaming, and WebSocket
-- **Room 2.6.1** for conversation history persistence
-- **Hilt** for dependency injection
-- **Eclipse Paho** for MQTT client
-- **Moshi** for JSON serialization
-
-## Project Structure
+### Architecture
 
 ```
 app/src/main/java/com/opensmarthome/speaker/
-├── assistant/              # AI provider abstraction and routing
-│   ├── provider/embedded/  # On-device LLM (MediaPipe)
-│   ├── provider/openai/    # OpenAI-compatible REST+SSE
-│   ├── provider/openclaw/  # OpenClaw WebSocket
-│   └── router/             # Provider selection (Auto/Manual/Failover/LowestLatency)
-├── device/                 # Smart home device control
-│   ├── provider/matter/    # Matter device control
-│   ├── provider/switchbot/ # SwitchBot API client
-│   ├── provider/mqtt/      # MQTT discovery and control
-│   └── tool/               # LLM function calling for device operations
-├── voice/                  # Voice pipeline (wake word → STT → AI → TTS)
-├── ui/                     # Chat, Dashboard, Ambient, Settings screens
-├── service/                # Foreground service for always-on voice
-└── data/                   # Room database, encrypted preferences
+├── assistant/
+│   ├── provider/embedded/   # LiteRT-LM on-device provider
+│   ├── provider/openai/     # OpenAI-compatible REST+SSE
+│   ├── provider/openclaw/   # OpenClaw WebSocket
+│   ├── router/              # 4 routing policies
+│   ├── skills/              # SkillRegistry + SkillInstaller (OpenClaw SKILL.md)
+│   ├── routine/             # Routine + RoomRoutineStore
+│   ├── agent/               # AgentPlan + PlanExecutor
+│   ├── proactive/           # Time-based suggestions + rules
+│   └── context/             # ContextCompactor + DeviceContextBuilder
+├── device/                  # HA / SwitchBot / MQTT / Matter providers
+├── voice/
+│   ├── pipeline/            # VoicePipeline + ErrorClassifier
+│   └── fastpath/            # FastPathRouter (Alexa-style LLM bypass)
+├── tool/
+│   ├── system/              # timer / volume / notifications / SMS / camera etc
+│   ├── info/                # weather / search / news / calc / currency
+│   ├── memory/              # persistent KV + TF-IDF semantic search
+│   ├── rag/                 # document chunker + retrieval
+│   ├── accessibility/       # screen reader service
+│   └── analytics/           # usage stats
+├── ui/                      # Chat / Dashboard / Ambient / Settings / Home
+├── service/                 # Foreground + VoiceInteraction + Boot
+└── data/                    # Room + encrypted preferences
 ```
+
+See [docs/architecture.md](docs/architecture.md) for the deeper dive.
+
+---
+
+## Priority order
+
+Every change in this project advances one of these, in order:
+
+1. **Smart home device feel** — it has to feel like Alexa for everyday use
+2. **Local agent capabilities** — OpenClaw-style, on-device
+3. **UX polish** — ambient, onboarding, error recovery
+4. **Hybrid gateway** — connect to external OpenClaw / Hermes when needed
+5. **Refactor / quality** — code, performance, security
+6. **OSS project health** — docs, CI, community
+
+See [docs/roadmap.md](docs/roadmap.md) for the full per-item list.
+
+---
+
+## Inspiration / credit
+
+- **OpenClaw** — the agent framework we bring to Android
+- **Ava** — voice state machine + wake ripple UX patterns
+- **off-grid-mobile-ai** — hardware-aware LLM init + context compaction
+- **dash-voice** — tablet-first smart-home UX
+- **local-llms-on-android** — LiteRT-LM integration reference
+
+Each of these informed a specific PR; see commit messages for "stolen from ..." notes.
+
+---
 
 ## License
 

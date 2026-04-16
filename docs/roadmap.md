@@ -85,7 +85,7 @@ Make it feel like Alexa/Google Home first.
 - [x] P13.4: Release workflow — tag push builds debug APK and attaches to release
 - [x] P13.5: SECURITY.md with threat model + responsible disclosure
 - [x] P13.6: CODE_OF_CONDUCT.md (Contributor Covenant 2.1)
-- [ ] P13.7: README overhaul — value prop for smart-home fans
+- [x] P13.7: README overhaul — value prop, hardware guide, tool list, architecture diagram, inspiration credits
 - [ ] P13.8: Docs site covering architecture, SKILL.md authoring, tool list
 
 ---
