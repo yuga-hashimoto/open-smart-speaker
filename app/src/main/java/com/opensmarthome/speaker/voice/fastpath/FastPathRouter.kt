@@ -39,6 +39,8 @@ class DefaultFastPathRouter(
 
     companion object {
         val DEFAULT_MATCHERS: List<FastPathMatcher> = listOf(
+            // CancelAllTimersMatcher must precede TimerMatcher because "cancel timer" contains "timer".
+            CancelAllTimersMatcher,
             TimerMatcher,
             TimeQueryMatcher,
             VolumeMatcher,
@@ -98,6 +100,26 @@ object TimerMatcher : FastPathMatcher {
         unit.startsWith("min") -> n * 60
         unit.startsWith("hour") || unit == "hr" -> n * 3600
         else -> null
+    }
+}
+
+/** "cancel all timers", "stop all timers", "タイマー全部止めて" */
+object CancelAllTimersMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:cancel|stop|clear)\s+(?:all\s+)?timers?"""),
+        Regex("""タイマー\s*(?:を)?\s*(?:全部|全て)?\s*(?:止めて|キャンセル|やめて)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "cancel_all_timers",
+                    spokenConfirmation = "Timers cancelled."
+                )
+            }
+        }
+        return null
     }
 }
 

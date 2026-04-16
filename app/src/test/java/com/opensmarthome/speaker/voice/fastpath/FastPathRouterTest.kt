@@ -119,6 +119,24 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `cancel all timers fast-path`() {
+        val m = router.match("cancel all timers")
+        assertThat(m?.toolName).isEqualTo("cancel_all_timers")
+    }
+
+    @Test
+    fun `stop timers also matches`() {
+        val m = router.match("stop timers")
+        assertThat(m?.toolName).isEqualTo("cancel_all_timers")
+    }
+
+    @Test
+    fun `japanese cancel all timers`() {
+        val m = router.match("タイマーを全部止めて")
+        assertThat(m?.toolName).isEqualTo("cancel_all_timers")
+    }
+
+    @Test
     fun `pause music fast-path`() {
         val m = router.match("pause music")
         assertThat(m?.toolName).isEqualTo("execute_command")

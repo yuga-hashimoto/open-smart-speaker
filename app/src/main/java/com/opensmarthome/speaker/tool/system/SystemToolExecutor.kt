@@ -38,6 +38,11 @@ class SystemToolExecutor(
             )
         ),
         ToolSchema(
+            name = "cancel_all_timers",
+            description = "Cancel every active timer.",
+            parameters = emptyMap()
+        ),
+        ToolSchema(
             name = "get_timers",
             description = "List all active timers.",
             parameters = emptyMap()
@@ -78,6 +83,7 @@ class SystemToolExecutor(
             when (call.name) {
                 "set_timer" -> executeSetTimer(call)
                 "cancel_timer" -> executeCancelTimer(call)
+                "cancel_all_timers" -> executeCancelAllTimers(call)
                 "get_timers" -> executeGetTimers(call)
                 "set_volume" -> executeSetVolume(call)
                 "get_volume" -> executeGetVolume(call)
@@ -114,6 +120,11 @@ class SystemToolExecutor(
         } else {
             ToolResult(call.id, false, "", "Timer not found: $timerId")
         }
+    }
+
+    private suspend fun executeCancelAllTimers(call: ToolCall): ToolResult {
+        val count = timerManager.cancelAllTimers()
+        return ToolResult(call.id, true, """{"cancelled_count": $count}""")
     }
 
     private suspend fun executeGetTimers(call: ToolCall): ToolResult {
