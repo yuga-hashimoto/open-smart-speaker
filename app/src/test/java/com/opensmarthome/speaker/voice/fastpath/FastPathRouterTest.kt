@@ -291,6 +291,24 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `news fast-path`() {
+        val m = router.match("news")
+        assertThat(m?.toolName).isEqualTo("get_news")
+    }
+
+    @Test
+    fun `tell me the news`() {
+        val m = router.match("tell me the news")
+        assertThat(m?.toolName).isEqualTo("get_news")
+    }
+
+    @Test
+    fun `japanese news`() {
+        val m = router.match("ニュース")
+        assertThat(m?.toolName).isEqualTo("get_news")
+    }
+
+    @Test
     fun `whats the weather`() {
         val m = router.match("what's the weather")
         assertThat(m?.toolName).isEqualTo("get_weather")

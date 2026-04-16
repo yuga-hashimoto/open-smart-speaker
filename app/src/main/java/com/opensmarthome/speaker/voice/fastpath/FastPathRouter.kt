@@ -54,6 +54,7 @@ class DefaultFastPathRouter(
             LaunchAppMatcher,
             FindDeviceMatcher,
             WeatherMatcher,
+            NewsMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             HelpMatcher
@@ -552,6 +553,28 @@ object WeatherMatcher : FastPathMatcher {
             if (p.containsMatchIn(normalized)) {
                 return FastPathMatch(
                     toolName = "get_weather",
+                    arguments = emptyMap()
+                )
+            }
+        }
+        return null
+    }
+}
+
+/** "news", "what's the news", "today's news", "ニュース" → get_news */
+object NewsMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""^\s*(?:the\s+)?news\s*[!?.]*\s*$"""),
+        Regex("""(?:what'?s|tell\s+me)\s+(?:the\s+)?(?:today'?s\s+)?news"""),
+        Regex("""(?:news|headlines)\s+(?:briefing|today|now)"""),
+        Regex("""(?:今日|きょう)?\s*(?:の)?\s*ニュース""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "get_news",
                     arguments = emptyMap()
                 )
             }
