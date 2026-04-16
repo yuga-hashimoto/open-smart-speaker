@@ -611,6 +611,38 @@ object ListDevicesMatcher : FastPathMatcher {
 }
 
 /**
+ * "what's on my calendar today", "do I have any meetings", "今日の予定" → get_calendar_events.
+ * Defaults to days_ahead=1 (today). Multi-day briefings should use the LLM
+ * (or the morning_briefing composite) to phrase the response.
+ */
+object CalendarMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""what'?s\s+on\s+my\s+calendar(?:\s+today)?"""),
+        Regex("""(?:my|the)\s+calendar\s+(?:today|for\s+today)"""),
+        Regex("""(?:do\s+i|i)\s+have\s+(?:any\s+)?(?:meetings?|events?|appointments?)\s+(?:today|this\s+(?:morning|afternoon))?"""),
+        Regex("""any\s+(?:meetings?|events?|appointments?)\s+today"""),
+        Regex("""what'?s\s+(?:on\s+)?(?:today'?s|my)\s+schedule""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""今日\s*(?:の)?\s*(?:予定|スケジュール|ミーティング|会議)"""),
+        Regex("""(?:予定|スケジュール)\s*(?:を)?\s*(?:教えて|確認)"""),
+        Regex("""今日\s*(?:は)?\s*(?:何か|なにか)\s*(?:予定|ある)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(
+                toolName = "get_calendar_events",
+                arguments = mapOf("days_ahead" to 1.0)
+            )
+        }
+        return null
+    }
+}
+
+/**
  * "what do you remember", "list memories", "覚えていること" → list_memory
  * with no prefix. Returns whatever's in the memory store so the LLM (or
  * the user, via the speak-back) can audit it.

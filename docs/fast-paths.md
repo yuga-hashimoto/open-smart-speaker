@@ -30,6 +30,7 @@ to the list.
 | `EveningBriefingMatcher` | "evening briefing", "wind down", "夜のサマリー" | `evening_briefing` (composite) | Notifications + calendar + timers |
 | `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` | |
 | `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
+| `CalendarMatcher` | "what's on my calendar today", "do I have any meetings", "今日の予定", "今日のミーティング" | `get_calendar_events` (days_ahead=1) | |
 | `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
 | `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
 | `ListTimersMatcher` | "list timers", "what timers do I have", "タイマー一覧" | `get_timers` | Ordered after CancelAllTimersMatcher so "cancel all timers" still wins |

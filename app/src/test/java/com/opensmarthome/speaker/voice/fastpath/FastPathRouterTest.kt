@@ -420,6 +420,37 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `whats on my calendar today fast-path`() {
+        val m = router.match("what's on my calendar today")
+        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+        assertThat(m?.arguments?.get("days_ahead")).isEqualTo(1.0)
+    }
+
+    @Test
+    fun `do I have any meetings today fast-path`() {
+        val m = router.match("do i have any meetings today")
+        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    }
+
+    @Test
+    fun `whats my schedule fast-path`() {
+        val m = router.match("what's my schedule")
+        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    }
+
+    @Test
+    fun `japanese today schedule fast-path`() {
+        val m = router.match("今日の予定")
+        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    }
+
+    @Test
+    fun `japanese today meeting fast-path`() {
+        val m = router.match("今日のミーティング")
+        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    }
+
+    @Test
     fun `what do you remember calls list_memory`() {
         val m = router.match("what do you remember")
         assertThat(m?.toolName).isEqualTo("list_memory")
