@@ -29,6 +29,27 @@ class SuggestionEngineTest {
     }
 
     @Test
+    fun `evening briefing fires at 20`() = runTest {
+        val ctx = ProactiveContext(nowMs = 0, hourOfDay = 20, dayOfWeek = 1)
+        val suggestion = EveningBriefingRule().evaluate(ctx)
+        assertThat(suggestion).isNotNull()
+        assertThat(suggestion?.suggestedAction?.toolName).isEqualTo("evening_briefing")
+        assertThat(suggestion?.priority).isEqualTo(Suggestion.Priority.NORMAL)
+    }
+
+    @Test
+    fun `evening briefing silent at noon`() = runTest {
+        val ctx = ProactiveContext(nowMs = 0, hourOfDay = 12, dayOfWeek = 1)
+        assertThat(EveningBriefingRule().evaluate(ctx)).isNull()
+    }
+
+    @Test
+    fun `evening briefing silent after 22`() = runTest {
+        val ctx = ProactiveContext(nowMs = 0, hourOfDay = 23, dayOfWeek = 1)
+        assertThat(EveningBriefingRule().evaluate(ctx)).isNull()
+    }
+
+    @Test
     fun `night quiet fires after 23`() = runTest {
         val midnight = ProactiveContext(nowMs = 0, hourOfDay = 0, dayOfWeek = 1)
         val late = ProactiveContext(nowMs = 0, hourOfDay = 23, dayOfWeek = 1)

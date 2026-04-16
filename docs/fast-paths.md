@@ -30,12 +30,16 @@ to the list.
 | `EveningBriefingMatcher` | "evening briefing", "wind down", "夜のサマリー" | `evening_briefing` (composite) | Notifications + calendar + timers |
 | `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` | |
 | `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
+| `CalendarMatcher` | "what's on my calendar today", "do I have any meetings", "今日の予定", "今日のミーティング" | `get_calendar_events` (days_ahead=1) | |
+| `ClearNotificationsMatcher` | "clear notifications", "dismiss all notifications", "通知を消して" | `clear_notifications` | Precedes ListNotifications |
+| `ListNotificationsMatcher` | "show notifications", "what notifications do I have", "通知一覧" | `list_notifications` | |
 | `LocationMatcher` | "where am I", "what's my location", "ここはどこ", "現在地を教えて" | `get_location` | Distinct from FindDeviceMatcher |
 | `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
 | `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
+| `ListTimersMatcher` | "list timers", "what timers do I have", "タイマー一覧" | `get_timers` | Ordered after CancelAllTimersMatcher so "cancel all timers" still wins |
 | `DatetimeMatcher` | "what's today's date", "今日は何日" | `get_datetime` | |
 | `GreetingMatcher` | "thanks", "hello", "ありがとう", "おはよう", "ごめん" | (speak-only) | Canned reply, no tool |
-| `HelpMatcher` | "help", "what can you do", "できることを教えて" | (speak-only) | Capability summary |
+| `HelpMatcher` | "help", "what can you do", "できることを教えて" | (speak-only) | Capability summary mentions timers, lights, weather, news, routines, memory, skills |
 
 ## Adding a new matcher
 

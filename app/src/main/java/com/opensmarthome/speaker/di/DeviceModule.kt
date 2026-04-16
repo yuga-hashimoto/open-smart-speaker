@@ -167,6 +167,7 @@ object DeviceModule {
                 com.opensmarthome.speaker.assistant.proactive.MorningGreetingRule(),
                 com.opensmarthome.speaker.assistant.proactive.WeekendMorningRule(),
                 com.opensmarthome.speaker.assistant.proactive.EveningLightsRule(),
+                com.opensmarthome.speaker.assistant.proactive.EveningBriefingRule(),
                 com.opensmarthome.speaker.assistant.proactive.NightQuietRule()
             )
         )

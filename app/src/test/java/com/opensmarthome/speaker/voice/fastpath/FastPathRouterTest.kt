@@ -163,6 +163,37 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `list timers fast-path`() {
+        val m = router.match("list timers")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `what timers do I have fast-path`() {
+        val m = router.match("what timers do I have")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `show my timers fast-path`() {
+        val m = router.match("show my timers")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `japanese list timers`() {
+        val m = router.match("タイマー一覧")
+        assertThat(m?.toolName).isEqualTo("get_timers")
+    }
+
+    @Test
+    fun `cancel all still wins over list timers`() {
+        // Precedence guard: 'cancel all timers' must trigger cancel, not list.
+        val m = router.match("cancel all timers")
+        assertThat(m?.toolName).isEqualTo("cancel_all_timers")
+    }
+
+    @Test
     fun `pause music fast-path`() {
         val m = router.match("pause music")
         assertThat(m?.toolName).isEqualTo("execute_command")
@@ -196,6 +227,41 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `thank you so much gets speak-only reply`() {
+        val m = router.match("thank you so much")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `thanks a lot gets speak-only reply`() {
+        val m = router.match("thanks a lot")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `appreciate it gets speak-only reply`() {
+        val m = router.match("appreciate it")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `many thanks gets speak-only reply`() {
+        val m = router.match("many thanks")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation?.lowercase()).contains("welcome")
+    }
+
+    @Test
+    fun `japanese kansha triggers welcome`() {
+        val m = router.match("感謝します")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).contains("どういたしまして")
+    }
+
+    @Test
     fun `hello gets greeting reply`() {
         val m = router.match("hello")
         assertThat(m?.toolName).isNull()
@@ -219,6 +285,16 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `english help mentions agent capabilities`() {
+        val m = router.match("what can you do")
+        val text = m?.spokenConfirmation?.lowercase() ?: ""
+        // Surface OpenClaw-class capabilities, not just smart-speaker basics.
+        assertThat(text).contains("weather")
+        assertThat(text).contains("news")
+        assertThat(text).contains("skill")
+    }
+
+    @Test
     fun `what can you do returns speak-only help`() {
         val m = router.match("What can you do?")
         assertThat(m?.toolName).isNull()
@@ -230,6 +306,15 @@ class FastPathRouterTest {
         val m = router.match("できることを教えて")
         assertThat(m?.toolName).isNull()
         assertThat(m?.spokenConfirmation).isNotNull()
+    }
+
+    @Test
+    fun `japanese help mentions agent capabilities`() {
+        val m = router.match("できることを教えて")
+        val text = m?.spokenConfirmation ?: ""
+        assertThat(text).contains("天気")
+        assertThat(text).contains("ニュース")
+        assertThat(text).contains("スキル")
     }
 
     @Test
@@ -256,6 +341,44 @@ class FastPathRouterTest {
     fun `open lights does not launch an app`() {
         // LightsMatcher should handle this, not LaunchAppMatcher
         val m = router.match("turn the lights on")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `open the door is not launched as an app`() {
+        // Smart-home controllable — must fall through to the LLM, not become launch_app("door").
+        val m = router.match("open the door")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `open the garage is not launched as an app`() {
+        val m = router.match("open the garage")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `open the blinds is not launched as an app`() {
+        val m = router.match("open the blinds")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `lock the door is not launched as an app`() {
+        // 'lock' alias also reserved.
+        val m = router.match("open the lock")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `japanese open door is not launched as an app`() {
+        val m = router.match("ドアを開いて")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `japanese open curtains is not launched as an app`() {
+        val m = router.match("カーテンを開いて")
         assertThat(m?.toolName).isNotEqualTo("launch_app")
     }
 

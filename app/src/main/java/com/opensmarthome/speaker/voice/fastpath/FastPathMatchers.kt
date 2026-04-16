@@ -352,11 +352,36 @@ object LaunchAppMatcher : FastPathMatcher {
     private val englishRegex = Regex("""(?:open|launch|start|run)\s+(?:the\s+)?(.+?)(?:\s+app)?\s*[!?.]*\s*$""")
     private val japaneseRegex = Regex("""(.+?)\s*(?:を)?\s*(?:開いて|立ち上げて|起動して)""")
 
+    /**
+     * Names that should never be interpreted as apps even if they match the
+     * "open/launch/start X" pattern. These are smart-home controllables
+     * (doors, blinds, locks, thermostats…) that the LLM can route to
+     * execute_command, plus timer/light keywords that their own matchers
+     * already own.
+     */
+    private val smartHomeReservedPrefixes = listOf(
+        "light", "timer",
+        "door", "garage", "gate",
+        "blind", "curtain", "shade", "window",
+        "lock", "unlock",
+        "thermostat", "ac", "air conditioner",
+        "fan", "tv", "television",
+        "speaker", "music", "playlist",
+        "oven", "microwave"
+    )
+    private val japaneseReservedSubstrings = listOf(
+        "ドア", "扉", "玄関",
+        "カーテン", "ブラインド", "シャッター", "窓",
+        "鍵", "ロック",
+        "エアコン", "扇風機",
+        "テレビ", "音楽"
+    )
+
     override fun tryMatch(normalized: String): FastPathMatch? {
         englishRegex.matchEntire(normalized.trim())?.let {
             val name = it.groupValues[1].trim()
             if (name.isEmpty()) return null
-            if (name.startsWith("light") || name.startsWith("timer")) return null
+            if (smartHomeReservedPrefixes.any { keyword -> name.startsWith(keyword) }) return null
             return FastPathMatch(
                 toolName = "launch_app",
                 arguments = mapOf("app_name" to name),
@@ -366,6 +391,7 @@ object LaunchAppMatcher : FastPathMatcher {
         japaneseRegex.matchEntire(normalized.trim())?.let {
             val name = it.groupValues[1].trim().removeSuffix("アプリ").trim()
             if (name.isEmpty()) return null
+            if (japaneseReservedSubstrings.any { keyword -> name.contains(keyword) }) return null
             return FastPathMatch(
                 toolName = "launch_app",
                 arguments = mapOf("app_name" to name),
@@ -585,6 +611,88 @@ object ListDevicesMatcher : FastPathMatcher {
 }
 
 /**
+ * "what's on my calendar today", "do I have any meetings", "今日の予定" → get_calendar_events.
+ * Defaults to days_ahead=1 (today). Multi-day briefings should use the LLM
+ * (or the morning_briefing composite) to phrase the response.
+ */
+object CalendarMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""what'?s\s+on\s+my\s+calendar(?:\s+today)?"""),
+        Regex("""(?:my|the)\s+calendar\s+(?:today|for\s+today)"""),
+        Regex("""(?:do\s+i|i)\s+have\s+(?:any\s+)?(?:meetings?|events?|appointments?)\s+(?:today|this\s+(?:morning|afternoon))?"""),
+        Regex("""any\s+(?:meetings?|events?|appointments?)\s+today"""),
+        Regex("""what'?s\s+(?:on\s+)?(?:today'?s|my)\s+schedule""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""今日\s*(?:の)?\s*(?:予定|スケジュール|ミーティング|会議)"""),
+        Regex("""(?:予定|スケジュール)\s*(?:を)?\s*(?:教えて|確認)"""),
+        Regex("""今日\s*(?:は)?\s*(?:何か|なにか)\s*(?:予定|ある)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(
+                toolName = "get_calendar_events",
+                arguments = mapOf("days_ahead" to 1.0)
+            )
+        }
+        return null
+    }
+}
+
+/**
+ * "clear notifications", "dismiss all notifications", "通知を消して" → clear_notifications.
+ * Must precede ListNotificationsMatcher because "clear" is a stronger verb.
+ */
+object ClearNotificationsMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:clear|dismiss|delete|remove)\s+(?:all\s+)?(?:my\s+)?notifications?"""),
+        Regex("""通知\s*(?:を)?\s*(?:全部|全て)?\s*(?:消して|クリア|削除)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(
+                    toolName = "clear_notifications",
+                    arguments = emptyMap(),
+                    spokenConfirmation = "Notifications cleared."
+                )
+            }
+        }
+        return null
+    }
+}
+
+/**
+ * "what notifications do I have", "show notifications", "any notifications",
+ * "通知一覧" / "通知ある" → list_notifications.
+ */
+object ListNotificationsMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""(?:list|show|see|read)\s+(?:my\s+|all\s+)?notifications?"""),
+        Regex("""what\s+notifications?\s+(?:do\s+i\s+have|are\s+there)"""),
+        Regex("""any\s+(?:new\s+)?notifications?"""),
+        Regex("""(?:do\s+i\s+have|got)\s+(?:any\s+)?notifications?""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""通知\s*(?:の)?\s*(?:一覧|リスト)"""),
+        Regex("""通知\s*(?:は|を)?\s*(?:ある|教えて|見せて)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(toolName = "list_notifications", arguments = emptyMap())
+        }
+        return null
+    }
+}
+
+/**
  * "where am I", "what's my location", "ここはどこ" → get_location.
  *
  * Distinct from FindDeviceMatcher which rings the device. This one
@@ -635,6 +743,32 @@ object ListMemoryMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "list timers", "what timers do I have", "show my timers", "タイマー一覧" → get_timers.
+ *
+ * Must precede CancelAllTimersMatcher? No — this matcher is registered
+ * AFTER CancelAllTimersMatcher in DEFAULT_MATCHERS, so "cancel all timers"
+ * still wins. We only fire on list/show/what queries.
+ */
+object ListTimersMatcher : FastPathMatcher {
+    private val patterns = listOf(
+        Regex("""(?:list|show|see)\s+(?:my\s+|all\s+)?timers?"""),
+        Regex("""what\s+timers?\s+(?:do\s+i\s+have|are\s+(?:set|running|going))"""),
+        Regex("""(?:any|how\s+many)\s+timers?\s+(?:running|set|going|left)"""),
+        Regex("""タイマー\s*(?:の)?\s*(?:一覧|リスト|残り|何個)"""),
+        Regex("""残ってる\s*タイマー""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (p in patterns) {
+            if (p.containsMatchIn(normalized)) {
+                return FastPathMatch(toolName = "get_timers", arguments = emptyMap())
+            }
+        }
+        return null
+    }
+}
+
 /** "what's today's date" / "今日は何日" */
 object DatetimeMatcher : FastPathMatcher {
     private val patterns = listOf(
@@ -658,12 +792,26 @@ object GreetingMatcher : FastPathMatcher {
     private data class Rule(val regex: Regex, val reply: String)
 
     private val rules = listOf(
-        Rule(Regex("""^\s*(?:thanks|thank\s+you|thx|ty)\s*[!?.]*\s*$"""), "You're welcome."),
+        // Thanks variants — covers "thanks", "thank you", "thank you so much",
+        // "thanks a lot", "many thanks", "thx", "ty", "appreciate it/that".
+        Rule(
+            Regex(
+                """^\s*(?:""" +
+                    """(?:many\s+)?thanks?(?:\s+(?:a\s+lot|so\s+much|very\s+much|again))?""" +
+                    """|thank\s+you(?:\s+(?:so\s+much|very\s+much|kindly))?""" +
+                    """|thx""" +
+                    """|ty""" +
+                    """|appreciate\s+(?:it|that|you)""" +
+                    """)\s*[!?.]*\s*$"""
+            ),
+            "You're welcome."
+        ),
         Rule(Regex("""^\s*(?:hi|hello|hey)(?:\s+there)?\s*[!?.]*\s*$"""), "Hi. What can I help with?"),
         Rule(Regex("""^\s*good\s+morning\s*[!?.]*\s*$"""), "Good morning."),
         Rule(Regex("""^\s*good\s+(?:evening|night)\s*[!?.]*\s*$"""), "Good evening."),
         Rule(Regex("""^\s*sorry\s*[!?.]*\s*$"""), "No problem."),
         Rule(Regex("""ありがとう"""), "どういたしまして。"),
+        Rule(Regex("""感謝"""), "どういたしまして。"),
         Rule(Regex("""こんにちは"""), "こんにちは。何かお手伝いできますか。"),
         Rule(Regex("""おはよう"""), "おはようございます。"),
         Rule(Regex("""こんばんは"""), "こんばんは。"),
@@ -693,10 +841,12 @@ object HelpMatcher : FastPathMatcher {
         Regex("""(?:できる|出来る)こと.*(?:教えて|おしえて|知りたい)""")
     )
 
-    private const val EN_HELP = "Try things like: set a timer, volume up, turn the lights on, " +
-        "what time is it, or ask me a question. Say 'help' anytime."
-    private const val JA_HELP = "例えば、タイマーをセット、音量を上げて、電気をつけて、今何時、" +
-        "などと話しかけてみてください。"
+    private const val EN_HELP = "Try: set a timer, turn the lights on, what's the weather, " +
+        "tell me the news, run the morning routine, or ask me anything. " +
+        "I can also remember things, search your documents, and run skills."
+    private const val JA_HELP = "例えば、タイマーをセット、電気をつけて、今日の天気、ニュース、" +
+        "朝のルーチンを実行、などと話しかけてください。" +
+        "メモやドキュメント検索、スキルの実行もできます。"
 
     override fun tryMatch(normalized: String): FastPathMatch? {
         if (englishPatterns.any { it.containsMatchIn(normalized) }) {

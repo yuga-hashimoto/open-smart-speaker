@@ -84,6 +84,28 @@ class WeekendMorningRule : SuggestionRule {
     }
 }
 
+/**
+ * Evening briefing: 19-21 — proactive notifications + calendar + timers
+ * summary so the user knows what to expect overnight before going to bed.
+ * NORMAL priority so it surfaces above ambient morning/evening greetings.
+ */
+class EveningBriefingRule : SuggestionRule {
+    override suspend fun evaluate(context: ProactiveContext): Suggestion? {
+        return if (context.hourOfDay in 19..21) {
+            Suggestion(
+                id = "evening_briefing_${context.hourOfDay}",
+                priority = Suggestion.Priority.NORMAL,
+                message = "Want a quick evening briefing — notifications, " +
+                    "tomorrow's events, and active timers?",
+                suggestedAction = SuggestedAction(
+                    toolName = "evening_briefing",
+                    arguments = emptyMap()
+                )
+            )
+        } else null
+    }
+}
+
 /** Night mode: suggest silent/do-not-disturb after 23:00. */
 class NightQuietRule : SuggestionRule {
     override suspend fun evaluate(context: ProactiveContext): Suggestion? {
