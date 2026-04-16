@@ -43,7 +43,7 @@ Make it feel like Alexa/Google Home first.
 - [x] P8.5: Barge-in verified via unit tests (interruptAndListen + stopSpeaking both halt TTS)
 - [x] P8.6: Filler phrases (existing FillerPhrases object — JP/EN, initial + wait timing, user-toggleable)
 - [x] P8.7: ErrorClassifier — 7 categories (no-provider / STT / timeout / network / permission / tool / unknown) with spoken-friendly copy + retry flag (stolen Ava pattern)
-- [ ] P8.8: Tablet-first landscape layout, large touch targets, night mode
+- [x] P8.8: Tablet-first landscape layout — new `isExpandedLandscape()` helper (≥600dp wide + landscape); HomeScreen and AmbientScreen switch to two-column split on tablet landscape (clock/weather left, devices/status right). Touch targets already 48dp+ via IconButton/FAB defaults; NightClockOverlay + night-mode control drawer already shipped
 
 ## Phase 9 — Priority 2: Surface existing OpenClaw engine capabilities in UI
 - [x] P9.1: Settings → Skills manager (SkillsViewModel + SkillsScreen: list, install-from-URL, delete)

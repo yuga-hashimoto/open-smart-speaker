@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Lightbulb
@@ -30,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.ui.common.isExpandedLandscape
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -42,8 +45,6 @@ fun AmbientScreen(
     val snapshot by viewModel.snapshot.collectAsState()
     var tick by remember { mutableStateOf(0) }
 
-    // Refresh local clock every second (independent of the snapshot refresh rate
-    // which is driven by DeviceManager's 30s poll).
     LaunchedEffect(Unit) {
         while (true) {
             tick++
@@ -52,12 +53,79 @@ fun AmbientScreen(
     }
 
     val now = remember(tick) { LocalDateTime.now() }
+    val wide = isExpandedLandscape()
 
+    if (wide) {
+        TwoColumnLayout(snapshot = snapshot, now = now, modifier = modifier)
+    } else {
+        SingleColumnLayout(snapshot = snapshot, now = now, modifier = modifier)
+    }
+}
+
+@Composable
+private fun SingleColumnLayout(
+    snapshot: AmbientSnapshot,
+    now: LocalDateTime,
+    modifier: Modifier
+) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        ClockBlock(snapshot = snapshot, now = now, centered = true)
+        Spacer(modifier = Modifier.height(24.dp))
+        WeatherStrip(snapshot)
+        Spacer(modifier = Modifier.height(16.dp))
+        CountsStrip(snapshot)
+        if (snapshot.recentDeviceActivity.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            DeviceActivityCard(snapshot)
+        }
+    }
+}
+
+@Composable
+private fun TwoColumnLayout(
+    snapshot: AmbientSnapshot,
+    now: LocalDateTime,
+    modifier: Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxSize().padding(32.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left: big clock + greeting
+        Column(
+            modifier = Modifier.weight(1.2f).fillMaxHeight(),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Center
+        ) {
+            ClockBlock(snapshot = snapshot, now = now, centered = false)
+        }
+
+        Spacer(Modifier.width(24.dp))
+
+        // Right: info stack
+        Column(
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            verticalArrangement = Arrangement.Center
+        ) {
+            WeatherStrip(snapshot)
+            Spacer(Modifier.height(16.dp))
+            CountsStrip(snapshot)
+            if (snapshot.recentDeviceActivity.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                DeviceActivityCard(snapshot)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClockBlock(snapshot: AmbientSnapshot, now: LocalDateTime, centered: Boolean) {
+    val alignment = if (centered) Alignment.CenterHorizontally else Alignment.Start
+    Column(horizontalAlignment = alignment) {
         Text(
             text = snapshot.greeting(),
             style = MaterialTheme.typography.titleLarge,
@@ -72,19 +140,6 @@ fun AmbientScreen(
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        WeatherStrip(snapshot)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CountsStrip(snapshot)
-
-        if (snapshot.recentDeviceActivity.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            DeviceActivityCard(snapshot)
-        }
     }
 }
 
