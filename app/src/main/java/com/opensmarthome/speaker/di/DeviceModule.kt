@@ -16,6 +16,8 @@ import com.opensmarthome.speaker.homeassistant.client.HomeAssistantClient
 import com.opensmarthome.speaker.tool.CompositeToolExecutor
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
+import com.opensmarthome.speaker.tool.info.InMemoryKnowledgeStore
+import com.opensmarthome.speaker.tool.info.KnowledgeToolExecutor
 import com.opensmarthome.speaker.tool.info.NewsToolExecutor
 import com.opensmarthome.speaker.tool.info.OpenMeteoWeatherProvider
 import com.opensmarthome.speaker.tool.info.RssNewsProvider
@@ -117,6 +119,7 @@ object DeviceModule {
             NewsToolExecutor(
                 RssNewsProvider(client)
             ),
+            KnowledgeToolExecutor(InMemoryKnowledgeStore()),
             NotificationToolExecutor(
                 AndroidNotificationProvider(context)
             ),

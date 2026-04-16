@@ -53,7 +53,7 @@ Give the agent access to information.
 - [x] P3.1: Weather tool (Open-Meteo, no auth required)
 - [x] P3.2: Web search tool (DuckDuckGo Instant Answer API)
 - [x] P3.3: News tool (RSS/Atom via XmlPullParser, bundled feeds)
-- [ ] P3.4: Knowledge/FAQ tool (user-defined Q&A)
+- [x] P3.4: Knowledge/FAQ tool (user-defined Q&A, in-memory KnowledgeStore)
 
 ### Phase 4: Agent Memory & Context
 Make the agent persistent and contextual.
