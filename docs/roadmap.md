@@ -60,14 +60,14 @@ Make it feel like Alexa/Google Home first.
 - [x] P10.2: Voice-controlled tour — HelpMatcher added to fast-path; "help" / "what can you do" / "できることを教えて" return a canned capability summary with zero LLM round-trip. FastPathMatch.toolName made nullable for speak-only responses
 - [x] P10.3: Offline-first error states — ErrorClassifier.ProviderKind (LOCAL/REMOTE/UNKNOWN); LOCAL provider remaps network-shaped errors to LOCAL_ENGINE, adds model-load patterns; ProviderCapabilities.isLocal propagates from EmbeddedLlmProvider; VoicePipeline passes kind based on active provider
 - [x] P10.4: Accessibility pass — VoiceOverlay response + state label now `liveRegion = Polite` so TalkBack announces state changes; SuggestionBubble also `liveRegion = Polite`; decorative icons already correctly pass `contentDescription = null` alongside labeled text
-- [ ] P10.5: Dark/light mode consistency
+- [x] P10.5: Dark/light mode — OpenSmartSpeakerTheme accepts darkTheme param (defaults to isSystemInDarkTheme()); LightColorScheme added; Material3 surfaces respect system theme; ambient/home keep dark smart-speaker aesthetic via hardcoded Speaker* colors
 - [x] P10.6: Music Assistant / media control UI — NowPlayingBar wired to dispatch play/pause/next/prev via DeviceManager.executeCommand; HA media_player service names (media_play/media_pause/media_next_track/media_previous_track); HomeViewModel.dispatchMediaAction; clock tick moved from ViewModel to Composable for testability; HomeViewModelTest covers action wiring
 
 ## Phase 11 — Priority 4: Hybrid / External Gateway
 - [ ] P11.1: HermesAgent protocol adapter (new AssistantProvider)
 - [ ] P11.2: OpenClawProvider streaming + tool forwarding
 - [x] P11.3: Heavy task hint — HeavyTaskDetector with conservative heuristics (long input, heavy keywords EN+JA, vision request vs local capability). Router policy can consult it when Auto; UI can show escalation hint to user
-- [ ] P11.4: Unified provider switcher polish
+- [x] P11.4: Unified provider switcher polish — ProvidersScreen + ProvidersViewModel lists registered AssistantProviders with badges (On-device / Streaming / Tools / Vision), active highlighted; tap to call router.selectProvider; ProvidersViewModelTest covers rows + selection
 
 ## Phase 12 — Priority 5: Refactor / Quality
 - [x] P12.1: Dead code sweep — removed dead `is AndroidTtsProvider` branch in VoicePipeline.applyTtsLanguagePreference (TtsManager is the only injected TextToSpeech, so the direct provider branch was unreachable). Removed corresponding unused import
