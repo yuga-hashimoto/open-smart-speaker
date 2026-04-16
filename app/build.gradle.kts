@@ -37,6 +37,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(
@@ -88,7 +91,56 @@ android {
         unitTests.all {
             it.useJUnitPlatform()
         }
+        unitTests {
+            // Required for JaCoCo to instrument tests.
+            isIncludeAndroidResources = true
+        }
     }
+}
+
+// JaCoCo coverage report. Run:
+//   ./gradlew testDebugUnitTest jacocoTestReport
+// Output: app/build/reports/jacoco/jacocoTestReport/html/index.html
+// Aim: 80%+ on non-UI code.
+tasks.register<JacocoReport>("jacocoTestReport") {
+    group = "verification"
+    description = "Generates code coverage report for debug unit tests."
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        // UI layer — not worth mocking Compose for coverage, covered via manual QA
+        "**/ui/**",
+        // Generated code (Hilt / Moshi / Room / Compose)
+        "**/R.class", "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*_Factory*.*",
+        "**/*_HiltModules*.*",
+        "**/*_Impl*.*",
+        "**/hilt_aggregated_deps/**",
+        "**/*JsonAdapter*.*",
+        "**/*ComposableSingletons*.*",
+        "**/*LambdaImpl*.*"
+    )
+
+    val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    val mainSrc = "${projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(layout.buildDirectory.get()) {
+        include(
+            "outputs/unit_test_code_coverage/debugUnitTest/*.exec",
+            "jacoco/testDebugUnitTest.exec"
+        )
+    })
 }
 
 dependencies {
