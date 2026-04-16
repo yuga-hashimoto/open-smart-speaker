@@ -76,6 +76,46 @@ object ToolFilter {
         Bucket(
             keywords = listOf("search", "google", "look up", "検索"),
             tools = setOf("web_search", "fetch_webpage", "get_news")
+        ),
+        Bucket(
+            keywords = listOf(
+                "where am i", "location", "current location", "city",
+                "ここ", "現在地", "現在位置"
+            ),
+            tools = setOf("get_location")
+        ),
+        Bucket(
+            keywords = listOf(
+                "find my", "where's my", "ring my", "ring the",
+                "探して", "見つけて", "鳴らして"
+            ),
+            tools = setOf("find_device")
+        ),
+        Bucket(
+            keywords = listOf(
+                "sms", "text message", "send a message", "送って",
+                "メッセージを送", "ショートメール"
+            ),
+            tools = setOf("send_sms", "search_contacts", "list_contacts")
+        ),
+        Bucket(
+            keywords = listOf(
+                "contact", "phone number", "連絡先", "電話番号"
+            ),
+            tools = setOf("search_contacts", "list_contacts")
+        ),
+        Bucket(
+            keywords = listOf(
+                "document", "rag", "ingest", "knowledge base",
+                "ドキュメント", "資料"
+            ),
+            tools = setOf("ingest_document", "retrieve_document", "list_documents", "delete_document")
+        ),
+        Bucket(
+            keywords = listOf(
+                "screen recording", "record screen", "スクリーン録画", "画面録画"
+            ),
+            tools = setOf("start_screen_recording", "stop_screen_recording", "read_screen")
         )
     )
 
