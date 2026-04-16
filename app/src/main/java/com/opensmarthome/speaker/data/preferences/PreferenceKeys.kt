@@ -59,6 +59,7 @@ object PreferenceKeys {
     // Wake word
     val WAKE_WORD = stringPreferencesKey("wake_word")
     val HOTWORD_ENABLED = booleanPreferencesKey("hotword_enabled")
+    val WAKE_WORD_SENSITIVITY = floatPreferencesKey("wake_word_sensitivity")
 
     // Setup
     val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")

@@ -287,6 +287,22 @@ fun SettingsScreen(
         }
         SettingsHint("The phrase the app listens for. Restart the app after changing.")
 
+        val wakeWordSensitivity by viewModel.wakeWordSensitivity.collectAsState()
+        Text(
+            text = "Sensitivity: ${"%.2f".format(wakeWordSensitivity)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Slider(
+            value = wakeWordSensitivity,
+            onValueChange = { viewModel.saveWakeWordSensitivity(it) },
+            valueRange = 0f..1f,
+            steps = 9,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
+        )
+        SettingsHint("Higher = more likely to trigger (can cause false wakes). Lower = more conservative. Default 0.60.")
+
         SettingsDivider()
 
         // === Connections ===

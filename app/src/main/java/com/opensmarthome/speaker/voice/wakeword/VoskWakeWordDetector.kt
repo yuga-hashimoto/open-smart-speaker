@@ -54,6 +54,9 @@ class VoskWakeWordDetector(
         private const val MAX_RETRY_ATTEMPTS = 5
         private const val RETRY_BACKOFF_BASE_MS = 1000L
         private const val RETRY_BACKOFF_MAX_MS = 10000L
+        internal const val PARTIAL_MATCH_SENSITIVITY_THRESHOLD = 0.5f
+        private val FINAL_TEXT_REGEX = Regex("\"text\"\\s*:\\s*\"([^\"]*)\"")
+        private val PARTIAL_TEXT_REGEX = Regex("\"partial\"\\s*:\\s*\"([^\"]*)\"")
     }
 
     override fun start(onDetected: () -> Unit) {
@@ -227,7 +230,7 @@ class VoskWakeWordDetector(
                 } else {
                     partialMethod.invoke(rec) as String
                 }
-                checkForWakeWord(jsonResult)
+                checkForWakeWord(jsonResult, isFinal = accepted)
             }
         } catch (e: Exception) {
             Timber.w(e, "Vosk audio loop exited with exception")
@@ -237,15 +240,22 @@ class VoskWakeWordDetector(
         }
     }
 
-    private fun checkForWakeWord(jsonResult: String) {
+    /**
+     * Sensitivity gates partial-result matching: when sensitivity < 0.5, only final
+     * (end-of-utterance) Vosk results are considered. This reduces false wakes at
+     * the cost of a ~300ms latency penalty vs. matching on partials.
+     *
+     * JSON is parsed via regex instead of org.json.JSONObject because the Android
+     * stdlib mock used during JVM unit tests throws on JSONObject construction.
+     * Vosk's output is simple {"text":"..."} / {"partial":"..."} so this is safe.
+     */
+    internal fun checkForWakeWord(jsonResult: String, isFinal: Boolean) {
+        if (!isFinal && config.sensitivity < PARTIAL_MATCH_SENSITIVITY_THRESHOLD) return
         try {
-            val json = org.json.JSONObject(jsonResult)
-            val text = json.optString("text", "")
-                .ifBlank { json.optString("partial", "") }
-                .lowercase()
+            val text = extractVoskText(jsonResult)?.lowercase() ?: return
 
             if (text.isNotBlank() && keywordPattern.containsMatchIn(text)) {
-                Timber.d("Wake word detected in: '$text'")
+                Timber.d("Wake word detected in: '$text' (isFinal=$isFinal)")
                 // Pause before triggering callback to release mic
                 pause()
                 onDetectedCallback?.invoke()
@@ -253,6 +263,12 @@ class VoskWakeWordDetector(
         } catch (e: Exception) {
             Timber.w(e, "Failed to parse Vosk result")
         }
+    }
+
+    private fun extractVoskText(jsonResult: String): String? {
+        val finalMatch = FINAL_TEXT_REGEX.find(jsonResult)?.groupValues?.getOrNull(1)
+        if (!finalMatch.isNullOrBlank()) return finalMatch
+        return PARTIAL_TEXT_REGEX.find(jsonResult)?.groupValues?.getOrNull(1)
     }
 
     private fun releaseAudio() {

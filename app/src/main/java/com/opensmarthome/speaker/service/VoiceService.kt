@@ -200,7 +200,8 @@ class VoiceService : Service() {
             if (!downloader.isModelDownloaded()) return
 
             val savedWakeWord = preferences.observe(PreferenceKeys.WAKE_WORD).first() ?: "hey speaker"
-            val config = WakeWordConfig(keyword = savedWakeWord)
+            val savedSensitivity = preferences.observe(PreferenceKeys.WAKE_WORD_SENSITIVITY).first() ?: 0.6f
+            val config = WakeWordConfig(keyword = savedWakeWord, sensitivity = savedSensitivity)
 
             // Always create fresh detector (OpenClaw pattern: destroy + recreate)
             wakeWordDetector?.stop()
