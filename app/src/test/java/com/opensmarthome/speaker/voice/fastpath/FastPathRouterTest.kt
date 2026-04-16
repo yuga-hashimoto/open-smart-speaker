@@ -119,6 +119,32 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `mute sets volume to zero`() {
+        val m = router.match("mute")
+        assertThat(m?.toolName).isEqualTo("set_volume")
+        assertThat(m?.arguments?.get("level")).isEqualTo(0.0)
+    }
+
+    @Test
+    fun `be quiet mutes`() {
+        val m = router.match("be quiet")
+        assertThat(m?.arguments?.get("level")).isEqualTo(0.0)
+    }
+
+    @Test
+    fun `unmute restores moderate level`() {
+        val m = router.match("unmute")
+        assertThat(m?.toolName).isEqualTo("set_volume")
+        assertThat(m?.arguments?.get("level")).isEqualTo(50.0)
+    }
+
+    @Test
+    fun `japanese mute`() {
+        val m = router.match("ミュート")
+        assertThat(m?.arguments?.get("level")).isEqualTo(0.0)
+    }
+
+    @Test
     fun `pause music fast-path`() {
         val m = router.match("pause music")
         assertThat(m?.toolName).isEqualTo("execute_command")

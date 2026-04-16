@@ -132,6 +132,16 @@ object VolumeMatcher : FastPathMatcher {
         Regex("""(?:volume\s+down|quieter|turn\s+(?:it\s+)?down)"""),
         Regex("""音量\s*(?:を\s*)?(?:下げて|小さく)""")
     )
+    private val mutePatterns = listOf(
+        Regex("""^\s*mute\s*[!?.]*\s*$"""),
+        Regex("""(?:be\s+)?(?:quiet|silent)"""),
+        Regex("""ミュート"""),
+        Regex("""(?:音|音量)\s*(?:を)?\s*(?:消して|オフ)""")
+    )
+    private val unmutePatterns = listOf(
+        Regex("""^\s*unmute\s*[!?.]*\s*$"""),
+        Regex("""ミュート\s*(?:を)?\s*(?:解除|オフ|やめて)""")
+    )
     private val setPattern = Regex("""(?:set\s+)?volume\s+(?:to\s+)?(\d+)""")
 
     override fun tryMatch(normalized: String): FastPathMatch? {
@@ -140,6 +150,20 @@ object VolumeMatcher : FastPathMatcher {
             return FastPathMatch(
                 toolName = "set_volume",
                 arguments = mapOf("level" to level.toDouble())
+            )
+        }
+        if (mutePatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "set_volume",
+                arguments = mapOf("level" to 0.0),
+                spokenConfirmation = "Muted."
+            )
+        }
+        if (unmutePatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(
+                toolName = "set_volume",
+                arguments = mapOf("level" to 50.0),
+                spokenConfirmation = "Unmuted."
             )
         }
         if (upPatterns.any { it.containsMatchIn(normalized) }) {
