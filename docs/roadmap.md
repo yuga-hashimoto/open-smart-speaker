@@ -88,6 +88,19 @@ Make it feel like Alexa/Google Home first.
 - [x] P13.7: README overhaul — value prop, hardware guide, tool list, architecture diagram, inspiration credits
 - [x] P13.8: Docs site — docs/index.md landing + topic pages (tools, providers, skills, permissions); docs/_config.yml enables GitHub Pages with jekyll-theme-cayman
 
+## Phase 14 — Priority 1: Smart speaker production gaps
+Roadmapがチェック済みでも、実機でアレクサ相当にはならない。以下は実装ゼロ or 薄い:
+
+- [ ] P14.1: Offline STT provider — WhisperSttProvider (whisper.cpp via JNI) or SherpaSttProvider; SpeechToText interface already exists; pluggable via settings. Ref: whisper.cpp, sherpa-onnx, SmolChat-Android
+- [ ] P14.2: VAD / endpoint detection — silence threshold, min-speech / max-silence windows; expose as settings; feed into STT endpoint-of-speech. Ref: sherpa-onnx silero-vad binding
+- [ ] P14.3: Wake word customization UI — WakeWordSettingsScreen: keyword + sensitivity sliders write to WakeWordConfig. Ref: openWakeWord (custom-keyword training hints)
+- [ ] P14.4: Media deeper control — volume scrub, queue/playlist, shuffle, repeat via HA `media_player` services; NowPlayingBar expanded sheet. Ref: home-assistant/android media controls
+- [ ] P14.5: Multi-room broadcast — discover other OpenSmartSpeaker instances on LAN (mDNS), broadcast announcements + group timers. Ref: OVOS message bus
+- [ ] P14.6: Model download resume — range-request Range: bytes=; interrupted download continues; progress notification. Ref: ModelDownloader audit
+- [ ] P14.7: Real-device smoke test checklist — docs/real-device-smoke-test.md with wake→STT→LLM→TTS end-to-end steps + latency targets
+- [ ] P14.8: Power/thermal profile — ambient idle wattage target, thermal throttle detection; reduce wake-word polling rate when battery < 20%
+- [ ] P14.9: Neural TTS option — Piper TTS (on-device neural) as alternative to AndroidTts. Ref: piper
+
 ---
 
 ## Legacy Phase 1-7 (kept for history)

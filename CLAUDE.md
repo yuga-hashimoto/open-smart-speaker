@@ -49,6 +49,13 @@ Located at `/Users/y-c-hashimoto/Documents/GitHub/open-smart-speaker参考リポ
 - **SmolChat-Android** — llama.cpp JNI wrapper (`smollm`), ObjectBox-based on-device vector DB (`smolvectordb`), HuggingFace model-hub API wrapper
 - **mlc-llm** — alternative on-device LLM runtime with its own compile-optimized backend
 - **dicio-android** — free-software voice assistant with multilanguage skills system (14 langs), shipping on F-Droid
+- **sherpa-onnx** (k2-fsa) — on-device STT + TTS + VAD + keyword spotting in one toolkit; ONNX runtime; has Android sample apps
+- **whisper.cpp** — ggml-based Whisper STT; the on-device STT gold-standard; directly comparable to our llama.cpp submodule approach
+- **piper** (rhasspy) — on-device neural TTS (VITS); small enough for Android; fills Priority-1 offline TTS gap
+- **ovos-core** (OpenVoiceOS) — successor to Mycroft; message-bus architecture; multi-room, skills manifest, intent parsing
+- **willow** (tovera) — ESP32-S3-based hardware voice assistant; reference for wake-word + VAD + STT pipeline sequencing
+- **openWakeWord** (dscripka) — open-source wake-word engine with custom-keyword training; alternative to Vosk keyword-spotting
+- **home-assistant/android** — official HA companion app; reference for deep HA integration (media controls, sensors, location)
 
 Every PR that steals from one of these should say "stolen from X" in the commit message.
 
