@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.opensmarthome.speaker.data.db.AppDatabase
 import com.opensmarthome.speaker.data.db.MemoryDao
 import com.opensmarthome.speaker.data.db.MessageDao
+import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.data.db.SessionDao
 import dagger.Module
 import dagger.Provides
@@ -36,4 +37,7 @@ object DatabaseModule {
 
     @Provides
     fun provideMemoryDao(db: AppDatabase): MemoryDao = db.memoryDao()
+
+    @Provides
+    fun provideRoutineDao(db: AppDatabase): RoutineDao = db.routineDao()
 }

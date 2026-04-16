@@ -26,9 +26,10 @@ import com.opensmarthome.speaker.tool.info.WeatherToolExecutor
 import com.opensmarthome.speaker.assistant.skills.AssetSkillLoader
 import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.assistant.skills.SkillToolExecutor
-import com.opensmarthome.speaker.assistant.routine.InMemoryRoutineStore
+import com.opensmarthome.speaker.assistant.routine.RoomRoutineStore
 import com.opensmarthome.speaker.assistant.routine.RoutineToolExecutor
 import com.opensmarthome.speaker.data.db.MemoryDao
+import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.tool.memory.MemoryToolExecutor
 import com.opensmarthome.speaker.tool.system.AndroidAppLauncher
 import com.opensmarthome.speaker.tool.system.AndroidCalendarProvider
@@ -107,9 +108,10 @@ object DeviceModule {
         @ApplicationContext context: Context,
         client: OkHttpClient,
         skillRegistry: SkillRegistry,
-        memoryDao: MemoryDao
+        memoryDao: MemoryDao,
+        routineDao: RoutineDao
     ): ToolExecutor {
-        val routineStore = InMemoryRoutineStore()
+        val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
         // RoutineToolExecutor needs a reference to the full tool executor so
         // saved routines can invoke any other tool. We build composite first,

@@ -81,7 +81,7 @@ Close remaining gaps vs. OpenClaw Android node.
 - [ ] P6.3: Screen recording (OpenClaw screen.record via MediaProjection)
 - [x] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
 - [x] P6.5: Battery / device.health tool (OpenClaw device.health)
-- [ ] P6.6: Routine persistence (Room-backed RoutineStore)
+- [x] P6.6: Routine persistence (Room-backed RoutineStore)
 - [ ] P6.7: Vector-based memory search (local embeddings)
 - [ ] P6.8: RAG / document ingest (user files → memory)
 - [ ] P6.9: Vision support via multimodal LLM
