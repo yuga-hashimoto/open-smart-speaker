@@ -350,7 +350,37 @@ fun SettingsScreen(
             modifier = Modifier.padding(vertical = 4.dp)
         )
 
+        SettingsDivider()
+
+        AboutSection()
+
         Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun AboutSection() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    SectionHeader("About")
+    Text(
+        text = "OpenSmartSpeaker — tablet-first on-device AI smart speaker.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+    Spacer(Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = {
+            val intent = android.content.Intent(
+                android.content.Intent.ACTION_VIEW,
+                android.net.Uri.parse(
+                    "https://github.com/yuga-hashimoto/open-smart-speaker"
+                )
+            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(intent) }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Docs & source on GitHub")
     }
 }
 
