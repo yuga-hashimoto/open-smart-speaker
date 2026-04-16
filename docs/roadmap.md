@@ -79,7 +79,7 @@ Close remaining gaps vs. OpenClaw Android node.
 - [ ] P6.1: SMS send tool (OpenClaw sms.send)
 - [ ] P6.2: Camera capture tool (OpenClaw camera.snap)
 - [ ] P6.3: Screen recording (OpenClaw screen.record via MediaProjection)
-- [ ] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
+- [x] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
 - [x] P6.5: Battery / device.health tool (OpenClaw device.health)
 - [ ] P6.6: Routine persistence (Room-backed RoutineStore)
 - [ ] P6.7: Vector-based memory search (local embeddings)
