@@ -17,6 +17,7 @@ to the list.
 | `TimeQueryMatcher` | "what time is it", "今何時" | `get_datetime` | |
 | `VolumeMatcher` | "volume up/down", "set volume to 50", "mute", "unmute", "ミュート" | `set_volume` | |
 | `ThermostatMatcher` | "set thermostat to 22", "エアコン25度" | `execute_command` device_type=climate | Clamps 10..32°C |
+| `FanMatcher` | "fan on", "fan off", "ファンをつけて", "扇風機を消して" | `execute_command` device_type=fan | |
 | `CoverMatcher` | "open the blinds", "close the garage", "カーテンを開けて", "ブラインドを閉めて" | `execute_command` device_type=cover | |
 | `EverythingOffMatcher` | "turn off everything", "全部消して" | `execute_command` device_type=light off | Conservative — needs explicit "everything"/"all" |
 | `LightsMatcher` | "lights on", "電気つけて", "dim the lights", "set brightness 50", "明るさ80%", "bedroom lights off" | `execute_command` device_type=light | Room-scoped variants supported |
