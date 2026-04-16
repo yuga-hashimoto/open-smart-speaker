@@ -34,6 +34,7 @@ to the list.
 | `CalendarMatcher` | "what's on my calendar today", "do I have any meetings", "今日の予定", "今日のミーティング" | `get_calendar_events` (days_ahead=1) | |
 | `ClearNotificationsMatcher` | "clear notifications", "dismiss all notifications", "通知を消して" | `clear_notifications` | Precedes ListNotifications |
 | `ListNotificationsMatcher` | "show notifications", "what notifications do I have", "通知一覧" | `list_notifications` | |
+| `LocationMatcher` | "where am I", "what's my location", "ここはどこ", "現在地を教えて" | `get_location` | Distinct from FindDeviceMatcher |
 | `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
 | `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
 | `ListTimersMatcher` | "list timers", "what timers do I have", "タイマー一覧" | `get_timers` | Ordered after CancelAllTimersMatcher so "cancel all timers" still wins |

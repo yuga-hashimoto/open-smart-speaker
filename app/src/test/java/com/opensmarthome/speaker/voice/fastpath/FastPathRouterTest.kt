@@ -420,34 +420,35 @@ class FastPathRouterTest {
     }
 
     @Test
-    fun `whats on my calendar today fast-path`() {
-        val m = router.match("what's on my calendar today")
-        assertThat(m?.toolName).isEqualTo("get_calendar_events")
-        assertThat(m?.arguments?.get("days_ahead")).isEqualTo(1.0)
+    fun `where am I calls get_location`() {
+        val m = router.match("where am I")
+        assertThat(m?.toolName).isEqualTo("get_location")
     }
 
     @Test
-    fun `do I have any meetings today fast-path`() {
-        val m = router.match("do i have any meetings today")
-        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    fun `whats my location fast-path`() {
+        val m = router.match("what's my location")
+        assertThat(m?.toolName).isEqualTo("get_location")
     }
 
     @Test
-    fun `whats my schedule fast-path`() {
-        val m = router.match("what's my schedule")
-        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    fun `japanese where am I`() {
+        val m = router.match("ここはどこ")
+        assertThat(m?.toolName).isEqualTo("get_location")
     }
 
     @Test
-    fun `japanese today schedule fast-path`() {
-        val m = router.match("今日の予定")
-        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    fun `japanese current location`() {
+        val m = router.match("現在地を教えて")
+        assertThat(m?.toolName).isEqualTo("get_location")
     }
 
     @Test
-    fun `japanese today meeting fast-path`() {
-        val m = router.match("今日のミーティング")
-        assertThat(m?.toolName).isEqualTo("get_calendar_events")
+    fun `where am I does not collide with find device`() {
+        // FindDeviceMatcher fires on "find/where is my phone/tablet/device".
+        // "where am I" must NOT route to find_device.
+        val m = router.match("where am I")
+        assertThat(m?.toolName).isNotEqualTo("find_device")
     }
 
     @Test

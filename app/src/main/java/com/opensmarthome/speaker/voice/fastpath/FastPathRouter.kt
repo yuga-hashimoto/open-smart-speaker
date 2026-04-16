@@ -89,6 +89,7 @@ class DefaultFastPathRouter(
             // dominates the "show / list" verbs on common notification utterances.
             ClearNotificationsMatcher,
             ListNotificationsMatcher,
+            LocationMatcher,
             ListMemoryMatcher,
             ListDevicesMatcher,
             ListTimersMatcher,
