@@ -29,8 +29,10 @@ OpenSmartSpeaker is all three at once, on a single Android tablet you already ow
 
 ### Smart-home device ("Alexa feel")
 - Custom wake word (Vosk) with always-on foreground service
-- Sub-200ms fast-path for common intents: `"lights on"`, `"volume up"`,
-  `"5分タイマー"`, `"what time is it"` — LLM bypass via `FastPathRouter`
+- Sub-200ms fast-path for ~30 common intents: lights, volume, timers, weather,
+  forecast, calendar, notifications, location, find-device, briefings, routines,
+  app launch, media control, presence (`"I'm home"` / `"I'm leaving"`), goodnight
+  — full catalog in [docs/fast-paths.md](docs/fast-paths.md)
 - Voice-first UI: breathing `VoiceOrb` shows pipeline state (listening / thinking /
   speaking) with audio-level reactive scaling
 - Error recovery copy: `"I didn't catch that. Try again?"` not `"list index out of range"`
@@ -110,13 +112,14 @@ Optional permissions unlock more tools:
 Kotlin 2.1 + Jetpack Compose + Material 3 + Hilt. Built against SDK 35.
 
 ```bash
-./gradlew testDebugUnitTest   # 400+ unit tests
+./gradlew testDebugUnitTest   # 500+ unit tests
 ./gradlew assembleDebug       # build APK
-./gradlew lint                # Android Lint
+./gradlew lint                # Android Lint (baseline at app/lint-baseline.xml)
+./gradlew jacocoTestReport    # coverage report → app/build/reports/jacoco/
 ```
 
-JUnit 5 + MockK + Truth + MockWebServer, ~80% coverage for non-UI code.
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+JUnit 5 + MockK + Truth + MockWebServer + Turbine, 80%+ coverage target for
+non-UI code. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Architecture
 
