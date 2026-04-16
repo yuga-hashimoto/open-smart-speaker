@@ -16,7 +16,9 @@ import com.opensmarthome.speaker.homeassistant.client.HomeAssistantClient
 import com.opensmarthome.speaker.tool.CompositeToolExecutor
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
+import com.opensmarthome.speaker.tool.info.NewsToolExecutor
 import com.opensmarthome.speaker.tool.info.OpenMeteoWeatherProvider
+import com.opensmarthome.speaker.tool.info.RssNewsProvider
 import com.opensmarthome.speaker.tool.info.SearchToolExecutor
 import com.opensmarthome.speaker.tool.info.WeatherToolExecutor
 import com.opensmarthome.speaker.assistant.skills.AssetSkillLoader
@@ -108,6 +110,9 @@ object DeviceModule {
             ),
             SearchToolExecutor(
                 DuckDuckGoSearchProvider(client, moshi)
+            ),
+            NewsToolExecutor(
+                RssNewsProvider(client)
             ),
             NotificationToolExecutor(
                 AndroidNotificationProvider(context)
