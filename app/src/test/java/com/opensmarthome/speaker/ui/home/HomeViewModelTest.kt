@@ -43,7 +43,9 @@ class HomeViewModelTest {
         val cmdSlot = slot<DeviceCommand>()
         coEvery { deviceManager.executeCommand(capture(cmdSlot)) } returns CommandResult(success = true)
 
-        val vm = HomeViewModel(deviceManager)
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val vm = HomeViewModel(deviceManager, ss)
         vm.dispatchMediaAction("media_player.kitchen", MediaAction.PLAY)
         advanceUntilIdle()
 
@@ -65,7 +67,9 @@ class HomeViewModelTest {
         every { deviceManager.devices } returns MutableStateFlow(emptyMap())
         coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
 
-        val vm = HomeViewModel(deviceManager)
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val vm = HomeViewModel(deviceManager, ss)
         vm.dispatchMediaAction("media_player.x", MediaAction.PAUSE)
         advanceUntilIdle()
 

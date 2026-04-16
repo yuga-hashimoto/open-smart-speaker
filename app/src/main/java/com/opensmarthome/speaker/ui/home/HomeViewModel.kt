@@ -2,6 +2,8 @@ package com.opensmarthome.speaker.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.opensmarthome.speaker.assistant.proactive.Suggestion
+import com.opensmarthome.speaker.assistant.proactive.SuggestionState
 import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.device.model.DeviceCommand
 import com.opensmarthome.speaker.device.model.DeviceType
@@ -14,8 +16,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val deviceManager: DeviceManager
+    private val deviceManager: DeviceManager,
+    private val suggestionState: SuggestionState
 ) : ViewModel() {
+
+    val suggestions: StateFlow<List<Suggestion>> = suggestionState.current
+
+    fun dismissSuggestion(id: String) {
+        suggestionState.dismiss(id)
+    }
 
     private val _weather = MutableStateFlow<WeatherData?>(null)
     val weather: StateFlow<WeatherData?> = _weather.asStateFlow()

@@ -161,6 +161,24 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideSuggestionEngine(): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
+        com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
+            rules = listOf(
+                com.opensmarthome.speaker.assistant.proactive.MorningGreetingRule(),
+                com.opensmarthome.speaker.assistant.proactive.EveningLightsRule(),
+                com.opensmarthome.speaker.assistant.proactive.NightQuietRule()
+            )
+        )
+
+    @Provides
+    @Singleton
+    fun provideSuggestionState(
+        engine: com.opensmarthome.speaker.assistant.proactive.SuggestionEngine
+    ): com.opensmarthome.speaker.assistant.proactive.SuggestionState =
+        com.opensmarthome.speaker.assistant.proactive.SuggestionState(engine).apply { start() }
+
+    @Provides
+    @Singleton
     fun provideScreenRecorderHolder(): ScreenRecorderHolder = ScreenRecorderHolder()
 
     @Provides

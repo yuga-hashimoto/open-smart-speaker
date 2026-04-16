@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.ui.common.SuggestionBubble
 import com.opensmarthome.speaker.ui.common.isExpandedLandscape
 import com.opensmarthome.speaker.ui.theme.SpeakerBackground
 import kotlinx.coroutines.delay
@@ -44,6 +45,7 @@ fun HomeScreen(
     val weather by viewModel.weather.collectAsState()
     val chips by viewModel.deviceChips.collectAsState()
     val nowPlaying by viewModel.nowPlaying.collectAsState()
+    val suggestions by viewModel.suggestions.collectAsState()
 
     val wide = isExpandedLandscape()
 
@@ -99,6 +101,17 @@ fun HomeScreen(
                     viewModel.dispatchMediaAction(playing.deviceId, action)
                 },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
+            )
+        }
+
+        // Top: most recent proactive suggestion (one at a time so it doesn't
+        // dominate the ambient view).
+        suggestions.firstOrNull()?.let { suggestion ->
+            SuggestionBubble(
+                suggestion = suggestion,
+                onAccept = { viewModel.dismissSuggestion(it.id) },
+                onDismiss = { viewModel.dismissSuggestion(it.id) },
+                modifier = Modifier.align(Alignment.TopCenter)
             )
         }
     }
