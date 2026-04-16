@@ -369,7 +369,9 @@ class VoicePipeline(
                         if (ttsEnabled) {
                             _state.value = VoicePipelineState.Speaking
                             try {
+                                latencyRecorder.startSpan(LatencyRecorder.Span.TTS_PREPARATION)
                                 tts.speak(response.content)
+                                latencyRecorder.endSpan(LatencyRecorder.Span.TTS_PREPARATION)
                                 Timber.d("TTS completed")
                             } catch (e: Exception) {
                                 Timber.e(e, "TTS failed")
