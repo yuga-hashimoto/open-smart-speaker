@@ -260,6 +260,25 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `turn off everything`() {
+        val m = router.match("turn off everything")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `japanese everything off`() {
+        val m = router.match("全部消して")
+        assertThat(m?.arguments?.get("action")).isEqualTo("turn_off")
+    }
+
+    @Test
+    fun `turn it off does not match everything-off`() {
+        val m = router.match("turn it off")
+        assertThat(m?.spokenConfirmation).isNotEqualTo("Everything off.")
+    }
+
+    @Test
     fun `whats the weather`() {
         val m = router.match("what's the weather")
         assertThat(m?.toolName).isEqualTo("get_weather")
