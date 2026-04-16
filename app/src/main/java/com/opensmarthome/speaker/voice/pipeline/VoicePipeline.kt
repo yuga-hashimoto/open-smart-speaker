@@ -570,15 +570,20 @@ class VoicePipeline(
         match: com.opensmarthome.speaker.voice.fastpath.FastPathMatch
     ): Boolean {
         return try {
-            Timber.d("Fast-path matched: ${match.toolName}")
-            val call = ToolCall(
-                id = "fast_${System.currentTimeMillis()}",
-                name = match.toolName,
-                arguments = match.arguments
-            )
-            val result = toolExecutor.execute(call)
+            Timber.d("Fast-path matched: ${match.toolName ?: "(speak-only)"}")
+            // Speak-only matches (e.g. "help") skip tool execution entirely.
+            val result = match.toolName?.let { toolName ->
+                toolExecutor.execute(
+                    ToolCall(
+                        id = "fast_${System.currentTimeMillis()}",
+                        name = toolName,
+                        arguments = match.arguments
+                    )
+                )
+            }
             val spoken = when {
                 match.spokenConfirmation != null -> match.spokenConfirmation
+                result == null -> "Done."
                 result.success -> "Done."
                 else -> "Sorry, that didn't work."
             }

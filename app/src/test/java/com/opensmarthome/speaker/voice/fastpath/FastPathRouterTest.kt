@@ -117,4 +117,27 @@ class FastPathRouterTest {
         assertThat(m?.toolName).isEqualTo("execute_command")
         assertThat(m?.arguments?.get("action")).isEqualTo("turn_on")
     }
+
+    @Test
+    fun `help utterance returns speak-only match`() {
+        val m = router.match("help")
+        assertThat(m).isNotNull()
+        assertThat(m!!.toolName).isNull()
+        assertThat(m.spokenConfirmation).isNotNull()
+        assertThat(m.spokenConfirmation!!.lowercase()).contains("timer")
+    }
+
+    @Test
+    fun `what can you do returns speak-only help`() {
+        val m = router.match("What can you do?")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).isNotNull()
+    }
+
+    @Test
+    fun `japanese help`() {
+        val m = router.match("できることを教えて")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).isNotNull()
+    }
 }

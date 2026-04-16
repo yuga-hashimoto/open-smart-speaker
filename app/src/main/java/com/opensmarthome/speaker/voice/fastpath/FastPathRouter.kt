@@ -16,8 +16,9 @@ interface FastPathRouter {
 }
 
 data class FastPathMatch(
-    val toolName: String,
-    val arguments: Map<String, Any?>,
+    /** Tool to invoke, or null for speak-only responses (e.g. "help"). */
+    val toolName: String?,
+    val arguments: Map<String, Any?> = emptyMap(),
     /** Short confirmation phrase the TTS can speak while/after the tool runs. */
     val spokenConfirmation: String? = null
 )
@@ -42,7 +43,8 @@ class DefaultFastPathRouter(
             TimeQueryMatcher,
             VolumeMatcher,
             LightsMatcher,
-            DatetimeMatcher
+            DatetimeMatcher,
+            HelpMatcher
         )
     }
 }
@@ -188,6 +190,41 @@ object LightsMatcher : FastPathMatcher {
                 ),
                 spokenConfirmation = "Lights off."
             )
+        }
+        return null
+    }
+}
+
+/**
+ * "help", "what can you do", "できることを教えて"
+ *
+ * Returns a speak-only match (toolName=null) whose spokenConfirmation is a
+ * short, friendly capability summary. Lets users discover features without
+ * paying for an LLM round-trip or reading documentation.
+ */
+object HelpMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""^\s*help\s*[!?.]*\s*$"""),
+        Regex("""what\s+can\s+you\s+do"""),
+        Regex("""what\s+can\s+i\s+(?:ask|say)""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""ヘルプ"""),
+        Regex("""使い方"""),
+        Regex("""(?:できる|出来る)こと.*(?:教えて|おしえて|知りたい)""")
+    )
+
+    private const val EN_HELP = "Try things like: set a timer, volume up, turn the lights on, " +
+        "what time is it, or ask me a question. Say 'help' anytime."
+    private const val JA_HELP = "例えば、タイマーをセット、音量を上げて、電気をつけて、今何時、" +
+        "などと話しかけてみてください。"
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(toolName = null, spokenConfirmation = EN_HELP)
+        }
+        if (japanesePatterns.any { it.containsMatchIn(normalized) }) {
+            return FastPathMatch(toolName = null, spokenConfirmation = JA_HELP)
         }
         return null
     }

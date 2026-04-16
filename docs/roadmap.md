@@ -57,7 +57,7 @@ Make it feel like Alexa/Google Home first.
 
 ## Phase 10 — Priority 3: UX polish
 - [x] P10.1: First-run permission walkthrough — OnboardingScreen + OnboardingViewModel; shows after model download before ModeScaffold when SETUP_COMPLETED=false; uses PermissionRepository rows with rationale + "Grant" deep-link; "Skip" / "Get started" both flip flag
-- [ ] P10.2: Voice-controlled tour ("say 'help' to learn what I can do")
+- [x] P10.2: Voice-controlled tour — HelpMatcher added to fast-path; "help" / "what can you do" / "できることを教えて" return a canned capability summary with zero LLM round-trip. FastPathMatch.toolName made nullable for speak-only responses
 - [x] P10.3: Offline-first error states — ErrorClassifier.ProviderKind (LOCAL/REMOTE/UNKNOWN); LOCAL provider remaps network-shaped errors to LOCAL_ENGINE, adds model-load patterns; ProviderCapabilities.isLocal propagates from EmbeddedLlmProvider; VoicePipeline passes kind based on active provider
 - [ ] P10.4: Accessibility pass (TalkBack, large-text)
 - [ ] P10.5: Dark/light mode consistency
