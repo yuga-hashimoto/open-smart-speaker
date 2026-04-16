@@ -46,6 +46,7 @@ class DefaultFastPathRouter(
             VolumeMatcher,
             LightsMatcher,
             MediaControlMatcher,
+            LaunchAppMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             HelpMatcher
@@ -276,6 +277,39 @@ object MediaControlMatcher : FastPathMatcher {
                     spokenConfirmation = p.spoken
                 )
             }
+        }
+        return null
+    }
+}
+
+/**
+ * "open X" / "launch X" / "Xを開いて" — forwards directly to launch_app.
+ * The AppLauncher handles fuzzy name matching server-side.
+ */
+object LaunchAppMatcher : FastPathMatcher {
+    private val englishRegex = Regex("""(?:open|launch|start|run)\s+(?:the\s+)?(.+?)(?:\s+app)?\s*[!?.]*\s*$""")
+    private val japaneseRegex = Regex("""(.+?)\s*(?:を)?\s*(?:開いて|立ち上げて|起動して)""")
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        englishRegex.matchEntire(normalized.trim())?.let {
+            val name = it.groupValues[1].trim()
+            if (name.isEmpty()) return null
+            // Avoid stealing from other matchers (e.g. "open the lights")
+            if (name.startsWith("light") || name.startsWith("timer")) return null
+            return FastPathMatch(
+                toolName = "launch_app",
+                arguments = mapOf("app_name" to name),
+                spokenConfirmation = "Opening $name."
+            )
+        }
+        japaneseRegex.matchEntire(normalized.trim())?.let {
+            val name = it.groupValues[1].trim().removeSuffix("アプリ").trim()
+            if (name.isEmpty()) return null
+            return FastPathMatch(
+                toolName = "launch_app",
+                arguments = mapOf("app_name" to name),
+                spokenConfirmation = "${name}を開きます。"
+            )
         }
         return null
     }

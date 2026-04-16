@@ -231,4 +231,38 @@ class FastPathRouterTest {
         assertThat(m?.toolName).isNull()
         assertThat(m?.spokenConfirmation).isNotNull()
     }
+
+    @Test
+    fun `open camera launches app`() {
+        val m = router.match("open camera")
+        assertThat(m?.toolName).isEqualTo("launch_app")
+        assertThat(m?.arguments?.get("app_name")).isEqualTo("camera")
+    }
+
+    @Test
+    fun `launch maps launches app`() {
+        val m = router.match("launch maps")
+        assertThat(m?.toolName).isEqualTo("launch_app")
+        assertThat(m?.arguments?.get("app_name")).isEqualTo("maps")
+    }
+
+    @Test
+    fun `open the calculator strips article`() {
+        val m = router.match("open the calculator")
+        assertThat(m?.arguments?.get("app_name")).isEqualTo("calculator")
+    }
+
+    @Test
+    fun `open lights does not launch an app`() {
+        // LightsMatcher should handle this, not LaunchAppMatcher
+        val m = router.match("turn the lights on")
+        assertThat(m?.toolName).isNotEqualTo("launch_app")
+    }
+
+    @Test
+    fun `japanese open app`() {
+        val m = router.match("Chromeを開いて")
+        assertThat(m?.toolName).isEqualTo("launch_app")
+        assertThat(m?.arguments?.get("app_name")).isEqualTo("chrome")
+    }
 }
