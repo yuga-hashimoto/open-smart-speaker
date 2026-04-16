@@ -45,6 +45,7 @@ Located at `/Users/y-c-hashimoto/Documents/GitHub/open-smart-speaker参考リポ
 - **local-llms-on-android** — LiteRT-LM integration
 - **ViewAssist** — ambient info panel
 - **openclaw** (official, TS) — tool list reference, skills system, memory system
+- **gallery** (google-ai-edge) — SKILL.md format + JS-sandboxed skills, `@Tool` / `@ToolParam` annotations, FunctionGemma 270m patterns, on-device benchmarks, mobile actions (camera/intent/etc.)
 
 Every PR that steals from one of these should say "stolen from X" in the commit message.
 
