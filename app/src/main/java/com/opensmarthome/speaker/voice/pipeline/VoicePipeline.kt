@@ -306,7 +306,12 @@ class VoicePipeline(
             trimConversationHistory()
             persistUserMessage(text)
 
-            val tools = toolExecutor.availableTools()
+            // Filter to intent-relevant tools when the user input matches any
+            // bucket; otherwise pass the whole list. Local LLMs benefit most.
+            val tools = com.opensmarthome.speaker.tool.ToolFilter.filterByIntent(
+                allTools = toolExecutor.availableTools(),
+                userInput = text
+            )
             var toolRounds = 0
 
             _state.value = VoicePipelineState.Thinking
