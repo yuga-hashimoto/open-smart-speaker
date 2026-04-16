@@ -32,6 +32,7 @@ to the list.
 | `NewsMatcher` | "news", "tell me the news", "ニュース" | `get_news` | |
 | `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` | |
 | `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` (defaults to lights) | |
+| `ListTimersMatcher` | "list timers", "what timers do I have", "タイマー一覧" | `get_timers` | Ordered after CancelAllTimersMatcher so "cancel all timers" still wins |
 | `DatetimeMatcher` | "what's today's date", "今日は何日" | `get_datetime` | |
 | `GreetingMatcher` | "thanks", "hello", "ありがとう", "おはよう", "ごめん" | (speak-only) | Canned reply, no tool |
 | `HelpMatcher` | "help", "what can you do", "できることを教えて" | (speak-only) | Capability summary |
