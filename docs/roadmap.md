@@ -79,12 +79,12 @@ Make it feel like Alexa/Google Home first.
 - [ ] P12.7: Android Lint baseline / zero warnings in tool/
 
 ## Phase 13 — Priority 6: OSS Project Health
-- [ ] P13.1: CONTRIBUTING.md
-- [ ] P13.2: Issue + PR templates
-- [ ] P13.3: CI workflow — gradle test + lint on push
-- [ ] P13.4: Release workflow — signed APK per tag
-- [ ] P13.5: SECURITY.md
-- [ ] P13.6: CODE_OF_CONDUCT.md
+- [x] P13.1: CONTRIBUTING.md (priority-order guide, code style, tool/skill authoring)
+- [x] P13.2: Issue + PR templates (bug report / feature request / PR template)
+- [x] P13.3: CI workflow already exists (gradle test + lint)
+- [x] P13.4: Release workflow — tag push builds debug APK and attaches to release
+- [x] P13.5: SECURITY.md with threat model + responsible disclosure
+- [x] P13.6: CODE_OF_CONDUCT.md (Contributor Covenant 2.1)
 - [ ] P13.7: README overhaul — value prop for smart-home fans
 - [ ] P13.8: Docs site covering architecture, SKILL.md authoring, tool list
 
