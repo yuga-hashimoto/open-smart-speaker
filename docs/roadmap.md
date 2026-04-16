@@ -1,126 +1,123 @@
-# Improvement Roadmap
+# Improvement Roadmap (v2)
 
 ## Vision
-AndroidタブレットをOpenClaw相当のAIエージェント + スマートスピーカーに変える。
-ローカルLLMが端末内で自律的にツール実行・デバイス制御・情報取得を行う。
+Androidタブレットを **「アレクサ以上 + OpenClaw相当のローカルAIエージェント」** に変える。
+スマートホームデバイスとして最高のUXを、完全ローカル・軽量で実現する。
 
-## Current State Analysis
+## User Priority Order (この順で改善する)
+1. **アレクサなどのスマートホームデバイスとして動くこと** — 即応性、視覚フィードバック、voice-first
+2. **OpenClawのようにローカルLLMでagentic** — engine/tool layer 大部分達成、UI統合と軽量化が残
+3. **最高のUX** — ambient mode, onboarding, error recovery
+4. **OpenClaw / HermesAgent と外部接続** — 重処理は外部 gateway へ
+5. **リファクタ** — 不要コード削除、メンテ性、パフォーマンス、セキュリティ
+6. **OSSとして発展する体制** — CONTRIBUTING, issue templates, CI
 
-### Working
-- AssistantProvider abstraction (3 providers: Embedded, OpenAI-compatible, OpenClaw)
-- ConversationRouter with 4 routing policies
-- DeviceToolExecutor with 5 tools (get_state, get_by_type, get_by_room, execute_command, get_rooms)
-- Device providers (SwitchBot, Matter, MQTT, HA)
-- VoicePipeline (wake word → STT → LLM → TTS)
-- UI: Chat, Dashboard, Ambient, Settings, Home screens
-- Room DB for conversation history
-- SecurePreferences for API tokens
+---
 
-### Gaps (vs OpenClaw-like agent)
-1. **Tool calling is minimal** — only device control, no system/Android tools
-2. **No agent loop** — LLM does one-shot response, no multi-step reasoning
-3. **No system prompt** — EmbeddedLlmProvider sends raw user message only
-4. **No conversation history** in prompt — only last message sent to LLM
-5. **Prompt format is hardcoded** — Gemma format only, no chat template system
-6. **No Android-native tools** — no alarms, timers, calendar, contacts, apps, notifications
-7. **No web/information tools** — no search, weather, news
-8. **No memory/context persistence** — agent forgets everything between sessions
+## Status Summary
 
-## Phases
+### Done — Agent engine + tool layer
+- Phase 1: system prompt, history, tool call parser (JSON/XML/Gemma4), chat templates (Gemma/Qwen/Llama3)
+- Phase 2: timer, volume, app launcher, datetime, notifications, calendar, contacts
+- Phase 3: weather (Open-Meteo), search (DDG), news (RSS), knowledge, web fetch, unit converter, calculator, currency
+- Phase 4: context compaction, user memory (Room), device state injection, datetime awareness
+- Phase 5: multi-tool chaining, proactive suggestions, routines (Room), skills (SKILL.md + install), location, screen reader
+- Phase 6: SMS, camera skeleton, screen record skeleton, photos, device health, routine persistence, TF-IDF semantic memory, RAG, vision model
+- Phase 7 data: permission catalog, persistent tool stats, memory/skill/routine/rag/analytics repos, suggestion state
 
-### Phase 1: Agent Foundation (Current Priority)
-Make the local LLM a proper agent with multi-step reasoning.
+### Not done (Phase 8+)
+- **UI integration** — most repos have no screen on top yet
+- **Real-device UX testing** — wake word latency, barge-in, smoothness
+- **CameraX / MediaProjection** — skeletons only
+- **Smart-home-first feel** — fast-path, ambient polish, first-run
 
-- [x] P1.1: System prompt with persona and tool instructions
-- [x] P1.2: Full conversation history in prompt (with context window management)
-- [x] P1.3: Agent loop — LLM can call tools and continue reasoning
-- [x] P1.4: Chat template system (Gemma, Qwen, Llama3, ChatML)
-- [x] P1.5: Tool call parsing improvements (structured JSON output)
+---
 
-### Phase 2: Android System Tools
-Give the agent Android-native capabilities.
+## Phase 8 — Priority 1: Smart Home Device Feel
+Make it feel like Alexa/Google Home first.
 
-- [x] P2.1: Timer/Alarm tool (set timer, set alarm, cancel)
-- [x] P2.2: Notification tool (read notifications, clear)
-- [x] P2.3: Calendar tool (query events, requires READ_CALENDAR)
-- [x] P2.4: App launcher tool (open apps by name)
-- [x] P2.5: Volume/Media control tool
-- [x] P2.6: Contacts tool (search, list — requires READ_CONTACTS)
+- [ ] P8.1: Fast-path command router — "lights on", "set timer 5 min", "what time" bypass LLM for <200ms response
+- [ ] P8.2: Wake-to-listening latency budget — target <500ms visual feedback after wake
+- [ ] P8.3: Richer voice pipeline states UI — breathing mic orb with audio level (steal from OpenClawSession)
+- [ ] P8.4: Ambient home screen — clock + weather + notifications + device quick-control (steal from Ava/ViewAssist)
+- [ ] P8.5: Barge-in verification — user interrupts TTS mid-sentence
+- [ ] P8.6: "Hmm…" filler phrase during long LLM waits
+- [ ] P8.7: Error recovery copy — short, specific, spoken
+- [ ] P8.8: Tablet-first landscape layout, large touch targets, night mode
 
-### Phase 3: Information Tools
-Give the agent access to information.
+## Phase 9 — Priority 2: Surface existing OpenClaw engine capabilities in UI
+- [ ] P9.1: Settings → Skills manager (SkillRepository)
+- [ ] P9.2: Settings → Routines manager (RoutineRepository)
+- [ ] P9.3: Settings → Memory browser (MemoryRepository)
+- [ ] P9.4: Settings → Documents / RAG (RagRepository)
+- [ ] P9.5: Settings → Analytics dashboard (AnalyticsRepository)
+- [ ] P9.6: Settings → Custom system prompt editor
+- [ ] P9.7: Settings → Permissions checklist (PermissionCatalog)
+- [ ] P9.8: Proactive suggestion bubble in Home (SuggestionState)
 
-- [x] P3.1: Weather tool (Open-Meteo, no auth required)
-- [x] P3.2: Web search tool (DuckDuckGo Instant Answer API)
-- [x] P3.3: News tool (RSS/Atom via XmlPullParser, bundled feeds)
-- [x] P3.4: Knowledge/FAQ tool (user-defined Q&A, in-memory KnowledgeStore)
-- [x] P3.5: Web fetch tool (HtmlWebFetcher — readable text from any URL, OpenClaw web.fetch)
-- [x] P3.6: Unit converter tool (length/mass/temperature/volume, zero-dep)
-- [x] P3.7: Calculator tool (safe arithmetic evaluator, shunting-yard RPN, no script engine)
+## Phase 10 — Priority 3: UX polish
+- [ ] P10.1: First-run permission walkthrough
+- [ ] P10.2: Voice-controlled tour ("say 'help' to learn what I can do")
+- [ ] P10.3: Offline-first error states — never blame "internet" for local failure
+- [ ] P10.4: Accessibility pass (TalkBack, large-text)
+- [ ] P10.5: Dark/light mode consistency
+- [ ] P10.6: Music Assistant / media control UI (inspired by dash-voice)
 
-### Phase 4: Agent Memory & Context
-Make the agent persistent and contextual.
+## Phase 11 — Priority 4: Hybrid / External Gateway
+- [ ] P11.1: HermesAgent protocol adapter (new AssistantProvider)
+- [ ] P11.2: OpenClawProvider streaming + tool forwarding
+- [ ] P11.3: "Heavy task" hint — escalate to gateway when needed
+- [ ] P11.4: Unified provider switcher polish
 
-- [x] P4.1: Conversation summarization / context compaction (stolen from off-grid-mobile-ai)
-- [x] P4.2: User preference memory (SQLite-backed remember/recall/search/forget tools)
-- [x] P4.3: Device state context auto-injection into LLM prompt
-- [x] P4.4: Time/location awareness in system prompt (get_datetime tool)
+## Phase 12 — Priority 5: Refactor / Quality
+- [ ] P12.1: Dead code sweep (VoicePipeline TTS/audio branches)
+- [ ] P12.2: CameraX integration (replaces skeleton)
+- [ ] P12.3: MediaProjection integration (replaces skeleton)
+- [ ] P12.4: SecurePreferences audit — no plaintext
+- [ ] P12.5: Unified OkHttp with sensible timeouts
+- [ ] P12.6: Coverage report — aim 80% non-UI
+- [ ] P12.7: Android Lint baseline / zero warnings in tool/
 
-### Phase 5: Advanced Agent Capabilities
-OpenClaw-level autonomy.
+## Phase 13 — Priority 6: OSS Project Health
+- [ ] P13.1: CONTRIBUTING.md
+- [ ] P13.2: Issue + PR templates
+- [ ] P13.3: CI workflow — gradle test + lint on push
+- [ ] P13.4: Release workflow — signed APK per tag
+- [ ] P13.5: SECURITY.md
+- [ ] P13.6: CODE_OF_CONDUCT.md
+- [ ] P13.7: README overhaul — value prop for smart-home fans
+- [ ] P13.8: Docs site covering architecture, SKILL.md authoring, tool list
 
-- [x] P5.1: Multi-tool chaining (AgentPlan + PlanExecutor)
-- [x] P5.2: Proactive suggestions (time-based rules, extensible engine)
-- [x] P5.3: Routine/automation creation (named tool-chain workflows)
-- [x] P5.4: Screen control / accessibility service (read_screen tool + service skeleton)
-- [x] P5.5: Skills system (SKILL.md + XML prompt injection, stolen from OpenClaw)
-- [x] P5.6: Location tool (ACCESS_FINE_LOCATION, OpenClaw location.get)
+---
 
-### Phase 6: Deeper OpenClaw Parity
-Close remaining gaps vs. OpenClaw Android node.
+## Legacy Phase 1-7 (kept for history)
+All items below were done during the priority-agnostic phase. Keeping for reference.
+<details>
+<summary>Expand</summary>
 
-- [x] P6.1: SMS send tool (OpenClaw sms.send)
-- [x] P6.2: Camera capture tool skeleton (CameraProviderHolder + Activity-bound binding point)
-- [x] P6.3: Screen recording skeleton (ScreenRecorderHolder + start/stop tool)
-- [x] P6.4: Photos latest (OpenClaw photos.latest via MediaStore)
-- [x] P6.5: Battery / device.health tool (OpenClaw device.health)
-- [x] P6.6: Routine persistence (Room-backed RoutineStore)
-- [x] P6.7: Semantic memory search (TF-IDF cosine similarity, zero-dep lightweight alternative to embeddings)
-- [x] P6.8: RAG / document ingest (chunked Room storage + TF-IDF retrieval)
-- [x] P6.9: Vision support foundation (MediaAttachment, ProviderCapabilities flag, encoder helper)
-- [x] P6.10: Skill install from URL (FileSystemSkillLoader + SkillInstaller + install_skill_from_url tool)
+- Phase 1: system prompt, conversation history, agent loop, chat templates, tool parsing
+- Phase 2: timer, notifications, calendar, app launcher, volume, contacts
+- Phase 3: weather, search, news, knowledge, web fetch, unit converter, calculator, currency
+- Phase 4: compaction, user memory, device context, datetime
+- Phase 5: multi-tool chaining, proactive, routines, screen reader, skills, location
+- Phase 6: SMS, camera, screen record, photos, device health, routine persistence, semantic memory, RAG, vision, skill install
+- Phase 7: tool analytics, permission catalog, suggestion state, repos for Settings UI
 
-### Phase 7: Activation & Polish
-Turn Phase 6 skeletons into working implementations; UX for permissions and onboarding.
+</details>
 
-- [ ] P7.1: CameraX integration for CameraProvider (actual photo capture)
-- [ ] P7.2: MediaProjection integration for ScreenRecorder
-- [x] P7.3: Permission catalog + manager (lists all tool permissions with rationale, detects current grant state)
-- [x] P7.4: SkillRepository (data layer for skill management — delete installed, keep bundled)
-- [x] P7.5: RoutineRepository (data layer for routine CRUD)
-- [x] P7.6: Tool usage analytics (local only — ToolUsageStats wired via CompositeToolExecutor)
-- [x] P7.7: SuggestionState (polling + dismissals) ready for UI consumption
-- [x] P7.8: User-editable system prompt (CUSTOM_SYSTEM_PROMPT pref, read by ProviderManager)
-- [x] P7.9: Memory repository layer (MemoryRepository — UI on top lands later)
-- [x] P7.10: RagRepository (data layer for document ingest UI — listDocuments with chunk counts)
-
-### Continuous: Maintenance
-ロードマップ項目がない場合、以下を実施する:
-- コードのリファクタリング（重複排除、型安全性向上）
-- バグの検出と修正
-- パフォーマンス改善
-- テストカバレッジ向上
+---
 
 ## Improvement Cycle Protocol
 
 Each cycle:
-0. **目的確認**: 「AndroidタブレットをOpenClaw相当のAIエージェント+スマートスピーカーに変える。ローカルLLMが端末内で自律的にツール実行・デバイス制御・情報取得を行う」を再読する
-1. Pick the next unchecked item from the roadmap (or maintenance task)
-2. Create a feature branch
-3. Write tests first (TDD)
-4. Implement
-5. Run `./gradlew test` — fix failures
-6. Create PR with description
-7. Merge to main
-8. Update this roadmap (check off completed items)
-9. **目的との整合性チェック**: 今回の変更は最終目標に近づいているか？次に何をすべきか？
+0. **目的再確認**: 「Android タブレットをアレクサ相当 + OpenClaw 相当のローカルエージェントに」
+1. Pick the next item **strictly in priority order** (P8 before P9 before P10 etc.)
+2. Reference `/Users/y-c-hashimoto/Documents/GitHub/open-smart-speaker参考リポ/` when relevant
+3. Create a feature branch (worktree)
+4. Write tests first (TDD, 80%+ coverage)
+5. Implement minimal code
+6. `./gradlew testDebugUnitTest assembleDebug` must be green
+7. PR with `## Priority` header citing which priority this addresses
+8. Merge to main
+9. Update this roadmap (check off, record learnings)
+10. **整合性チェック**: 変更は priority top に近づいているか？Yes=続行 / No=巻き戻し
