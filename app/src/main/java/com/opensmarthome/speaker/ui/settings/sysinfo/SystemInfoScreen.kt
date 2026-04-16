@@ -57,6 +57,9 @@ fun SystemInfoScreen(
             add("Providers registered" to "${state.providerCount}")
             add("Tools available" to "${state.toolCount}")
             add("Smart-home devices" to "${state.deviceCount}")
+            state.devicesByType.forEach { (type, count) ->
+                add("  • $type" to "$count")
+            }
             add("Skills" to "${state.skillCount}")
             add("Memory entries" to "${state.memoryCount}")
             add("Connectivity" to if (state.online) "Online" else "Offline")

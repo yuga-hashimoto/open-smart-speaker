@@ -35,6 +35,7 @@ class SystemInfoViewModel @Inject constructor(
         val activeProviderModel: String?,
         val providerCount: Int,
         val deviceCount: Int,
+        val devicesByType: List<Pair<String, Int>> = emptyList(),
         val skillCount: Int,
         val memoryCount: Int,
         val toolCount: Int,
@@ -43,7 +44,7 @@ class SystemInfoViewModel @Inject constructor(
         val loading: Boolean = false
     )
 
-    private val _state = MutableStateFlow(Snapshot(null, 0, 0, 0, 0, 0, false, 0, loading = true))
+    private val _state = MutableStateFlow(Snapshot(null, 0, 0, emptyList(), 0, 0, 0, false, 0, loading = true))
     val state: StateFlow<Snapshot> = _state.asStateFlow()
 
     init {
@@ -52,7 +53,11 @@ class SystemInfoViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            val devices = deviceManager.devices.value.size
+            val deviceMap = deviceManager.devices.value
+            val byType = deviceMap.values
+                .groupBy { it.type.value }
+                .map { (type, list) -> type to list.size }
+                .sortedByDescending { it.second }
             val skills = skillRegistry.all().size
             val memories = memoryDao.list(1000).size
             val tools = toolExecutor.availableTools().size
@@ -60,7 +65,8 @@ class SystemInfoViewModel @Inject constructor(
             _state.value = Snapshot(
                 activeProviderModel = router.activeProvider.value?.capabilities?.modelName,
                 providerCount = router.availableProviders.value.size,
-                deviceCount = devices,
+                deviceCount = deviceMap.size,
+                devicesByType = byType,
                 skillCount = skills,
                 memoryCount = memories,
                 toolCount = tools,
