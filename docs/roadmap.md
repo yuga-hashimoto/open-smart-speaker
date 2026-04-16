@@ -66,7 +66,7 @@ Make the agent persistent and contextual.
 ### Phase 5: Advanced Agent Capabilities
 OpenClaw-level autonomy.
 
-- [ ] P5.1: Multi-tool chaining (plan → execute → verify)
+- [x] P5.1: Multi-tool chaining (AgentPlan + PlanExecutor)
 - [ ] P5.2: Proactive suggestions (time-based, context-based)
 - [ ] P5.3: Routine/automation creation (user-defined workflows)
 - [ ] P5.4: Screen control / accessibility service integration
