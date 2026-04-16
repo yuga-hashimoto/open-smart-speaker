@@ -38,7 +38,7 @@ Make it feel like Alexa/Google Home first.
 
 - [x] P8.1: Fast-path command router wired into VoicePipeline — LLM bypass for timers/volume/lights/time/date (EN+JA)
 - [ ] P8.2: Wake-to-listening latency budget — target <500ms visual feedback after wake
-- [ ] P8.3: Richer voice pipeline states UI — breathing mic orb with audio level (steal from OpenClawSession)
+- [x] P8.3: VoiceOrb compose component — per-state color + breathing + audio-level scaling (stolen from Ava WakeRippleView + OpenClawSession mic orb)
 - [ ] P8.4: Ambient home screen — clock + weather + notifications + device quick-control (steal from Ava/ViewAssist)
 - [ ] P8.5: Barge-in verification — user interrupts TTS mid-sentence
 - [ ] P8.6: "Hmm…" filler phrase during long LLM waits
