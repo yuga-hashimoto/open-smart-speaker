@@ -45,6 +45,7 @@ class DefaultFastPathRouter(
             LightsMatcher,
             MediaControlMatcher,
             DatetimeMatcher,
+            GreetingMatcher,
             HelpMatcher
         )
     }
@@ -228,6 +229,38 @@ object MediaControlMatcher : FastPathMatcher {
                     ),
                     spokenConfirmation = p.spoken
                 )
+            }
+        }
+        return null
+    }
+}
+
+/**
+ * Social pleasantries. Speak a canned reply so the user gets instant feedback
+ * and the LLM isn't bothered for trivial turn-taking.
+ */
+object GreetingMatcher : FastPathMatcher {
+    private data class Rule(val regex: Regex, val reply: String)
+
+    private val rules = listOf(
+        // English
+        Rule(Regex("""^\s*(?:thanks|thank\s+you|thx|ty)\s*[!?.]*\s*$"""), "You're welcome."),
+        Rule(Regex("""^\s*(?:hi|hello|hey)(?:\s+there)?\s*[!?.]*\s*$"""), "Hi. What can I help with?"),
+        Rule(Regex("""^\s*good\s+morning\s*[!?.]*\s*$"""), "Good morning."),
+        Rule(Regex("""^\s*good\s+(?:evening|night)\s*[!?.]*\s*$"""), "Good evening."),
+        Rule(Regex("""^\s*sorry\s*[!?.]*\s*$"""), "No problem."),
+        // Japanese
+        Rule(Regex("""ありがとう"""), "どういたしまして。"),
+        Rule(Regex("""こんにちは"""), "こんにちは。何かお手伝いできますか。"),
+        Rule(Regex("""おはよう"""), "おはようございます。"),
+        Rule(Regex("""こんばんは"""), "こんばんは。"),
+        Rule(Regex("""ごめん(?:なさい)?"""), "気にしないでください。")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        for (rule in rules) {
+            if (rule.regex.containsMatchIn(normalized)) {
+                return FastPathMatch(toolName = null, spokenConfirmation = rule.reply)
             }
         }
         return null
