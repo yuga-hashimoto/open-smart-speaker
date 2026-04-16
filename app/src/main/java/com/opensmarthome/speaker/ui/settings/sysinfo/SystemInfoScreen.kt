@@ -64,6 +64,7 @@ fun SystemInfoScreen(
             add("Memory entries" to "${state.memoryCount}")
             add("Connectivity" to if (state.online) "Online" else "Offline")
             add("Latency budget violations" to "${state.totalBudgetViolations}")
+            add("Latency measurements (lifetime)" to "${state.totalLatencyMeasurements}")
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),

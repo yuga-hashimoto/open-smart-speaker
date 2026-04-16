@@ -41,10 +41,11 @@ class SystemInfoViewModel @Inject constructor(
         val toolCount: Int,
         val online: Boolean,
         val totalBudgetViolations: Int,
+        val totalLatencyMeasurements: Long = 0L,
         val loading: Boolean = false
     )
 
-    private val _state = MutableStateFlow(Snapshot(null, 0, 0, emptyList(), 0, 0, 0, false, 0, loading = true))
+    private val _state = MutableStateFlow(Snapshot(null, 0, 0, emptyList(), 0, 0, 0, false, 0, 0L, loading = true))
     val state: StateFlow<Snapshot> = _state.asStateFlow()
 
     init {
@@ -62,6 +63,7 @@ class SystemInfoViewModel @Inject constructor(
             val memories = memoryDao.list(1000).size
             val tools = toolExecutor.availableTools().size
             val violations = latencyRecorder.budgetViolations().values.sum()
+            val measurements = latencyRecorder.totalMeasurements()
             _state.value = Snapshot(
                 activeProviderModel = router.activeProvider.value?.capabilities?.modelName,
                 providerCount = router.availableProviders.value.size,
@@ -72,6 +74,7 @@ class SystemInfoViewModel @Inject constructor(
                 toolCount = tools,
                 online = networkMonitor.isOnline.value,
                 totalBudgetViolations = violations,
+                totalLatencyMeasurements = measurements,
                 loading = false
             )
         }
