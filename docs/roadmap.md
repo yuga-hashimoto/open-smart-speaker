@@ -46,7 +46,7 @@ Make it feel like Alexa/Google Home first.
 - [ ] P8.8: Tablet-first landscape layout, large touch targets, night mode
 
 ## Phase 9 — Priority 2: Surface existing OpenClaw engine capabilities in UI
-- [ ] P9.1: Settings → Skills manager (SkillRepository)
+- [x] P9.1: Settings → Skills manager (SkillsViewModel + SkillsScreen: list, install-from-URL, delete)
 - [ ] P9.2: Settings → Routines manager (RoutineRepository)
 - [ ] P9.3: Settings → Memory browser (MemoryRepository)
 - [ ] P9.4: Settings → Documents / RAG (RagRepository)
