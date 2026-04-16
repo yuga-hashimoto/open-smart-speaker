@@ -41,6 +41,25 @@ restrictions before suggesting substitutions.
 - Body is the system-prompt append that activates when a trigger fires.
 - Keep the body under ~300 tokens so the system prompt stays lean.
 
+## Bundled skills
+
+These ship in `app/src/main/assets/skills/` and are auto-registered on
+launch. Each is editable in `Settings → Skills` (toggle on/off).
+User-installed skills can override or supplement these.
+
+| Skill | Purpose |
+|---|---|
+| `bedtime-routine` | Wind-down — pause media, dim lights, optional alarm-style timer, evening summary |
+| `cooking-assistant` | Recipe walkthroughs with set_timer + unit_converter |
+| `focus-mode` | Deep-work session: lights→70, volume→20, clear notifications, optional Pomodoro timer |
+| `home-control` | General smart-home control verbs and disambiguation |
+| `morning-routine` | Wake-up flow — morning_briefing + lights + ambient music |
+| `movie-night` | Movie ambience: lights→15, volume→30, clear notifications, optional service launch |
+| `news-briefing` | Reading the news without dumping every headline |
+| `task-manager` | "Remind me to X" → memory store + recall + forget |
+| `voice-assistant` | Conversational guardrails — keep replies under 30s of speech |
+| `workout` | Workout mode: lights→100, volume→70, interval timers, cooldown recovery |
+
 ## Install flow
 
 ```
