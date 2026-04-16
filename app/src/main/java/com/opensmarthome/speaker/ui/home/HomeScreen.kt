@@ -103,6 +103,12 @@ fun HomeScreen(
                 onVolumeChange = { level ->
                     viewModel.dispatchMediaVolume(playing.deviceId, level)
                 },
+                onShuffleToggle = { enabled ->
+                    viewModel.dispatchShuffle(playing.deviceId, enabled)
+                },
+                onRepeatChange = { mode ->
+                    viewModel.dispatchRepeat(playing.deviceId, mode)
+                },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
             )
         }

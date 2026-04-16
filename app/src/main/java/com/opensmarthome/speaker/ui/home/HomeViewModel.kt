@@ -113,7 +113,9 @@ class HomeViewModel @Inject constructor(
                         mediaTitle = it.state.mediaTitle,
                         mediaArtist = it.state.attributes["media_artist"] as? String,
                         isPlaying = it.state.isOn == true,
-                        volumeLevel = (it.state.attributes["volume_level"] as? Number)?.toFloat()
+                        volumeLevel = (it.state.attributes["volume_level"] as? Number)?.toFloat(),
+                        shuffle = it.state.attributes["shuffle"] as? Boolean,
+                        repeatMode = (it.state.attributes["repeat"] as? String)?.let { r -> RepeatMode.fromHa(r) }
                     )
                 }
             }
@@ -136,6 +138,30 @@ class HomeViewModel @Inject constructor(
                     deviceId = deviceId,
                     action = "volume_set",
                     parameters = mapOf("volume_level" to clamped)
+                )
+            )
+        }
+    }
+
+    fun dispatchShuffle(deviceId: String, enabled: Boolean) {
+        viewModelScope.launch {
+            deviceManager.executeCommand(
+                DeviceCommand(
+                    deviceId = deviceId,
+                    action = "shuffle_set",
+                    parameters = mapOf("shuffle" to enabled)
+                )
+            )
+        }
+    }
+
+    fun dispatchRepeat(deviceId: String, mode: RepeatMode) {
+        viewModelScope.launch {
+            deviceManager.executeCommand(
+                DeviceCommand(
+                    deviceId = deviceId,
+                    action = "repeat_set",
+                    parameters = mapOf("repeat" to mode.haValue)
                 )
             )
         }
