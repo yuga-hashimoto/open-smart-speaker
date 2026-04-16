@@ -22,6 +22,13 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- SEND_SMS implies telephony. Mark as optional so the app installs on
+         tablets / Chromebooks without a cellular modem. -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <!-- Location permission implies location hardware. Mark as optional. -->
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <!-- Required to detect TTS engines and speech recognizer (Android 11+) -->
     <queries>
