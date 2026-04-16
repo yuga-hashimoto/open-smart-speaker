@@ -1,6 +1,7 @@
 package com.opensmarthome.speaker.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,11 +14,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -49,9 +55,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -69,74 +73,41 @@ fun SettingsScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Home Assistant Section
-        SectionHeader("Home Assistant")
-        SettingsTextField("Base URL", haBaseUrl) { url ->
-            viewModel.saveHaSettings(url, haToken)
-        }
-        SettingsPasswordField("Long-Lived Access Token", haToken) { token ->
-            viewModel.saveHaSettings(haBaseUrl, token)
-        }
+        // === Voice Interaction ===
+        SectionHeader("Voice Interaction")
+        val continuousMode by viewModel.continuousMode.collectAsState()
+        val thinkingSound by viewModel.thinkingSound.collectAsState()
+        val bargeInEnabled by viewModel.bargeInEnabled.collectAsState()
+        val ttsEnabled by viewModel.ttsEnabled.collectAsState()
+        val mediaButtonEnabled by viewModel.mediaButtonEnabled.collectAsState()
+        val silenceTimeoutMs by viewModel.silenceTimeoutMs.collectAsState()
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+        SettingsToggle("Read AI Responses Aloud", ttsEnabled) { viewModel.saveTtsEnabled(it) }
+        SettingsToggle("Continuous Conversation", continuousMode) { viewModel.saveContinuousMode(it) }
+        SettingsHint("Auto-restart listening after response finishes")
+        SettingsToggle("Thinking Sound", thinkingSound) { viewModel.saveThinkingSound(it) }
+        SettingsHint("Play a beep when processing starts")
+        SettingsToggle("Wake Word Interrupts TTS", bargeInEnabled) { viewModel.saveBargeInEnabled(it) }
+        SettingsToggle("Media Button Trigger", mediaButtonEnabled) { viewModel.saveMediaButtonEnabled(it) }
+        SettingsHint("Use Bluetooth headset button to start voice input")
 
-        // OpenClaw Section
-        SectionHeader("OpenClaw")
-        SettingsTextField("Gateway URL", openClawUrl) { url ->
-            viewModel.saveOpenClawSettings(url)
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        // Local LLM Section
-        SectionHeader("Local LLM (OpenAI Compatible)")
-        SettingsTextField("Endpoint URL", localLlmUrl) { url ->
-            viewModel.saveLocalLlmSettings(url, localLlmModel)
-        }
-        SettingsTextField("Model Name", localLlmModel) { model ->
-            viewModel.saveLocalLlmSettings(localLlmUrl, model)
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        // SwitchBot Section
-        val switchBotToken by viewModel.switchBotToken.collectAsState()
-        val switchBotSecret by viewModel.switchBotSecret.collectAsState()
-        SectionHeader("SwitchBot")
-        SettingsTextField("Token", switchBotToken) { token ->
-            viewModel.saveSwitchBotSettings(token, switchBotSecret)
-        }
-        SettingsPasswordField("Secret Key", switchBotSecret) { secret ->
-            viewModel.saveSwitchBotSettings(switchBotToken, secret)
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        // MQTT Section
-        val mqttBrokerUrl by viewModel.mqttBrokerUrl.collectAsState()
-        SectionHeader("MQTT (Shelly / Tasmota)")
-        SettingsTextField("Broker URL", mqttBrokerUrl) { url ->
-            viewModel.saveMqttSettings(url)
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        // Wake Word Section
-        val wakeWord by viewModel.wakeWord.collectAsState()
-        SectionHeader("Wake Word")
-        SettingsTextField("Wake Word", wakeWord) { word ->
-            viewModel.saveWakeWord(word)
-        }
         Text(
-            text = "The phrase the app listens for to start a conversation. Restart the app after changing.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+            text = "Silence Timeout: ${silenceTimeoutMs / 1000.0}s",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Slider(
+            value = silenceTimeoutMs.toFloat(),
+            onValueChange = { viewModel.saveSilenceTimeout(it.toLong()) },
+            valueRange = 1000f..10000f,
+            steps = 8,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+        SettingsDivider()
 
-        // TTS Section
+        // === Text-to-Speech ===
         val ttsSpeechRate by viewModel.ttsSpeechRate.collectAsState()
         val ttsPitch by viewModel.ttsPitch.collectAsState()
         val ttsEngine by viewModel.ttsEngine.collectAsState()
@@ -150,11 +121,11 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 4.dp)
         )
-        androidx.compose.material3.Slider(
+        Slider(
             value = ttsSpeechRate,
             onValueChange = { viewModel.saveTtsSpeechRate(it) },
-            valueRange = 0.5f..2.0f,
-            steps = 5,
+            valueRange = 0.5f..3.0f,
+            steps = 9,
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
@@ -164,7 +135,7 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 4.dp)
         )
-        androidx.compose.material3.Slider(
+        Slider(
             value = ttsPitch,
             onValueChange = { viewModel.saveTtsPitch(it) },
             valueRange = 0.5f..2.0f,
@@ -184,34 +155,106 @@ fun SettingsScreen(
             )
             availableEngines.forEach { engine ->
                 val isSelected = engine.packageName == ttsEngine
-                androidx.compose.material3.OutlinedButton(
+                OutlinedButton(
                     onClick = { viewModel.saveTtsEngine(engine.packageName) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                     colors = if (isSelected) {
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        ButtonDefaults.outlinedButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     } else {
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+                        ButtonDefaults.outlinedButtonColors()
                     }
                 ) {
-                    Text(
-                        engine.label,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text(engine.label, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+        SettingsDivider()
 
-        // Info
+        // === Speech Recognition ===
+        SectionHeader("Speech Recognition")
+        val sttLanguage by viewModel.sttLanguage.collectAsState()
+        SettingsTextField("Language (e.g. ja-JP, en-US)", sttLanguage) { lang ->
+            viewModel.saveSttLanguage(lang)
+        }
+        SettingsHint("Leave empty to use device default language")
+
+        SettingsDivider()
+
+        // === Wake Word ===
+        SectionHeader("Wake Word")
+        val wakeWord by viewModel.wakeWord.collectAsState()
+        SettingsTextField("Wake Word", wakeWord) { word ->
+            viewModel.saveWakeWord(word)
+        }
+        SettingsHint("The phrase the app listens for. Restart the app after changing.")
+
+        SettingsDivider()
+
+        // === Connections ===
+        SectionHeader("Home Assistant")
+        SettingsTextField("Base URL", haBaseUrl) { url ->
+            viewModel.saveHaSettings(url, haToken)
+        }
+        SettingsPasswordField("Long-Lived Access Token", haToken) { token ->
+            viewModel.saveHaSettings(haBaseUrl, token)
+        }
+
+        SettingsDivider()
+
+        SectionHeader("OpenClaw")
+        SettingsTextField("Gateway URL", openClawUrl) { url ->
+            viewModel.saveOpenClawSettings(url)
+        }
+
+        SettingsDivider()
+
+        SectionHeader("Local LLM (OpenAI Compatible)")
+        SettingsTextField("Endpoint URL", localLlmUrl) { url ->
+            viewModel.saveLocalLlmSettings(url, localLlmModel)
+        }
+        SettingsTextField("Model Name", localLlmModel) { model ->
+            viewModel.saveLocalLlmSettings(localLlmUrl, model)
+        }
+
+        SettingsDivider()
+
+        val switchBotToken by viewModel.switchBotToken.collectAsState()
+        val switchBotSecret by viewModel.switchBotSecret.collectAsState()
+        SectionHeader("SwitchBot")
+        SettingsTextField("Token", switchBotToken) { token ->
+            viewModel.saveSwitchBotSettings(token, switchBotSecret)
+        }
+        SettingsPasswordField("Secret Key", switchBotSecret) { secret ->
+            viewModel.saveSwitchBotSettings(switchBotToken, secret)
+        }
+
+        SettingsDivider()
+
+        val mqttBrokerUrl by viewModel.mqttBrokerUrl.collectAsState()
+        SectionHeader("MQTT (Shelly / Tasmota)")
+        SettingsTextField("Broker URL", mqttBrokerUrl) { url ->
+            viewModel.saveMqttSettings(url)
+        }
+
+        SettingsDivider()
+
         Text(
-            text = "On-Device LLM: The app automatically downloads and loads a Gemma model on first launch.",
+            text = "On-Device LLM: The app uses LiteRT-LM for GPU-accelerated inference with Gemma 4 E2B.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 8.dp)
         )
+        Text(
+            text = "To set as default assistant: Settings > Apps > Default Apps > Digital Assistant > OpenSmartSpeaker",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -223,6 +266,44 @@ private fun SectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(bottom = 8.dp)
     )
+}
+
+@Composable
+private fun SettingsToggle(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun SettingsHint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 }
 
 @Composable
@@ -243,7 +324,7 @@ private fun SettingsTextField(
     Button(
         onClick = { onSave(text) },
         modifier = Modifier.padding(bottom = 8.dp),
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+        colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         )
@@ -271,7 +352,7 @@ private fun SettingsPasswordField(
     Button(
         onClick = { onSave(text) },
         modifier = Modifier.padding(bottom = 8.dp),
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+        colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         )

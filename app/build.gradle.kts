@@ -137,6 +137,9 @@ dependencies {
     implementation(libs.mediapipe.genai)
     implementation(libs.litertlm.android)
 
+    // Wake word (Vosk offline speech recognition)
+    implementation(libs.vosk)
+
     // Logging
     implementation(libs.timber)
 
