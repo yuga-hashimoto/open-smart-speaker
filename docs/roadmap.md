@@ -39,7 +39,7 @@ Make it feel like Alexa/Google Home first.
 - [x] P8.1: Fast-path command router wired into VoicePipeline — LLM bypass for timers/volume/lights/time/date (EN+JA)
 - [ ] P8.2: Wake-to-listening latency budget — target <500ms visual feedback after wake
 - [x] P8.3: VoiceOrb compose component — per-state color + breathing + audio-level scaling (stolen from Ava WakeRippleView + OpenClawSession mic orb)
-- [ ] P8.4: Ambient home screen — clock + weather + notifications + device quick-control (steal from Ava/ViewAssist)
+- [x] P8.4: Ambient home screen — AmbientSnapshotBuilder wired into AmbientViewModel; shows greeting + clock + weather + timer/notification counts + active device list; TimerManager/NotificationProvider promoted to Hilt singletons so tool invocations and ambient view share state
 - [x] P8.5: Barge-in verified via unit tests (interruptAndListen + stopSpeaking both halt TTS)
 - [x] P8.6: Filler phrases (existing FillerPhrases object — JP/EN, initial + wait timing, user-toggleable)
 - [x] P8.7: ErrorClassifier — 7 categories (no-provider / STT / timeout / network / permission / tool / unknown) with spoken-friendly copy + retry flag (stolen Ava pattern)
