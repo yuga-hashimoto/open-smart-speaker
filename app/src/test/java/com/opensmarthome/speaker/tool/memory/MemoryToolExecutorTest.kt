@@ -23,10 +23,10 @@ class MemoryToolExecutorTest {
     }
 
     @Test
-    fun `availableTools has five memory tools`() = runTest {
+    fun `availableTools exposes all memory tools`() = runTest {
         val names = executor.availableTools().map { it.name }
         assertThat(names).containsExactly(
-            "remember", "recall", "search_memory", "forget", "semantic_memory_search"
+            "remember", "recall", "search_memory", "forget", "semantic_memory_search", "list_memory"
         )
     }
 
@@ -47,6 +47,42 @@ class MemoryToolExecutorTest {
         )
 
         assertThat(result.success).isFalse()
+    }
+
+    @Test
+    fun `list_memory without prefix lists recent`() = runTest {
+        coEvery { dao.list(20) } returns listOf(
+            MemoryEntity("a", "v1", 1L),
+            MemoryEntity("b", "v2", 2L)
+        )
+        val result = executor.execute(ToolCall("3", "list_memory", emptyMap()))
+
+        assertThat(result.success).isTrue()
+        assertThat(result.data).contains("\"key\":\"a\"")
+        assertThat(result.data).contains("\"key\":\"b\"")
+    }
+
+    @Test
+    fun `list_memory with prefix filters by prefix`() = runTest {
+        coEvery { dao.listByPrefix("user.", 20) } returns listOf(
+            MemoryEntity("user.name", "Alice", 1L)
+        )
+        val result = executor.execute(
+            ToolCall("4", "list_memory", mapOf("prefix" to "user."))
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.data).contains("\"key\":\"user.name\"")
+        coVerify { dao.listByPrefix("user.", 20) }
+    }
+
+    @Test
+    fun `list_memory clamps limit`() = runTest {
+        coEvery { dao.list(100) } returns emptyList()
+        executor.execute(
+            ToolCall("5", "list_memory", mapOf("limit" to 999))
+        )
+        coVerify { dao.list(100) }
     }
 
     @Test

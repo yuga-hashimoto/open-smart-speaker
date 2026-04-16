@@ -20,6 +20,9 @@ interface MemoryDao {
     @Query("SELECT * FROM memory ORDER BY updatedAtMs DESC LIMIT :limit")
     suspend fun list(limit: Int): List<MemoryEntity>
 
+    @Query("SELECT * FROM memory WHERE `key` LIKE :prefix || '%' ORDER BY `key` ASC LIMIT :limit")
+    suspend fun listByPrefix(prefix: String, limit: Int): List<MemoryEntity>
+
     @Query("DELETE FROM memory WHERE `key` = :key")
     suspend fun delete(key: String): Int
 

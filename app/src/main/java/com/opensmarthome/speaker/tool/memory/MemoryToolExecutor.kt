@@ -59,6 +59,14 @@ class MemoryToolExecutor(
                 "query" to ToolParameter("string", "Natural language query", required = true),
                 "limit" to ToolParameter("number", "Max results (1-20, default 5)", required = false)
             )
+        ),
+        ToolSchema(
+            name = "list_memory",
+            description = "List saved memory keys, optionally filtered by key prefix. Useful to explore what's remembered without knowing exact keys. Example: prefix='user.' returns user.name, user.language, user.timezone.",
+            parameters = mapOf(
+                "prefix" to ToolParameter("string", "Optional key prefix to filter by (empty = list all)", required = false),
+                "limit" to ToolParameter("number", "Max results (1-100, default 20)", required = false)
+            )
         )
     )
 
@@ -69,6 +77,7 @@ class MemoryToolExecutor(
                 "recall" -> executeRecall(call)
                 "search_memory" -> executeSearch(call)
                 "semantic_memory_search" -> executeSemantic(call)
+                "list_memory" -> executeList(call)
                 "forget" -> executeForget(call)
                 else -> ToolResult(call.id, false, "", "Unknown tool: ${call.name}")
             }
@@ -114,6 +123,19 @@ class MemoryToolExecutor(
         val limit = (call.arguments["limit"] as? Number)?.toInt()?.coerceIn(1, 20) ?: 5
 
         val results = semanticSearch.searchSemantic(query, limit)
+        val data = results.joinToString(",") { formatEntry(it) }
+        return ToolResult(call.id, true, "[$data]")
+    }
+
+    private suspend fun executeList(call: ToolCall): ToolResult {
+        val prefix = (call.arguments["prefix"] as? String)?.trim().orEmpty()
+        val limit = (call.arguments["limit"] as? Number)?.toInt()?.coerceIn(1, 100) ?: 20
+
+        val results = if (prefix.isEmpty()) {
+            memoryDao.list(limit)
+        } else {
+            memoryDao.listByPrefix(prefix, limit)
+        }
         val data = results.joinToString(",") { formatEntry(it) }
         return ToolResult(call.id, true, "[$data]")
     }
