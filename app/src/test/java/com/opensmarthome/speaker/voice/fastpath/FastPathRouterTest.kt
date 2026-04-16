@@ -260,6 +260,32 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `dim lights sets 30 percent brightness`() {
+        val m = router.match("dim the lights")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("action")).isEqualTo("set_brightness")
+        @Suppress("UNCHECKED_CAST")
+        val params = m?.arguments?.get("parameters") as? Map<String, Any?>
+        assertThat(params?.get("brightness")).isEqualTo(30)
+    }
+
+    @Test
+    fun `set brightness 50 percent`() {
+        val m = router.match("set lights to 50 percent")
+        assertThat(m?.toolName).isEqualTo("execute_command")
+        assertThat(m?.arguments?.get("action")).isEqualTo("set_brightness")
+    }
+
+    @Test
+    fun `japanese brightness percent`() {
+        val m = router.match("明るさ80%")
+        assertThat(m?.arguments?.get("action")).isEqualTo("set_brightness")
+        @Suppress("UNCHECKED_CAST")
+        val params = m?.arguments?.get("parameters") as? Map<String, Any?>
+        assertThat(params?.get("brightness")).isEqualTo(80)
+    }
+
+    @Test
     fun `japanese open app`() {
         val m = router.match("Chromeを開いて")
         assertThat(m?.toolName).isEqualTo("launch_app")

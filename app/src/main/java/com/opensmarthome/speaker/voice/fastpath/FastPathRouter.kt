@@ -207,7 +207,7 @@ object VolumeMatcher : FastPathMatcher {
     }
 }
 
-/** "lights on/off", "電気つけて/消して" */
+/** "lights on/off", "電気つけて/消して", "set brightness 50", "明るさ50%" */
 object LightsMatcher : FastPathMatcher {
     // Note: without room context this is vague, but covers "all lights" style.
     private val onPatterns = listOf(
@@ -217,6 +217,20 @@ object LightsMatcher : FastPathMatcher {
     private val offPatterns = listOf(
         Regex("""(?:turn\s+)?(?:the\s+)?lights?\s+off"""),
         Regex("""(?:電気|ライト|明かり)\s*(?:を\s*)?(?:消して|けして|オフ)""")
+    )
+    // Brightness 0..100 → forwarded as parameters.brightness
+    private val brightnessSetEn = Regex(
+        """(?:set\s+)?(?:lights?\s+)?(?:to\s+)?(\d{1,3})\s*(?:%|percent)\s*(?:brightness)?"""
+    )
+    private val brightnessSetJa = Regex("""明るさ\s*(?:を)?\s*(\d{1,3})\s*(?:%|パーセント)?""")
+    private val dimPatterns = listOf(
+        Regex("""dim\s+(?:the\s+)?lights?"""),
+        Regex("""(?:電気|ライト|明かり)\s*(?:を)?\s*(?:暗く|くらく)""")
+    )
+    private val brighterPatterns = listOf(
+        Regex("""brighten\s+(?:the\s+)?lights?"""),
+        Regex("""(?:make\s+(?:the\s+)?lights?\s+brighter)"""),
+        Regex("""(?:電気|ライト|明かり)\s*(?:を)?\s*(?:明るく|あかるく)""")
     )
 
     override fun tryMatch(normalized: String): FastPathMatch? {
@@ -240,8 +254,31 @@ object LightsMatcher : FastPathMatcher {
                 spokenConfirmation = "Lights off."
             )
         }
+        // Brightness percent — only after on/off so 'turn lights on' wins
+        if (normalized.contains("light") || normalized.contains("brightness")) {
+            brightnessSetEn.find(normalized)?.let { m ->
+                val pct = m.groupValues[1].toInt().coerceIn(0, 100)
+                return brightnessMatch(pct)
+            }
+        }
+        brightnessSetJa.find(normalized)?.let { m ->
+            val pct = m.groupValues[1].toInt().coerceIn(0, 100)
+            return brightnessMatch(pct)
+        }
+        if (dimPatterns.any { it.containsMatchIn(normalized) }) return brightnessMatch(30)
+        if (brighterPatterns.any { it.containsMatchIn(normalized) }) return brightnessMatch(80)
         return null
     }
+
+    private fun brightnessMatch(pct: Int) = FastPathMatch(
+        toolName = "execute_command",
+        arguments = mapOf(
+            "device_type" to "light",
+            "action" to "set_brightness",
+            "parameters" to mapOf("brightness" to pct)
+        ),
+        spokenConfirmation = "Brightness $pct%."
+    )
 }
 
 /**
