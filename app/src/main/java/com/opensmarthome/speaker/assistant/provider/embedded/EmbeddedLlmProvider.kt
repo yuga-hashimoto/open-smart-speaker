@@ -37,7 +37,10 @@ class EmbeddedLlmProvider(
     override val displayName: String = "On-Device LLM"
     override val capabilities = ProviderCapabilities(
         supportsStreaming = true,
-        supportsTools = false,
+        // The agent loop parses tool calls from model output (ToolCallParser),
+        // so we declare tool support. Not every model is good at it, but
+        // VoicePipeline's tool loop works regardless.
+        supportsTools = true,
         maxContextTokens = config.contextSize,
         modelName = File(config.modelPath).nameWithoutExtension,
         supportsVision = detectVisionSupport(File(config.modelPath).nameWithoutExtension)
