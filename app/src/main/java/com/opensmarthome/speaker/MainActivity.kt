@@ -17,14 +17,20 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.opensmarthome.speaker.assistant.provider.ProviderManager
 import com.opensmarthome.speaker.assistant.provider.embedded.ModelDownloadState
 import com.opensmarthome.speaker.assistant.provider.embedded.ModelDownloader
+import com.opensmarthome.speaker.data.preferences.AppPreferences
+import com.opensmarthome.speaker.data.preferences.PreferenceKeys
 import com.opensmarthome.speaker.service.VoiceService
 import com.opensmarthome.speaker.ui.common.ModeScaffold
+import com.opensmarthome.speaker.ui.onboarding.OnboardingScreen
 import com.opensmarthome.speaker.ui.setup.ModelSetupScreen
 import com.opensmarthome.speaker.ui.theme.OpenSmartSpeakerTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,6 +44,7 @@ import timber.log.Timber
 class MainActivity : ComponentActivity() {
 
     @javax.inject.Inject lateinit var providerManager: ProviderManager
+    @javax.inject.Inject lateinit var appPreferences: AppPreferences
 
     private var voiceServiceStarted = false
     private var providerInitialized = false
@@ -77,6 +84,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             OpenSmartSpeakerTheme {
                 val downloadState by modelDownloader.state.collectAsState()
+                val setupCompleted by appPreferences
+                    .observe(PreferenceKeys.SETUP_COMPLETED)
+                    .collectAsState(initial = null)
+                var onboardingDismissed by remember { mutableStateOf(false) }
 
                 when (downloadState) {
                     is ModelDownloadState.Ready -> {
@@ -84,7 +95,12 @@ class MainActivity : ComponentActivity() {
                             providerInitialized = true
                             providerManager.initialize()
                         }
-                        ModeScaffold()
+                        val needsOnboarding = setupCompleted == false && !onboardingDismissed
+                        if (needsOnboarding) {
+                            OnboardingScreen(onDone = { onboardingDismissed = true })
+                        } else {
+                            ModeScaffold()
+                        }
                     }
                     else -> {
                         val models by modelDownloader.availableModels.collectAsState()

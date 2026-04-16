@@ -56,7 +56,7 @@ Make it feel like Alexa/Google Home first.
 - [x] P9.8: SuggestionBubble compose component for Home (wired to SuggestionState in next cycle)
 
 ## Phase 10 — Priority 3: UX polish
-- [ ] P10.1: First-run permission walkthrough
+- [x] P10.1: First-run permission walkthrough — OnboardingScreen + OnboardingViewModel; shows after model download before ModeScaffold when SETUP_COMPLETED=false; uses PermissionRepository rows with rationale + "Grant" deep-link; "Skip" / "Get started" both flip flag
 - [ ] P10.2: Voice-controlled tour ("say 'help' to learn what I can do")
 - [x] P10.3: Offline-first error states — ErrorClassifier.ProviderKind (LOCAL/REMOTE/UNKNOWN); LOCAL provider remaps network-shaped errors to LOCAL_ENGINE, adds model-load patterns; ProviderCapabilities.isLocal propagates from EmbeddedLlmProvider; VoicePipeline passes kind based on active provider
 - [ ] P10.4: Accessibility pass (TalkBack, large-text)
