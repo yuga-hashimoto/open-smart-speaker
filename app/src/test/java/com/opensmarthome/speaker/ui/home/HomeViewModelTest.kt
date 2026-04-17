@@ -150,6 +150,101 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `nowPlaying reads playlist label and source_list from attributes`() = runTest {
+        val devicesFlow = MutableStateFlow<Map<String, com.opensmarthome.speaker.device.model.Device>>(
+            mapOf(
+                "mp.kitchen" to com.opensmarthome.speaker.device.model.Device(
+                    id = "mp.kitchen",
+                    providerId = "ha",
+                    name = "Kitchen",
+                    type = com.opensmarthome.speaker.device.model.DeviceType.MEDIA_PLAYER,
+                    capabilities = emptySet(),
+                    state = com.opensmarthome.speaker.device.model.DeviceState(
+                        deviceId = "mp.kitchen",
+                        isOn = true,
+                        mediaTitle = "Song",
+                        attributes = mapOf(
+                            "media_playlist" to "Evening Jazz",
+                            "source_list" to listOf("Spotify", "Bluetooth", "Radio"),
+                            "volume_level" to 0.5
+                        )
+                    )
+                )
+            )
+        )
+        val deviceManager = mockk<DeviceManager>()
+        every { deviceManager.devices } returns devicesFlow
+        coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
+
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val vm = HomeViewModel(deviceManager, ss, te)
+        advanceUntilIdle()
+
+        val np = vm.nowPlaying.value
+        assertThat(np).isNotNull()
+        assertThat(np!!.playlist).isEqualTo("Evening Jazz")
+        assertThat(np.sources).containsExactly("Spotify", "Bluetooth", "Radio").inOrder()
+    }
+
+    @Test
+    fun `nowPlaying ignores non-string entries in source_list`() = runTest {
+        val devicesFlow = MutableStateFlow<Map<String, com.opensmarthome.speaker.device.model.Device>>(
+            mapOf(
+                "mp.den" to com.opensmarthome.speaker.device.model.Device(
+                    id = "mp.den",
+                    providerId = "ha",
+                    name = "Den",
+                    type = com.opensmarthome.speaker.device.model.DeviceType.MEDIA_PLAYER,
+                    capabilities = emptySet(),
+                    state = com.opensmarthome.speaker.device.model.DeviceState(
+                        deviceId = "mp.den",
+                        isOn = true,
+                        mediaTitle = "Song",
+                        attributes = mapOf(
+                            "source_list" to listOf<Any?>("Spotify", 42, null, "Bluetooth")
+                        )
+                    )
+                )
+            )
+        )
+        val deviceManager = mockk<DeviceManager>()
+        every { deviceManager.devices } returns devicesFlow
+        coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
+
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val vm = HomeViewModel(deviceManager, ss, te)
+        advanceUntilIdle()
+
+        val np = vm.nowPlaying.value
+        assertThat(np).isNotNull()
+        assertThat(np!!.playlist).isNull()
+        assertThat(np.sources).containsExactly("Spotify", "Bluetooth").inOrder()
+    }
+
+    @Test
+    fun `dispatchSelectSource sends select_source with source parameter`() = runTest {
+        val deviceManager = mockk<DeviceManager>()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        val cmdSlot = slot<DeviceCommand>()
+        coEvery { deviceManager.executeCommand(capture(cmdSlot)) } returns CommandResult(success = true)
+
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val vm = HomeViewModel(deviceManager, ss, te)
+
+        vm.dispatchSelectSource("media_player.lr", "Spotify")
+        advanceUntilIdle()
+        assertThat(cmdSlot.captured.deviceId).isEqualTo("media_player.lr")
+        assertThat(cmdSlot.captured.action).isEqualTo("select_source")
+        assertThat(cmdSlot.captured.parameters["source"]).isEqualTo("Spotify")
+    }
+
+    @Test
     fun `dispatchMediaVolume clamps out-of-range values`() = runTest {
         val deviceManager = mockk<DeviceManager>()
         every { deviceManager.devices } returns MutableStateFlow(emptyMap())

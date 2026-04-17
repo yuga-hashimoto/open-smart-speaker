@@ -1,5 +1,6 @@
 package com.opensmarthome.speaker.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -20,14 +22,21 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -66,7 +75,14 @@ data class NowPlayingInfo(
     /** HA `shuffle` attribute. Null = not reported. */
     val shuffle: Boolean? = null,
     /** HA `repeat` attribute. Null = not reported. */
-    val repeatMode: RepeatMode? = null
+    val repeatMode: RepeatMode? = null,
+    /** HA `media_playlist` attribute — the current playlist/source label. Null = not reported. */
+    val playlist: String? = null,
+    /**
+     * HA `source_list` attribute — available input sources for this media player.
+     * Best-effort; many integrations don't report this, in which case the list is empty.
+     */
+    val sources: List<String> = emptyList()
 )
 
 /** Service actions the bar dispatches to its host. Names match HA media_player services. */
@@ -77,6 +93,7 @@ enum class MediaAction(val haService: String) {
     PREVIOUS("media_previous_track")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NowPlayingBar(
     nowPlaying: NowPlayingInfo,
@@ -84,8 +101,11 @@ fun NowPlayingBar(
     onVolumeChange: (Float) -> Unit = {},
     onShuffleToggle: (Boolean) -> Unit = {},
     onRepeatChange: (RepeatMode) -> Unit = {},
+    onSourceSelected: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showSourceSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
@@ -182,6 +202,71 @@ fun NowPlayingBar(
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
+            }
+            if (nowPlaying.playlist != null || nowPlaying.sources.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (nowPlaying.playlist != null) {
+                        Text(
+                            text = "Now: ${nowPlaying.playlist}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SpeakerTextSecondary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    IconButton(
+                        onClick = { showSourceSheet = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ExpandMore,
+                            contentDescription = "Show source list",
+                            tint = SpeakerTextSecondary
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSourceSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSourceSheet = false },
+            sheetState = sheetState
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+                Text(
+                    text = "Sources",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SpeakerTextPrimary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                if (nowPlaying.sources.isEmpty()) {
+                    Text(
+                        text = "No source list from this device",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SpeakerTextSecondary,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    nowPlaying.sources.forEach { source ->
+                        Text(
+                            text = source,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = SpeakerTextPrimary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSourceSelected(source)
+                                    showSourceSheet = false
+                                }
+                                .padding(vertical = 12.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }

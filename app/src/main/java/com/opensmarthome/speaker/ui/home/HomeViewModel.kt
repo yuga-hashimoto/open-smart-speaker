@@ -107,6 +107,9 @@ class HomeViewModel @Inject constructor(
                     it.type == DeviceType.MEDIA_PLAYER && it.state.mediaTitle != null
                 }
                 _nowPlaying.value = mediaDevice?.let {
+                    val sources = (it.state.attributes["source_list"] as? List<*>)
+                        ?.mapNotNull { s -> s as? String }
+                        ?: emptyList()
                     NowPlayingInfo(
                         deviceId = it.id,
                         deviceName = it.name,
@@ -115,7 +118,9 @@ class HomeViewModel @Inject constructor(
                         isPlaying = it.state.isOn == true,
                         volumeLevel = (it.state.attributes["volume_level"] as? Number)?.toFloat(),
                         shuffle = it.state.attributes["shuffle"] as? Boolean,
-                        repeatMode = (it.state.attributes["repeat"] as? String)?.let { r -> RepeatMode.fromHa(r) }
+                        repeatMode = (it.state.attributes["repeat"] as? String)?.let { r -> RepeatMode.fromHa(r) },
+                        playlist = it.state.attributes["media_playlist"] as? String,
+                        sources = sources
                     )
                 }
             }
@@ -162,6 +167,19 @@ class HomeViewModel @Inject constructor(
                     deviceId = deviceId,
                     action = "repeat_set",
                     parameters = mapOf("repeat" to mode.haValue)
+                )
+            )
+        }
+    }
+
+    /** Fires HA `media_player.select_source` with the chosen source name. */
+    fun dispatchSelectSource(deviceId: String, source: String) {
+        viewModelScope.launch {
+            deviceManager.executeCommand(
+                DeviceCommand(
+                    deviceId = deviceId,
+                    action = "select_source",
+                    parameters = mapOf("source" to source)
                 )
             )
         }

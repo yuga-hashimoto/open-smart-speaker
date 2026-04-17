@@ -109,6 +109,9 @@ fun HomeScreen(
                 onRepeatChange = { mode ->
                     viewModel.dispatchRepeat(playing.deviceId, mode)
                 },
+                onSourceSelected = { source ->
+                    viewModel.dispatchSelectSource(playing.deviceId, source)
+                },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
             )
         }
