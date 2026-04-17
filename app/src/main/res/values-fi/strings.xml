@@ -10,4 +10,8 @@
     <string name="a11y_service_description">OpenSmartSpeaker käyttää tätä esteettömyyspalvelua lukeakseen näytön sisällön ja napauttaakseen painikkeita puolestasi pyynnöstäsi. Mitään tietoja ei lähetetä laitteen ulkopuolelle. Voit poistaa sen käytöstä milloin tahansa asetuksista.</string>
     <string name="voice_tile_label">Puhu</string>
     <string name="voice_tile_content_description">Aloita äänikeskustelu OpenSmartSpeakerin kanssa</string>
+    <string name="locale_picker_title">Kieli</string>
+    <string name="locale_picker_system_default">Järjestelmän oletus</string>
+    <string name="locale_picker_requires_android_13">Vaatii Android 13+</string>
+    <string name="locale_picker_close">Sulje</string>
 </resources>
