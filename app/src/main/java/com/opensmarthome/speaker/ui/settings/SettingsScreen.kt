@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -52,10 +53,16 @@ fun SettingsScreen(
     val localLlmUrl by viewModel.localLlmUrl.collectAsState()
     val localLlmModel by viewModel.localLlmModel.collectAsState()
 
+    // Settings is shown as an overlay from ModeScaffold AND as a NavHost route
+    // from AppNavigation. The NavHost path has no outer inset-consuming parent,
+    // so apply `systemBarsPadding()` at the root. When hosted inside
+    // ModeScaffold the outer Box already consumed the insets and this becomes
+    // a no-op — no double padding.
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {

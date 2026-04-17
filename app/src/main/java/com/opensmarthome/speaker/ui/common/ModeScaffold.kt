@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -82,7 +83,19 @@ fun ModeScaffold(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(SpeakerBackground)) {
+    // `systemBarsPadding()` consumes the WindowInsets for every descendant so
+    // the whole app shell (pager pages, connection badge, settings gear, voice
+    // overlay, mic FAB) is kept clear of the status bar and gesture nav bar on
+    // Android 15+ where `enableEdgeToEdge()` is mandatory. Applying it once on
+    // the outer Box means child composables don't have to opt in individually;
+    // Compose's inset consumption prevents double padding if a descendant
+    // re-applies the modifier.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SpeakerBackground)
+            .systemBarsPadding()
+    ) {
         // Main pages: Home ↔ Devices (swipe)
         HorizontalPager(
             state = pagerState,

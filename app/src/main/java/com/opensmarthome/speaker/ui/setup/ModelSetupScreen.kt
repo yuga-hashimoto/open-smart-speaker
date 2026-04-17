@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -71,8 +72,14 @@ fun ModelSetupScreen(
         label = "iconAlpha"
     )
 
+    // Setup runs before the main shell so it has no ModeScaffold parent —
+    // apply inset padding directly to avoid the progress text sliding under
+    // the status bar on edge-to-edge Android.
     Box(
-        modifier = modifier.fillMaxSize().background(SpeakerBackground),
+        modifier = modifier
+            .fillMaxSize()
+            .background(SpeakerBackground)
+            .systemBarsPadding(),
         contentAlignment = Alignment.Center
     ) {
         Column(

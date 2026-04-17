@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,10 +58,15 @@ fun VoiceOverlay(
         enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 },
         exit = fadeOut(tween(500))
     ) {
+        // Overlay is laid out inside ModeScaffold's inset-consuming root Box,
+        // so this `systemBarsPadding()` is a safety net: if the overlay is
+        // ever hoisted to MainActivity.setContent directly (tests, previews,
+        // bug reproductions) the headline text still clears the status bar.
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(SpeakerBackground.copy(alpha = 0.94f)),
+                .background(SpeakerBackground.copy(alpha = 0.94f))
+                .systemBarsPadding(),
             contentAlignment = Alignment.Center
         ) {
             Column(

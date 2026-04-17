@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,8 +52,14 @@ fun HomeScreen(
 
     val wide = isExpandedLandscape()
 
+    // `systemBarsPadding()` guards the standalone usage path (previews, direct
+    // navigation) — when HomeScreen is hosted inside ModeScaffold the outer Box
+    // has already consumed the insets so this becomes a no-op.
     Box(
-        modifier = modifier.fillMaxSize().background(SpeakerBackground)
+        modifier = modifier
+            .fillMaxSize()
+            .background(SpeakerBackground)
+            .systemBarsPadding()
     ) {
         if (wide) {
             Row(

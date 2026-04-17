@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
@@ -63,7 +64,10 @@ fun AmbientScreen(
     val now = remember(tick) { LocalDateTime.now() }
     val wide = isExpandedLandscape()
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Ambient renders edge-to-edge, so opt in to system bar insets explicitly
+    // to keep the clock, announcement banner, and quick-action chips below the
+    // status bar and above the gesture navigation bar.
+    Column(modifier = modifier.fillMaxSize().systemBarsPadding()) {
         // Household announcement banner sits above the quick-action row so it
         // dominates the viewport — the whole point of a persistent announcement
         // is that someone walking into the room can't miss it.

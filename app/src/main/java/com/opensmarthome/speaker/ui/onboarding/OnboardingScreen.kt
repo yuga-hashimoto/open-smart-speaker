@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -45,7 +46,13 @@ fun OnboardingScreen(
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+    // Edge-to-edge: keep the welcome heading below the status bar.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .padding(24.dp)
+    ) {
         Text(
             text = "Welcome",
             style = MaterialTheme.typography.headlineMedium
