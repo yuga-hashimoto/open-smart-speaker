@@ -99,7 +99,7 @@ would each warrant its own implementation phase:
   `DelegatingSttProvider` + `OfflineSttStub`. Real whisper.cpp / Vosk JNI = Phase 15.
 - **P14.2 VAD**: silence-timeout + min-speech knobs split; Silero VAD backend = Phase 15.
 - **P14.3 wake-word UI**: keyword + sensitivity shipped end-to-end. Done.
-- **P14.4 media depth**: volume / shuffle / repeat shipped. Queue list view = follow-up.
+- **P14.4 media depth**: volume / shuffle / repeat / source-picker bottom sheet shipped. HA integrations don't expose a uniform track queue, so per-track queue UI is out of scope.
 - **P14.5 multi-room**: mDNS discover + register + Settings opt-in toggle shipped.
   Broadcast RPC protocol = Phase 15.
 - **P14.6 DL resume**: HTTP Range end-to-end with full test coverage. Done.
@@ -113,7 +113,7 @@ would each warrant its own implementation phase:
 - [ ] P14.1: Offline STT provider — **scaffolding done**: SttProviderType enum (ANDROID / VOSK / WHISPER) + `STT_PROVIDER_TYPE` preference + DelegatingSttProvider that routes by preference at startListening time; OfflineSttStub emits a spoken "coming soon" Error so pipeline's ErrorClassifier surfaces it; Settings UI shows the three options with "coming soon" badges on offline. Actual whisper.cpp / Vosk JNI wiring still TODO. Ref: whisper.cpp, sherpa-onnx, SmolChat-Android
 - [ ] P14.2: VAD / endpoint detection — **parameters exposed**: separated `MIN_SPEECH_MS` from `SILENCE_TIMEOUT_MS` (previously both used the same value, which was surprising); new slider under Voice Interaction; AndroidSttProvider wires both into `EXTRA_SPEECH_INPUT_*`. Offline Silero/WebRTC VAD integration still TODO. Ref: sherpa-onnx silero-vad binding
 - [x] P14.3: Wake word customization UI — Sensitivity slider (0.0-1.0) in SettingsScreen alongside existing keyword text field; WAKE_WORD_SENSITIVITY preference; VoiceService loads into WakeWordConfig; VoskWakeWordDetector uses sensitivity to gate partial-result matching (threshold 0.5 = partial vs final-only). Unit tests cover the gate. Keyword customization was already shipped
-- [ ] P14.4: Media deeper control — **volume + shuffle + repeat done**: volume slider (0-100 %), shuffle toggle, repeat cycle (off→all→one) via HA `volume_set` / `shuffle_set` / `repeat_set`. Queue/playlist list-view still TODO. Ref: home-assistant/android media controls
+- [x] P14.4: Media deeper control — **all media controls shipped**: volume slider (0-100 %), shuffle toggle, repeat cycle (off→all→one), source/playlist picker bottom sheet (`media_player.select_source`). Per-track queue view out of scope: HA doesn't expose a uniform queue attribute across integrations. Ref: home-assistant/android media controls
 - [ ] P14.5: Multi-room broadcast — **discovery skeleton done**: MulticastDiscovery @Singleton wraps NsdManager for `_opensmartspeaker._tcp`; async resolveService fills host/port; SystemInfoScreen lifecycle-binds start/stop and lists nearby instances. **Registration wiring done (no UI yet)**: `register(port, instanceName)` / `unregister()` + `registeredName: StateFlow<String?>` advertise this device on DEFAULT_PORT=8421 (Build.MODEL fallback) — no caller wired yet, Settings toggle lands in a follow-up PR. Broadcast protocol handshake (timers, announcements) still TODO. Ref: OVOS message bus
 - [x] P14.6: Model download resume — ModelDownloader now sends `Range: bytes=N-` when a `.downloading` temp file exists and appends on 206 Partial Content. Falls back cleanly to full download when server returns 200. Failure path preserves partial file for next retry. Unit tests cover Range header, 206 append, 200-fallback, and post-failure survival
 - [x] P14.7: Real-device smoke test checklist — docs/real-device-smoke-test.md with wake→STT→LLM→TTS end-to-end steps + latency targets; 10 scripted steps (cold start → wake latency → fast path → tool call → barge-in → offline → tablet → onboarding → 30-min stability → system info) + power/thermal note + dated-run template
@@ -184,13 +184,26 @@ smoke testing).
   SecurePreferences. VoiceService lifecycle starts/stops the server behind the existing
   `MULTIROOM_BROADCAST_ENABLED` toggle. `tts_broadcast` and `heartbeat` are wired; other
   message types parse cleanly but dispatch as `Unhandled`. **Client / sender** side is P17.3+
-- [ ] P17.3: Timer sync — when user says "set a timer on all speakers 5 minutes",
-  fan out to discovered peers with `{"type":"start_timer", "seconds":300}`
-- [ ] P17.4: Speaker groups — user-named subsets of discovered peers for room-level routing
-- [ ] P17.5: Session handoff — "move this to the kitchen speaker" transfers the active
-  media device + conversation context via the bus
-- [ ] P17.6: Authentication — shared-secret QR pairing between peers; reject unpaired
-  message senders (protects against random LAN guests)
+- [x] P17.3: **Sender side shipped** — `AnnouncementClient` + `AnnouncementBroadcaster` with
+  fan-out across discovered peers; `BroadcastTtsToolExecutor` + `BroadcastTtsMatcher` provide
+  the user-facing path. `broadcast_timer` envelope wiring for cross-speaker timer fan-out is
+  a small follow-up on top of this (same broadcaster, different envelope type)
+- [x] P17.4: Speaker groups — `SpeakerGroupEntity` + `SpeakerGroupRepository` persist client-side
+  subsets; `AnnouncementBroadcaster.broadcastTtsToGroup` intersects with discovered peers;
+  `BroadcastGroupMatcher` routes "broadcast X to kitchen" ahead of the unscoped matcher;
+  `SettingsSpeakerGroupsScreen` manages add/remove/delete. Per ADR, groups stay client-side
+  and never appear on the wire
+- [x] P17.5: Session handoff — `AnnouncementType.SESSION_HANDOFF` envelope + dispatcher path
+  seeds `ConversationHistoryManager` on receive (replace semantics — the user said "move
+  this", not "also add this"); `HandoffMatcher` + `HandoffToolExecutor` on the send side.
+  Media handoff stubbed as Unhandled with a TODO (requires active-MediaSession + position
+  transfer, out of scope for P17.5)
+- [x] P17.6: Pairing fingerprint — **shipped as word-phrase, not QR**. `PairingFingerprint`
+  hashes the shared secret and maps the first 4 bytes against a bundled 256-word list;
+  `SettingsMultiroomPairingCard` displays the 4-word phrase so users verify both speakers
+  agree by reading to each other. Camera-based QR pairing intentionally deferred (camera dep,
+  marginal UX gain over word-phrase). Full challenge-response handshake is a future-work
+  item on the ADR backlog
 
 ## Won't do — requires root (design boundary)
 - OEM modifications (CarrierConfig, RIL overrides)
