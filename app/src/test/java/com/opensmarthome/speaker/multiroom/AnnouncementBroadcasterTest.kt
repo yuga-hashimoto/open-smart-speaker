@@ -768,6 +768,106 @@ class AnnouncementBroadcasterTest {
         coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
     }
 
+    // -- Multi-room traffic counter wiring ------------------------------------
+
+    @Test
+    fun `broadcastTts records one outbound per peer that returned Ok`() = runTest {
+        val peers = listOf(
+            DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421),
+            DiscoveredSpeaker("speaker-bedroom", host = "10.0.0.3", port = 8421)
+        )
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        coEvery { client.send(any(), any(), any(), any()) } returns SendOutcome.Ok
+        val recorder = io.mockk.mockk<MultiroomTrafficRecorder>(relaxed = true)
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            trafficRecorder = recorder,
+            nowMs = { 7_777L }
+        )
+
+        val result = broadcaster.broadcastTts("hi")
+        assertThat(result.sentCount).isEqualTo(2)
+        io.mockk.verify(exactly = 2) {
+            recorder.recordOutbound(type = AnnouncementType.TTS_BROADCAST, nowMs = 7_777L)
+        }
+    }
+
+    @Test
+    fun `broadcastTts does not record outbound for peers whose send failed`() = runTest {
+        // One good peer + one refused + one timeout: the recorder must
+        // see exactly one outbound tick. Inflating the counter on a
+        // flapping network would make the System Info view lie.
+        val peers = listOf(
+            DiscoveredSpeaker("ok", host = "10.0.0.2", port = 8421),
+            DiscoveredSpeaker("down", host = "10.0.0.3", port = 8421),
+            DiscoveredSpeaker("slow", host = "10.0.0.4", port = 8421)
+        )
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        coEvery { client.send("10.0.0.2", 8421, any(), any()) } returns SendOutcome.Ok
+        coEvery { client.send("10.0.0.3", 8421, any(), any()) } returns SendOutcome.ConnectionRefused
+        coEvery { client.send("10.0.0.4", 8421, any(), any()) } returns SendOutcome.Timeout
+        val recorder = io.mockk.mockk<MultiroomTrafficRecorder>(relaxed = true)
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            trafficRecorder = recorder
+        )
+
+        broadcaster.broadcastTts("hi")
+        io.mockk.verify(exactly = 1) { recorder.recordOutbound(type = AnnouncementType.TTS_BROADCAST, nowMs = any()) }
+    }
+
+    @Test
+    fun `broadcastHeartbeat records outbound with heartbeat type`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        coEvery { client.send(any(), any(), any(), any()) } returns SendOutcome.Ok
+        val recorder = io.mockk.mockk<MultiroomTrafficRecorder>(relaxed = true)
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            trafficRecorder = recorder
+        )
+
+        broadcaster.broadcastHeartbeat()
+        io.mockk.verify(exactly = 1) { recorder.recordOutbound(type = AnnouncementType.HEARTBEAT, nowMs = any()) }
+    }
+
+    @Test
+    fun `broadcast without recorder wired still succeeds`() = runTest {
+        // Existing tests and legacy call sites construct the broadcaster
+        // without a recorder — ensure no NPE creeps into the happy path.
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        coEvery { client.send(any(), any(), any(), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d, client = client,
+            securePreferences = securePrefs(secret), moshi = moshi, selfServiceName = self,
+            trafficRecorder = null
+        )
+
+        val result = broadcaster.broadcastTts("hi")
+        assertThat(result.sentCount).isEqualTo(1)
+    }
+
     @Test
     fun `handoffConversation returns failure when no shared secret`() = runTest {
         val peers = listOf(DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421))

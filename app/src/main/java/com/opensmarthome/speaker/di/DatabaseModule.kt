@@ -6,6 +6,7 @@ import com.opensmarthome.speaker.data.db.AppDatabase
 import com.opensmarthome.speaker.data.db.DocumentChunkDao
 import com.opensmarthome.speaker.data.db.MemoryDao
 import com.opensmarthome.speaker.data.db.MessageDao
+import com.opensmarthome.speaker.data.db.MultiroomTrafficDao
 import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.data.db.SessionDao
 import com.opensmarthome.speaker.data.db.SpeakerGroupDao
@@ -52,4 +53,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSpeakerGroupDao(db: AppDatabase): SpeakerGroupDao = db.speakerGroupDao()
+
+    @Provides
+    fun provideMultiroomTrafficDao(db: AppDatabase): MultiroomTrafficDao = db.multiroomTrafficDao()
 }

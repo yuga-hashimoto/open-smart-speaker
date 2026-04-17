@@ -39,7 +39,16 @@ class AnnouncementBroadcaster @Inject constructor(
      * if the handshake fails. Left nullable so legacy call sites and
      * tests can stay on NDJSON without pulling in an [OkHttpClient].
      */
-    private val webSocketClient: AnnouncementWebSocketClient? = null
+    private val webSocketClient: AnnouncementWebSocketClient? = null,
+    /**
+     * Optional outbound-traffic counter. When present, each peer-send
+     * that resolves to [SendOutcome.Ok] increments the lifetime counter
+     * for the envelope's type. Failed sends (timeout, refused, other)
+     * deliberately don't count — a flapping network shouldn't inflate
+     * the "sent" number the user sees in System Info.
+     */
+    private val trafficRecorder: MultiroomTrafficRecorder? = null,
+    private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) {
 
     private val mapAdapter: JsonAdapter<Map<String, Any?>> = moshi.adapter(
@@ -61,7 +70,7 @@ class AnnouncementBroadcaster @Inject constructor(
             )
 
         val line = buildTtsLine(text, language, secret)
-        return fanOut(line, filter = null)
+        return fanOut(line, filter = null, type = AnnouncementType.TTS_BROADCAST)
     }
 
     /**
@@ -98,7 +107,11 @@ class AnnouncementBroadcaster @Inject constructor(
 
         val line = buildTtsLine(text, language, secret)
         val allowed = group.memberServiceNames
-        return fanOut(line, filter = { peer -> peer.serviceName in allowed })
+        return fanOut(
+            line,
+            filter = { peer -> peer.serviceName in allowed },
+            type = AnnouncementType.TTS_BROADCAST
+        )
     }
 
     private fun requireSecret(): String? =
@@ -127,7 +140,7 @@ class AnnouncementBroadcaster @Inject constructor(
             payload = emptyMap(),
             secret = secret
         )
-        return fanOut(line, filter = null)
+        return fanOut(line, filter = null, type = AnnouncementType.HEARTBEAT)
     }
 
     /**
@@ -163,7 +176,7 @@ class AnnouncementBroadcaster @Inject constructor(
             payload = payload,
             secret = secret
         )
-        return fanOut(line, filter = null)
+        return fanOut(line, filter = null, type = AnnouncementType.START_TIMER)
     }
 
     /**
@@ -194,7 +207,7 @@ class AnnouncementBroadcaster @Inject constructor(
             payload = payload,
             secret = secret
         )
-        return fanOut(line, filter = null)
+        return fanOut(line, filter = null, type = AnnouncementType.CANCEL_TIMER)
     }
 
     private fun buildTtsLine(text: String, language: String, secret: String): String {
@@ -244,7 +257,7 @@ class AnnouncementBroadcaster @Inject constructor(
             payload = payload,
             secret = secret
         )
-        return fanOut(line, filter = null)
+        return fanOut(line, filter = null, type = AnnouncementType.ANNOUNCEMENT)
     }
 
     /**
@@ -356,7 +369,8 @@ class AnnouncementBroadcaster @Inject constructor(
 
     private suspend fun fanOut(
         line: String,
-        filter: ((DiscoveredSpeaker) -> Boolean)?
+        filter: ((DiscoveredSpeaker) -> Boolean)?,
+        type: String
     ): BroadcastResult {
         val resolved = discovery.speakers.value.filter {
             !it.host.isNullOrBlank() && it.port != null && it.port > 0
@@ -374,6 +388,17 @@ class AnnouncementBroadcaster @Inject constructor(
                     )
                 }
             }.awaitAll()
+        }
+        // Count one lifetime outbound per successful peer-send — failures
+        // (timeout / refused / other) deliberately don't increment, so a
+        // flapping network can't lie about how many envelopes actually
+        // reached the wire.
+        val recorder = trafficRecorder
+        if (recorder != null) {
+            val ts = nowMs()
+            results.forEach { (_, outcome) ->
+                if (outcome is SendOutcome.Ok) recorder.recordOutbound(type = type, nowMs = ts)
+            }
         }
         val sent = results.count { it.second is SendOutcome.Ok }
         val failures = results

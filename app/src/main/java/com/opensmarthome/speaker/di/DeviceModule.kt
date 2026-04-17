@@ -197,7 +197,8 @@ object DeviceModule {
         tts: com.opensmarthome.speaker.voice.tts.TextToSpeech,
         timerManager: com.opensmarthome.speaker.tool.system.TimerManager,
         announcementState: com.opensmarthome.speaker.multiroom.AnnouncementState,
-        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
+        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker,
+        trafficRecorder: com.opensmarthome.speaker.multiroom.MultiroomTrafficRecorder
     ): com.opensmarthome.speaker.multiroom.AnnouncementDispatcher =
         com.opensmarthome.speaker.multiroom.AnnouncementDispatcher(
             tts = tts,
@@ -207,7 +208,8 @@ object DeviceModule {
             historyProvider = { null },
             timerManagerProvider = { timerManager },
             announcementState = announcementState,
-            onHeartbeat = { envelope -> peerLivenessTracker.onHeartbeat(envelope) }
+            onHeartbeat = { envelope -> peerLivenessTracker.onHeartbeat(envelope) },
+            trafficRecorder = trafficRecorder
         )
 
     @Provides
@@ -218,7 +220,8 @@ object DeviceModule {
         webSocketClient: com.opensmarthome.speaker.multiroom.AnnouncementWebSocketClient,
         securePreferences: com.opensmarthome.speaker.data.preferences.SecurePreferences,
         moshi: Moshi,
-        speakerGroupRepository: com.opensmarthome.speaker.multiroom.SpeakerGroupRepository
+        speakerGroupRepository: com.opensmarthome.speaker.multiroom.SpeakerGroupRepository,
+        trafficRecorder: com.opensmarthome.speaker.multiroom.MultiroomTrafficRecorder
     ): com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster =
         com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster(
             discovery = discovery,
@@ -227,7 +230,8 @@ object DeviceModule {
             moshi = moshi,
             selfServiceName = { discovery.registeredName.value },
             groupLookup = { name -> speakerGroupRepository.get(name) },
-            webSocketClient = webSocketClient
+            webSocketClient = webSocketClient,
+            trafficRecorder = trafficRecorder
         )
 
     @Provides

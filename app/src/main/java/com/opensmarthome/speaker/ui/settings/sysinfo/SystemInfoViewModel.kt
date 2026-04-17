@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.data.db.MemoryDao
+import com.opensmarthome.speaker.data.db.MultiroomTrafficDao
+import com.opensmarthome.speaker.data.db.MultiroomTrafficEntity
 import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.multiroom.PeerFreshness
@@ -42,7 +44,8 @@ class SystemInfoViewModel @Inject constructor(
     private val ragRepository: RagRepository,
     private val multicastDiscovery: MulticastDiscovery,
     private val thermalMonitor: ThermalMonitor,
-    private val peerLivenessTracker: PeerLivenessTracker
+    private val peerLivenessTracker: PeerLivenessTracker,
+    private val multiroomTrafficDao: MultiroomTrafficDao
 ) : ViewModel() {
 
     val nearbySpeakers: StateFlow<List<DiscoveredSpeaker>> = multicastDiscovery.speakers
@@ -64,6 +67,20 @@ class SystemInfoViewModel @Inject constructor(
     /** Stop mDNS discovery to release the network stack. */
     fun stopDiscovery() = multicastDiscovery.stop()
 
+    /**
+     * One row per observed envelope type in the lifetime
+     * [MultiroomTrafficEntity] table. [inbound] / [outbound] are
+     * independent counters (different DB rows), collapsed here for UI
+     * consumption; [lastAtMs] is the most recent touch across both
+     * directions.
+     */
+    data class TrafficRow(
+        val type: String,
+        val inbound: Long,
+        val outbound: Long,
+        val lastAtMs: Long
+    )
+
     data class Snapshot(
         val activeProviderModel: String?,
         val providerCount: Int,
@@ -78,6 +95,7 @@ class SystemInfoViewModel @Inject constructor(
         val routineCount: Int = 0,
         val documentCount: Int = 0,
         val thermalLevel: String = "NORMAL",
+        val multiroomTraffic: List<TrafficRow> = emptyList(),
         val loading: Boolean = false
     )
 
@@ -104,6 +122,18 @@ class SystemInfoViewModel @Inject constructor(
             val measurements = latencyRecorder.totalMeasurements()
             val routines = runCatching { routineDao.listAll().size }.getOrDefault(0)
             val documents = runCatching { ragRepository.listDocuments().size }.getOrDefault(0)
+            val traffic = runCatching { multiroomTrafficDao.listAll() }.getOrDefault(emptyList())
+            val trafficRows = traffic
+                .groupBy { it.type }
+                .map { (type, rows) ->
+                    TrafficRow(
+                        type = type,
+                        inbound = rows.firstOrNull { it.direction == MultiroomTrafficEntity.DIRECTION_IN }?.count ?: 0L,
+                        outbound = rows.firstOrNull { it.direction == MultiroomTrafficEntity.DIRECTION_OUT }?.count ?: 0L,
+                        lastAtMs = rows.maxOf { it.lastAtMs }
+                    )
+                }
+                .sortedBy { it.type }
             _state.value = Snapshot(
                 activeProviderModel = router.activeProvider.value?.capabilities?.modelName,
                 providerCount = router.availableProviders.value.size,
@@ -118,6 +148,7 @@ class SystemInfoViewModel @Inject constructor(
                 routineCount = routines,
                 documentCount = documents,
                 thermalLevel = thermalMonitor.status.value.name,
+                multiroomTraffic = trafficRows,
                 loading = false
             )
         }

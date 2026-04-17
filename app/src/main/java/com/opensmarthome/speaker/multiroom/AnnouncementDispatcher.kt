@@ -35,7 +35,15 @@ class AnnouncementDispatcher(
      * to [PeerLivenessTracker.onHeartbeat] so receivers update their
      * per-peer `lastSeenMs` on every incoming heartbeat.
      */
-    private val onHeartbeat: (AnnouncementEnvelope) -> Unit = {}
+    private val onHeartbeat: (AnnouncementEnvelope) -> Unit = {},
+    /**
+     * Optional inbound-traffic counter. When present, every authenticated
+     * envelope that reaches [dispatch] increments the lifetime counter for
+     * its type. Nullable so existing tests and legacy callers don't need
+     * to thread a Room-backed recorder through.
+     */
+    private val trafficRecorder: MultiroomTrafficRecorder? = null,
+    private val clock: () -> Long = { System.currentTimeMillis() }
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -53,6 +61,12 @@ class AnnouncementDispatcher(
      * so the caller can log or update a counter.
      */
     fun dispatch(envelope: AnnouncementEnvelope): DispatchOutcome {
+        // Record every authenticated envelope that reaches us — the parser
+        // has already rejected anything with a bad HMAC or stale timestamp,
+        // so by the time we're here the envelope genuinely traversed the
+        // mesh. Unhandled types still count: the fact that a peer is
+        // emitting them is useful telemetry on its own.
+        trafficRecorder?.recordInbound(type = envelope.type, nowMs = clock())
         return when (envelope.type) {
             AnnouncementType.TTS_BROADCAST -> handleTtsBroadcast(envelope)
             AnnouncementType.ANNOUNCEMENT -> handleAnnouncement(envelope)

@@ -11,9 +11,10 @@ import androidx.room.RoomDatabase
         RoutineEntity::class,
         DocumentChunkEntity::class,
         ToolUsageEntity::class,
-        SpeakerGroupEntity::class
+        SpeakerGroupEntity::class,
+        MultiroomTrafficEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,4 +25,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun documentChunkDao(): DocumentChunkDao
     abstract fun toolUsageDao(): ToolUsageDao
     abstract fun speakerGroupDao(): SpeakerGroupDao
+    abstract fun multiroomTrafficDao(): MultiroomTrafficDao
 }

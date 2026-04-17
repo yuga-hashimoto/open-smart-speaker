@@ -25,14 +25,18 @@ class AnnouncementDispatcherTest {
         history: ConversationHistoryManager? = null,
         timerManager: TimerManager? = null,
         announcementState: AnnouncementState? = null,
-        onHeartbeat: (AnnouncementEnvelope) -> Unit = {}
+        onHeartbeat: (AnnouncementEnvelope) -> Unit = {},
+        trafficRecorder: MultiroomTrafficRecorder? = null,
+        clock: () -> Long = { 1_000L }
     ): AnnouncementDispatcher =
         AnnouncementDispatcher(
             tts = tts,
             historyProvider = { history },
             timerManagerProvider = { timerManager },
             announcementState = announcementState,
-            onHeartbeat = onHeartbeat
+            onHeartbeat = onHeartbeat,
+            trafficRecorder = trafficRecorder,
+            clock = clock
         )
 
     private fun recordingTimerManager(): Pair<TimerManager, MutableList<Pair<Int, String>>> {
@@ -389,5 +393,35 @@ class AnnouncementDispatcherTest {
         val r = dispatcher(timerManager = null)
             .dispatch(envelope("cancel_timer", emptyMap()))
         assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+    }
+
+    // -- Multi-room traffic counter wiring ------------------------------------
+
+    @Test
+    fun `dispatch records one inbound tick per authenticated envelope`() {
+        val recorder = io.mockk.mockk<MultiroomTrafficRecorder>(relaxed = true)
+        dispatcher(trafficRecorder = recorder, clock = { 4_242L })
+            .dispatch(envelope("tts_broadcast", mapOf("text" to "hi")))
+        io.mockk.verify(exactly = 1) { recorder.recordInbound(type = "tts_broadcast", nowMs = 4_242L) }
+    }
+
+    @Test
+    fun `dispatch records inbound even for unknown types so telemetry still shows peer chatter`() {
+        // An unfamiliar envelope type still traversed the mesh and still
+        // verified under our shared secret — the fact that a peer is
+        // emitting it is worth counting even though we can't act on it.
+        val recorder = io.mockk.mockk<MultiroomTrafficRecorder>(relaxed = true)
+        dispatcher(trafficRecorder = recorder)
+            .dispatch(envelope("future_message_type"))
+        io.mockk.verify(exactly = 1) { recorder.recordInbound(type = "future_message_type", nowMs = any()) }
+    }
+
+    @Test
+    fun `dispatch works unchanged when no trafficRecorder is wired`() {
+        // Existing legacy call sites don't pass a recorder — the dispatcher
+        // must still accept and route envelopes without throwing.
+        val r = dispatcher(trafficRecorder = null)
+            .dispatch(envelope("heartbeat"))
+        assertThat(r).isEqualTo(AnnouncementDispatcher.DispatchOutcome.AcknowledgedHeartbeat)
     }
 }

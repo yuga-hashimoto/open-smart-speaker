@@ -92,6 +92,15 @@ fun SystemInfoScreen(
                 val value = (hostSuffix + freshnessSuffix).trimStart(' ', '—', ' ')
                 add("  • ${speaker.serviceName}" to value)
             }
+            if (state.multiroomTraffic.isNotEmpty()) {
+                // Collapsed `{in}/{out}` counter per envelope type — lets the
+                // user sanity-check that the mesh is actually exchanging
+                // traffic without paging through logs.
+                add("Multi-room traffic" to "")
+                state.multiroomTraffic.forEach { row ->
+                    add("  • ${row.type}" to "${row.outbound} out · ${row.inbound} in")
+                }
+            }
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
