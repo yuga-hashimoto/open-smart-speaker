@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Συνομιλία</string>
+    <string name="tab_dashboard">Πίνακας</string>
+    <string name="tab_ambient">Περιβάλλον</string>
+    <string name="tab_settings">Ρυθμίσεις</string>
+    <string name="accessibility_service_description">Επιτρέπει στον βοηθό του έξυπνου ηχείου να διαβάζει το ορατό κείμενο της οθόνης και να αυτοματοποιεί ενέργειες της διεπαφής εκ μέρους σας.</string>
+    <string name="accessibility_service_summary">Ενεργοποιήστε για να επιτρέψετε στον τοπικό βοηθό να βλέπει και να ελέγχει την οθόνη.</string>
+    <string name="a11y_service_description">Το OpenSmartSpeaker χρησιμοποιεί αυτήν την υπηρεσία προσβασιμότητας για να διαβάζει το περιεχόμενο της οθόνης και να πατάει κουμπιά εκ μέρους σας όταν το ζητάτε. Κανένα δεδομένο δεν φεύγει από τη συσκευή. Μπορείτε να την απενεργοποιήσετε ανά πάσα στιγμή από τις Ρυθμίσεις.</string>
+    <string name="voice_tile_label">Μιλήστε</string>
+    <string name="voice_tile_content_description">Εκκίνηση φωνητικής συνεδρίας με το OpenSmartSpeaker</string>
+</resources>
