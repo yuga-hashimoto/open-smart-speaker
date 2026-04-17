@@ -11,6 +11,7 @@ import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.info.NewsItem
 import com.opensmarthome.speaker.tool.info.WeatherInfo
+import com.opensmarthome.speaker.tool.system.CalendarEvent
 import com.opensmarthome.speaker.tool.system.TimerInfo
 import com.opensmarthome.speaker.tool.system.TimerManager
 import com.opensmarthome.speaker.util.BatteryMonitor
@@ -39,6 +40,7 @@ class HomeViewModel @Inject constructor(
     private val briefingSource: OnlineBriefingSource,
     batteryMonitor: BatteryMonitor,
     thermalMonitor: ThermalMonitor,
+    private val upcomingEventSource: UpcomingEventSource,
 ) : ViewModel() {
 
     companion object {
@@ -54,6 +56,11 @@ class HomeViewModel @Inject constructor(
         /** Headline tile count on the Home dashboard. Keeps the UI readable
          *  at a glance on a tablet; deeper browsing is a voice command. */
         internal const val HEADLINES_LIMIT = 5
+
+        /** Cadence for polling the calendar provider. Five minutes is more
+         *  than fast enough — next-event resolution is measured in minutes,
+         *  not seconds, and calendar syncs are already coarse. */
+        internal const val NEXT_EVENT_REFRESH_MS = 5L * 60L * 1000L
     }
 
     /**
@@ -175,6 +182,23 @@ class HomeViewModel @Inject constructor(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList()
+    )
+
+    /**
+     * Single next upcoming calendar event. Polled every
+     * [NEXT_EVENT_REFRESH_MS]; `WhileSubscribed(5_000)` pauses the loop
+     * while Home is off-screen. Emits `null` when calendar permission
+     * is missing or nothing is coming up.
+     */
+    val nextEvent: StateFlow<CalendarEvent?> = flow {
+        while (true) {
+            emit(upcomingEventSource.nextEvent())
+            delay(NEXT_EVENT_REFRESH_MS)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = null
     )
 
     private val _deviceChips = MutableStateFlow<List<DeviceChip>>(emptyList())

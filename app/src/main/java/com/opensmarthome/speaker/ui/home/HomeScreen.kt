@@ -53,6 +53,7 @@ fun HomeScreen(
     val activeTimers by viewModel.activeTimers.collectAsState()
     val battery by viewModel.batteryStatus.collectAsState()
     val thermal by viewModel.thermalLevel.collectAsState()
+    val nextEvent by viewModel.nextEvent.collectAsState()
 
     val wide = isExpandedLandscape()
 
@@ -99,6 +100,10 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                         verticalArrangement = Arrangement.Center
                     ) {
+                        nextEvent?.let {
+                            NextEventCard(event = it)
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                         if (activeTimers.isNotEmpty()) {
                             ActiveTimersCard(
                                 timers = activeTimers,
@@ -131,6 +136,10 @@ fun HomeScreen(
                     OnlineWeatherCard(weather = online)
                 } else {
                     WeatherWidget(weather = weather)
+                }
+                nextEvent?.let {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    NextEventCard(event = it)
                 }
                 if (activeTimers.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(24.dp))

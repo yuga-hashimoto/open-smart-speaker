@@ -111,6 +111,30 @@ class RoutineToolExecutorTest {
     }
 
     @Test
+    fun `list_routines escapes control characters to produce valid JSON`() = runTest {
+        store.save(
+            Routine(
+                id = "r1",
+                name = "morning\troutine\r\nwith \"quotes\" and \\ slash",
+                description = "desc with\ttab",
+                actions = listOf(RoutineAction("tool\twith_tab", emptyMap()))
+            )
+        )
+
+        val result = executor.execute(ToolCall("json", "list_routines", emptyMap()))
+
+        assertThat(result.success).isTrue()
+        val parsed = JSONArray(result.data)
+        assertThat(parsed.length()).isEqualTo(1)
+        val entry = parsed.getJSONObject(0)
+        assertThat(entry.getString("name"))
+            .isEqualTo("morning\troutine\r\nwith \"quotes\" and \\ slash")
+        assertThat(entry.getString("description")).isEqualTo("desc with\ttab")
+        assertThat(entry.getJSONArray("actions").getJSONObject(0).getString("tool"))
+            .isEqualTo("tool\twith_tab")
+    }
+
+    @Test
     fun `delete_routine removes by id`() = runTest {
         store.save(Routine("r", "x", "", listOf()))
 

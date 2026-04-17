@@ -101,6 +101,18 @@ class RoutineToolExecutor(
         }
     }
 
-    private fun String.escapeJson(): String =
-        replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ")
+    private fun String.escapeJson(): String = buildString(length) {
+        for (c in this@escapeJson) {
+            when (c) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\b' -> append("\\b")
+                '\u000C' -> append("\\f")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> if (c.code < 0x20) append("\\u%04x".format(c.code)) else append(c)
+            }
+        }
+    }
 }

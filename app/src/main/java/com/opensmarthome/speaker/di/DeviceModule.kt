@@ -400,6 +400,20 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideCalendarProvider(
+        @ApplicationContext context: Context
+    ): com.opensmarthome.speaker.tool.system.CalendarProvider =
+        AndroidCalendarProvider(context)
+
+    @Provides
+    @Singleton
+    fun provideUpcomingEventSource(
+        calendarProvider: com.opensmarthome.speaker.tool.system.CalendarProvider
+    ): com.opensmarthome.speaker.ui.home.UpcomingEventSource =
+        com.opensmarthome.speaker.ui.home.DefaultUpcomingEventSource(calendarProvider)
+
+    @Provides
+    @Singleton
     fun provideToolExecutor(
         deviceManager: DeviceManager,
         moshi: Moshi,

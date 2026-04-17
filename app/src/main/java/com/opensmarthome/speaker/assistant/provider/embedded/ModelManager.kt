@@ -51,14 +51,15 @@ class ModelManager(private val context: Context) {
 
     fun importModel(uri: Uri): ModelInfo? {
         return try {
-            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
             val fileName = uri.lastPathSegment?.substringAfterLast("/") ?: "model.gguf"
             val targetFile = File(getModelsDirectory(), fileName)
 
-            FileOutputStream(targetFile).use { output ->
-                inputStream.copyTo(output, bufferSize = 8192)
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            inputStream.use { input ->
+                FileOutputStream(targetFile).use { output ->
+                    input.copyTo(output, bufferSize = 8192)
+                }
             }
-            inputStream.close()
 
             if (!validateModel(targetFile.absolutePath)) {
                 targetFile.delete()

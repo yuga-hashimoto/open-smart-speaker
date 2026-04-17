@@ -79,7 +79,7 @@ class HomeViewModelBriefingTest {
         val tm = mockk<com.opensmarthome.speaker.util.ThermalMonitor>().apply {
             every { status } returns MutableStateFlow(com.opensmarthome.speaker.util.ThermalLevel.NORMAL)
         }
-        return HomeViewModel(deviceManager, ss, te, stubbedTimerManager(), briefing, bm, tm)
+        return HomeViewModel(deviceManager, ss, te, stubbedTimerManager(), briefing, bm, tm, UpcomingEventSource.Empty)
     }
 
     @Test
