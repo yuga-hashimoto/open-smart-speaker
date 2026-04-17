@@ -157,7 +157,12 @@ object DeviceModule {
 
     @Provides
     @Singleton
-    fun provideFastPathRouter(): FastPathRouter = DefaultFastPathRouter()
+    fun provideFastPathRouter(
+        batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor
+    ): FastPathRouter = DefaultFastPathRouter(
+        matchers = DefaultFastPathRouter.DEFAULT_MATCHERS +
+            com.opensmarthome.speaker.voice.fastpath.BatteryMatcher(batteryMonitor)
+    )
 
     @Provides
     @Singleton
