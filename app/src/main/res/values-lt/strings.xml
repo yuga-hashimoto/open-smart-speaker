@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Pokalbis</string>
+    <string name="tab_dashboard">Skydelis</string>
+    <string name="tab_ambient">Aplinka</string>
+    <string name="tab_settings">Nustatymai</string>
+    <string name="accessibility_service_description">Leidžia išmaniojo garsiakalbio agentui skaityti šiuo metu matomą ekrano tekstą ir automatizuoti sąsajos veiksmus jūsų vardu.</string>
+    <string name="accessibility_service_summary">Įjunkite, kad įrenginyje veikiantis agentas galėtų matyti ir valdyti ekraną.</string>
+    <string name="a11y_service_description">„OpenSmartSpeaker“ naudoja šią pritaikymo neįgaliesiems paslaugą, kad paprašius perskaitytų, kas rodoma ekrane, ir paspaustų mygtukus jūsų vardu. Jokie duomenys neišsiunčiami iš įrenginio. Galite bet kada išjungti nustatymuose.</string>
+    <string name="voice_tile_label">Kalbėti</string>
+    <string name="voice_tile_content_description">Pradėti balso sesiją su „OpenSmartSpeaker“</string>
+    <string name="locale_picker_title">Kalba</string>
+    <string name="locale_picker_system_default">Sistemos numatytoji</string>
+    <string name="locale_picker_requires_android_13">Reikalingas „Android 13+“</string>
+    <string name="locale_picker_close">Uždaryti</string>
+</resources>
