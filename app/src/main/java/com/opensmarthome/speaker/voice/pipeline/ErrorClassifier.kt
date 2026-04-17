@@ -24,6 +24,10 @@ class ErrorClassifier {
         LOCAL_ENGINE,
         PERMISSION,
         TOOL_FAILURE,
+        MULTIROOM_NO_SECRET,
+        MULTIROOM_HMAC,
+        MULTIROOM_REPLAY,
+        MULTIROOM_NO_PEERS,
         UNKNOWN
     }
 
@@ -78,6 +82,30 @@ class ErrorClassifier {
                     Category.PERMISSION,
                     "I need permission for that. Check settings.",
                     canRetry = false
+                )
+            contains(lower, "no shared secret") ->
+                Recovery(
+                    Category.MULTIROOM_NO_SECRET,
+                    "Multi-room isn't set up yet. Tap Settings, Multi-room shared secret, on every speaker first.",
+                    canRetry = false
+                )
+            contains(lower, "hmac mismatch", "hmac_mismatch") ->
+                Recovery(
+                    Category.MULTIROOM_HMAC,
+                    "A speaker on the network sent a message I can't verify. Check that every speaker is using the same shared secret.",
+                    canRetry = false
+                )
+            contains(lower, "replay window", "replay_window") ->
+                Recovery(
+                    Category.MULTIROOM_REPLAY,
+                    "I ignored an out-of-sync message. Make sure every speaker has automatic network time enabled.",
+                    canRetry = true
+                )
+            contains(lower, "no peers") ->
+                Recovery(
+                    Category.MULTIROOM_NO_PEERS,
+                    "No other speakers are visible on the network. Check that Multi-room broadcast is on for each tablet.",
+                    canRetry = true
                 )
             contains(lower, "tool", "execution failed", "arguments") ->
                 Recovery(

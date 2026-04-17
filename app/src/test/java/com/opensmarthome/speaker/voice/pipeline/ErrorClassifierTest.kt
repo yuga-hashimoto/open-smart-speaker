@@ -116,4 +116,36 @@ class ErrorClassifierTest {
         )
         assertThat(r.category).isEqualTo(ErrorClassifier.Category.LOCAL_ENGINE)
     }
+
+    @Test
+    fun `multiroom no shared secret`() {
+        val r = classifier.classify("Broadcast refused: no shared secret")
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.MULTIROOM_NO_SECRET)
+        assertThat(r.canRetry).isFalse()
+        assertThat(r.userSpokenMessage).contains("shared secret")
+    }
+
+    @Test
+    fun `multiroom hmac mismatch from parser reason`() {
+        // AnnouncementParser.Reason enum name surfaces as HMAC_MISMATCH;
+        // classifier normalises underscores so the matcher catches it.
+        val r = classifier.classify("Envelope rejected: HMAC_MISMATCH")
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.MULTIROOM_HMAC)
+        assertThat(r.userSpokenMessage.lowercase()).contains("verify")
+    }
+
+    @Test
+    fun `multiroom replay window reject`() {
+        val r = classifier.classify("Envelope rejected: REPLAY_WINDOW age=120s")
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.MULTIROOM_REPLAY)
+        assertThat(r.userSpokenMessage.lowercase()).contains("network time")
+    }
+
+    @Test
+    fun `multiroom no peers discovered`() {
+        val r = classifier.classify("No peers found to broadcast to.")
+        assertThat(r.category).isEqualTo(ErrorClassifier.Category.MULTIROOM_NO_PEERS)
+        assertThat(r.canRetry).isTrue()
+        assertThat(r.userSpokenMessage.lowercase()).contains("speakers")
+    }
 }
