@@ -6,6 +6,12 @@ import timber.log.Timber
 
 /**
  * Android implementation of AppLauncher using PackageManager.
+ *
+ * [launchApp] resolves the user's spoken target via [AppNameMatcher]'s fuzzy
+ * scoring so utterances like "open the weather app" or "天気アプリ開いて" find
+ * the right package even when the user's wording doesn't exactly match the
+ * label. Exact match always beats fuzzy; below the threshold we refuse so a
+ * mumble doesn't randomly launch Netflix.
  */
 class AndroidAppLauncher(
     private val context: Context
@@ -14,11 +20,7 @@ class AndroidAppLauncher(
     override suspend fun launchApp(appName: String): Boolean {
         val pm = context.packageManager
         val apps = listInstalledApps()
-
-        // Find by exact or partial name match (case-insensitive)
-        val match = apps.firstOrNull { it.name.equals(appName, ignoreCase = true) }
-            ?: apps.firstOrNull { it.name.contains(appName, ignoreCase = true) }
-            ?: return false
+        val match = AppNameMatcher.findBest(appName, apps) ?: return false
 
         val launchIntent = pm.getLaunchIntentForPackage(match.packageName)
             ?: return false
