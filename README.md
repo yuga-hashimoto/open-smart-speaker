@@ -92,6 +92,13 @@ OpenSmartSpeaker is all three at once, on a single Android tablet you already ow
 - **Secrets encrypted** via EncryptedSharedPreferences (AES256-GCM).
 - **Network calls minimized** and opt-in. See [SECURITY.md](SECURITY.md).
 
+### Languages
+UI translated into English, 日本語, Español, Français, Deutsch, 简体中文 — pick in
+Settings → Language (Android 13+) or follow the system locale. Fast-path
+matchers and bundled skills respond to EN + JA utterances side-by-side. See
+[docs/i18n.md](docs/i18n.md) for the full list and how to contribute a new
+locale.
+
 ---
 
 ## Hardware recommendations
