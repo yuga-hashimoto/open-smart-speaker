@@ -16,6 +16,8 @@ package com.opensmarthome.speaker.voice.pipeline
 object FastPathResultFormatter {
 
     private const val FALLBACK = "Done."
+    private const val MAX_FORECAST_DAYS = 3
+    private const val MAX_NEWS_HEADLINES = 3
 
     /**
      * @param toolName the canonical tool name (`get_weather`, `get_forecast`,
@@ -38,9 +40,94 @@ object FastPathResultFormatter {
         }
     }
 
+    /**
+     * Pre-summary used as the grounding facts for
+     * [FastPathLlmPolisher.buildPrompt]. Same extraction logic as
+     * [format] but emits a short plain-text "Current: …", "Day 1: …",
+     * "Abstract: …", "Headlines: …" summary that a 270m-2B on-device
+     * model can reliably follow.
+     *
+     * Returns the empty string when [data] is blank or the tool is not
+     * one of the supported info tools; callers should fall back to the
+     * raw [data] in that case.
+     */
+    fun buildPolishSummary(toolName: String, data: String, ttsLanguageTag: String?): String {
+        if (data.isBlank()) return ""
+        return when (toolName) {
+            "get_weather" -> buildWeatherSummary(data)
+            "get_forecast" -> buildForecastSummary(data)
+            "web_search" -> buildWebSearchSummary(data)
+            "get_news" -> buildNewsSummary(data)
+            else -> ""
+        }
+    }
+
     private fun isJapanese(tag: String?): Boolean {
         if (tag.isNullOrBlank()) return false
         return tag.lowercase().startsWith("ja")
+    }
+
+    // --- Pre-summary builders (plain text for the LLM polisher) ---
+
+    private fun buildWeatherSummary(data: String): String {
+        val location = stringField(data, "location")
+        val tempC = numberField(data, "temperature_c")
+        val condition = stringField(data, "condition")
+        val humidity = numberField(data, "humidity")
+        val windKph = numberField(data, "wind_kph")
+        if (location == null && tempC == null && condition == null) return ""
+        val parts = mutableListOf<String>()
+        if (location != null) parts.add("location $location")
+        if (tempC != null) parts.add("${formatInt(tempC)}°C")
+        if (!condition.isNullOrBlank()) parts.add(condition)
+        if (humidity != null) parts.add("humidity ${formatInt(humidity)}%")
+        if (windKph != null) parts.add("wind ${formatInt(windKph)}km/h")
+        return "Current: " + parts.joinToString(", ") + "."
+    }
+
+    private fun buildForecastSummary(data: String): String {
+        val entries = splitObjectArray(data)
+        if (entries.isEmpty()) return "No forecast data."
+        return entries.take(MAX_FORECAST_DAYS).mapIndexed { idx, entry ->
+            val date = stringField(entry, "date")
+            val minC = numberField(entry, "min_c")
+            val maxC = numberField(entry, "max_c")
+            val condition = stringField(entry, "condition")
+            val label = date ?: "Day ${idx + 1}"
+            val parts = mutableListOf<String>()
+            if (minC != null) parts.add("min ${formatInt(minC)}°C")
+            if (maxC != null) parts.add("max ${formatInt(maxC)}°C")
+            if (!condition.isNullOrBlank()) parts.add(condition)
+            "$label: " + parts.joinToString(", ") + "."
+        }.joinToString(" ")
+    }
+
+    private fun buildWebSearchSummary(data: String): String {
+        val abstract = stringField(data, "abstract")
+        val related = stringArrayField(data, "related")
+        return buildString {
+            if (!abstract.isNullOrBlank()) {
+                append("Abstract: ")
+                append(abstract)
+            } else {
+                append("Abstract: (empty)")
+            }
+            if (related.isNotEmpty()) {
+                append(" Related: ")
+                append(related.take(3).joinToString("; "))
+            }
+            if (abstract.isNullOrBlank() && related.isEmpty()) {
+                append(" No results from the search provider.")
+            }
+        }
+    }
+
+    private fun buildNewsSummary(data: String): String {
+        val entries = splitObjectArray(data)
+        if (entries.isEmpty()) return "No news headlines available."
+        val titles = entries.take(MAX_NEWS_HEADLINES).mapNotNull { stringField(it, "title") }
+        if (titles.isEmpty()) return "No news headlines available."
+        return "Headlines: " + titles.mapIndexed { i, t -> "${i + 1}) $t" }.joinToString(". ") + "."
     }
 
     // --- Weather ---

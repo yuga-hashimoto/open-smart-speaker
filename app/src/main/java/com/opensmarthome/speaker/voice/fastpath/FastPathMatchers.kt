@@ -1111,7 +1111,16 @@ object WebSearchMatcher : FastPathMatcher {
     // chars there so conjugations like "検索して" / "ググって" / "調べてよ" all
     // match without enumerating every ending.
     private val japanesePatterns = listOf(
-        Regex("""^\s*(.+?)\s*(?:を|について|に関して)\s*(?:web\s*)?(?:検索|ググ|調べ).*$""")
+        // Accept optional "Web で / ウェブ で / ネット で" filler between the
+        // topic connector (を/について/に関して) and the search verb so
+        // STT output like "Google pixel 14について Web で検索して" still
+        // captures only "Google pixel 14".
+        Regex(
+            """^\s*(.+?)\s*(?:を|について|に関して)\s*""" +
+                """(?:(?:web|ウェブ|ネット)\s*で?\s*)?""" +
+                """(?:検索|ググ|調べ).*$""",
+            RegexOption.IGNORE_CASE
+        )
     )
 
     // Bare "search" / "web search" / "Web検索して" without a query — prompt.
@@ -1122,8 +1131,32 @@ object WebSearchMatcher : FastPathMatcher {
         """^\s*(?:web\s*)?(?:検索|ググ).*$"""
     )
 
+    // STT frequently joins the subject with its trailing connector so the
+    // capture group absorbs "について / に関して / Web で / 検索して / ググって".
+    // Strip those suffixes so the downstream search query stays clean —
+    // otherwise DuckDuckGo receives "pixel 14について web で検索して" and
+    // returns a 202 (empty) response.
+    private val trailingNoiseRegex = Regex(
+        """\s*(?:について|に関して|を|web\s*で?|ウェブ\s*で?|ネット\s*で?|検索\S*|ググ\S*|調べ\S*|\?|？|。|!|！|、|,|\.)+\s*$""",
+        RegexOption.IGNORE_CASE
+    )
+
     private const val EN_PROMPT = "What would you like to search for?"
     private const val JA_PROMPT = "何を検索しますか？"
+
+    /**
+     * Strip trailing Japanese/English search verb noise from [raw] until
+     * the tail is stable. Exposed `internal` so tests can exercise the
+     * cleanup in isolation without rebuilding the whole matcher input.
+     */
+    internal fun cleanQuery(raw: String): String {
+        var current = raw.trim()
+        while (true) {
+            val stripped = trailingNoiseRegex.replace(current, "").trim()
+            if (stripped == current) return current
+            current = stripped
+        }
+    }
 
     override fun tryMatch(normalized: String): FastPathMatch? {
         if (englishEmptyPattern.matches(normalized)) {
@@ -1134,7 +1167,7 @@ object WebSearchMatcher : FastPathMatcher {
         }
         for (p in englishPatterns) {
             val m = p.matchEntire(normalized) ?: p.find(normalized) ?: continue
-            val query = m.groupValues.getOrNull(1)?.trim().orEmpty()
+            val query = cleanQuery(m.groupValues.getOrNull(1)?.trim().orEmpty())
             if (query.isNotBlank()) {
                 return FastPathMatch(
                     toolName = "web_search",
@@ -1144,7 +1177,7 @@ object WebSearchMatcher : FastPathMatcher {
         }
         for (p in japanesePatterns) {
             val m = p.matchEntire(normalized) ?: p.find(normalized) ?: continue
-            val query = m.groupValues.getOrNull(1)?.trim().orEmpty()
+            val query = cleanQuery(m.groupValues.getOrNull(1)?.trim().orEmpty())
             if (query.isNotBlank()) {
                 return FastPathMatch(
                     toolName = "web_search",

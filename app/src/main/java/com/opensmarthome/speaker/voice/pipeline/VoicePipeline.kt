@@ -653,7 +653,13 @@ class VoicePipeline(
                     // meaningful JSON payloads we want spoken back to the user.
                     // Every other success case stays on "Done." to preserve
                     // the previous short-confirmation feel.
-                    val ttsLang = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()
+                    val rawTtsLang = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()
+                    // Fall back to the device locale when the user hasn't
+                    // explicitly picked a TTS language. On a Japanese tablet
+                    // this resolves to "ja-JP" so both the LLM polish *and*
+                    // the regex formatter speak Japanese instead of
+                    // defaulting to English.
+                    val ttsLang = resolveTtsLanguageTag(rawTtsLang)
                     val toolName = match.toolName ?: ""
                     // Try LLM polishing first for info tools — gives natural
                     // language replies (translates Open-Meteo conditions,

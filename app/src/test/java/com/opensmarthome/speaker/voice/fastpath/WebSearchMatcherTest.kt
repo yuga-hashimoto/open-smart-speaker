@@ -74,4 +74,45 @@ class WebSearchMatcherTest {
         assertThat(WebSearchMatcher.tryMatch("turn on the kitchen lights")).isNull()
         assertThat(WebSearchMatcher.tryMatch("set a timer for 5 minutes")).isNull()
     }
+
+    // --- Bug C: strip "について Web で検索して" style suffixes from the query ---
+
+    @Test
+    fun `japanese について web で検索して strips trailing noise`() {
+        val m = WebSearchMatcher.tryMatch("Google pixel 14について Web で検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Google pixel 14")
+    }
+
+    @Test
+    fun `japanese 最新情報を検索して retains modifier but drops verb`() {
+        val m = WebSearchMatcher.tryMatch("Python 最新情報を検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Python 最新情報")
+    }
+
+    @Test
+    fun `japanese bare をググって yields clean query`() {
+        val m = WebSearchMatcher.tryMatch("Pythonをググって")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Python")
+    }
+
+    @Test
+    fun `cleanQuery helper removes all trailing noise idempotently`() {
+        assertThat(WebSearchMatcher.cleanQuery("Google pixel 14について Web で検索して"))
+            .isEqualTo("Google pixel 14")
+        assertThat(WebSearchMatcher.cleanQuery("Python 最新情報を検索して"))
+            .isEqualTo("Python 最新情報")
+        assertThat(WebSearchMatcher.cleanQuery("kotlin coroutines"))
+            .isEqualTo("kotlin coroutines")
+    }
+
+    @Test
+    fun `cleanQuery tolerates trailing punctuation`() {
+        assertThat(WebSearchMatcher.cleanQuery("kotlin coroutines?"))
+            .isEqualTo("kotlin coroutines")
+        assertThat(WebSearchMatcher.cleanQuery("天気について。"))
+            .isEqualTo("天気")
+    }
 }

@@ -130,4 +130,72 @@ class FastPathResultFormatterTest {
         val spoken = FastPathResultFormatter.format("get_weather", "not-json", ttsLanguageTag = "en-US")
         assertThat(spoken).isEqualTo("Done.")
     }
+
+    // --- Pre-summary (used by FastPathLlmPolisher as grounding facts) ---
+
+    @Test
+    fun `buildPolishSummary for weather contains Current prefix and fields`() {
+        val json =
+            """{"location":"Munakata","temperature_c":16.3,"condition":"Clear","humidity":65,"wind_kph":12.0}"""
+        val summary = FastPathResultFormatter.buildPolishSummary("get_weather", json, "ja-JP")
+        assertThat(summary).startsWith("Current:")
+        assertThat(summary).contains("Munakata")
+        // formatInt keeps the decimal when the value isn't an integer.
+        assertThat(summary).contains("16.3°C")
+        assertThat(summary).contains("Clear")
+    }
+
+    @Test
+    fun `buildPolishSummary for forecast enumerates days`() {
+        val json =
+            """[{"date":"2026-04-18","min_c":12.0,"max_c":18.0,"condition":"Partly cloudy"},""" +
+                """{"date":"2026-04-19","min_c":10.0,"max_c":16.0,"condition":"Clear"}]"""
+        val summary = FastPathResultFormatter.buildPolishSummary("get_forecast", json, "en-US")
+        assertThat(summary).contains("2026-04-18")
+        assertThat(summary).contains("2026-04-19")
+        assertThat(summary).contains("min 12°C")
+        assertThat(summary).contains("max 18°C")
+        assertThat(summary).contains("Partly cloudy")
+    }
+
+    @Test
+    fun `buildPolishSummary for web_search surfaces abstract and related`() {
+        val json =
+            """{"query":"kotlin","abstract":"Kotlin is a modern JVM language.","source_url":null,"related":["Compiler","JetBrains"]}"""
+        val summary = FastPathResultFormatter.buildPolishSummary("web_search", json, "en-US")
+        assertThat(summary).contains("Abstract:")
+        assertThat(summary).contains("Kotlin is a modern JVM language.")
+        assertThat(summary).contains("Related:")
+        assertThat(summary).contains("Compiler")
+    }
+
+    @Test
+    fun `buildPolishSummary for empty web_search signals no results`() {
+        val json = """{"query":"foo","abstract":"","source_url":null,"related":[]}"""
+        val summary = FastPathResultFormatter.buildPolishSummary("web_search", json, "en-US")
+        assertThat(summary).contains("No results")
+    }
+
+    @Test
+    fun `buildPolishSummary for news lists numbered headlines`() {
+        val json =
+            """[{"title":"First Story"},{"title":"Second Story"},{"title":"Third Story"}]"""
+        val summary = FastPathResultFormatter.buildPolishSummary("get_news", json, "en-US")
+        assertThat(summary).startsWith("Headlines:")
+        assertThat(summary).contains("1)")
+        assertThat(summary).contains("First Story")
+        assertThat(summary).contains("Second Story")
+    }
+
+    @Test
+    fun `buildPolishSummary for unknown tool returns empty`() {
+        val summary = FastPathResultFormatter.buildPolishSummary("set_timer", "{}", "en-US")
+        assertThat(summary).isEmpty()
+    }
+
+    @Test
+    fun `buildPolishSummary with blank data returns empty`() {
+        val summary = FastPathResultFormatter.buildPolishSummary("get_weather", "", "en-US")
+        assertThat(summary).isEmpty()
+    }
 }
