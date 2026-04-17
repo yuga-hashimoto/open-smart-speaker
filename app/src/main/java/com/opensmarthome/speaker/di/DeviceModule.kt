@@ -165,11 +165,28 @@ object DeviceModule {
     @Provides
     @Singleton
     fun provideFastPathRouter(
-        batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor
-    ): FastPathRouter = DefaultFastPathRouter(
-        matchers = DefaultFastPathRouter.DEFAULT_MATCHERS +
-            com.opensmarthome.speaker.voice.fastpath.BatteryMatcher(batteryMonitor)
-    )
+        batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor,
+        timerManager: com.opensmarthome.speaker.tool.system.TimerManager
+    ): FastPathRouter {
+        // Insert CancelTimerByLabelMatcher between CancelAllTimersMatcher and TimerMatcher.
+        // CancelAll must come first (owns "all" / "全部" keyword case).
+        // CancelByLabel second so specific labels beat the generic TimerMatcher regex.
+        val cancelByLabel = com.opensmarthome.speaker.voice.fastpath
+            .CancelTimerByLabelMatcher(timerManager)
+        val defaults = DefaultFastPathRouter.DEFAULT_MATCHERS
+        val timerIdx = defaults.indexOf(
+            com.opensmarthome.speaker.voice.fastpath.TimerMatcher
+        )
+        val matchers = if (timerIdx >= 0) {
+            defaults.subList(0, timerIdx) + cancelByLabel + defaults.subList(timerIdx, defaults.size)
+        } else {
+            defaults + cancelByLabel
+        }
+        return DefaultFastPathRouter(
+            matchers = matchers +
+                com.opensmarthome.speaker.voice.fastpath.BatteryMatcher(batteryMonitor)
+        )
+    }
 
     @Provides
     @Singleton
