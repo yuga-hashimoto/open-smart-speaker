@@ -258,7 +258,8 @@ object DeviceModule {
     @Provides
     @Singleton
     fun provideSuggestionEngine(
-        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
+        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker,
+        batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor,
     ): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
         com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
             rules = listOf(
@@ -268,7 +269,10 @@ object DeviceModule {
                 com.opensmarthome.speaker.assistant.proactive.EveningLightsRule(),
                 com.opensmarthome.speaker.assistant.proactive.EveningBriefingRule(),
                 com.opensmarthome.speaker.assistant.proactive.NightQuietRule(),
-                com.opensmarthome.speaker.assistant.proactive.StalePeerRule(peerLivenessTracker)
+                com.opensmarthome.speaker.assistant.proactive.StalePeerRule(peerLivenessTracker),
+                com.opensmarthome.speaker.assistant.proactive.LowBatteryRule(
+                    statusSupplier = { batteryMonitor.status.value }
+                ),
             )
         )
 
