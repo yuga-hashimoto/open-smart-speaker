@@ -345,7 +345,13 @@ fun SettingsScreen(
 
         val multiroomOn by viewModel.multiroomBroadcastEnabled.collectAsState()
         SettingsToggle("Multi-room broadcast", multiroomOn) { viewModel.saveMultiroomBroadcastEnabled(it) }
-        SettingsHint("Advertise this device on the LAN via mDNS so other OpenSmartSpeaker instances can find it. Registration is the signal only — the broadcast protocol is still in development.")
+        SettingsHint("Advertise this device on the LAN via mDNS and accept announcement envelopes from peers on port 8421. Requires a shared secret below.")
+
+        val multiroomSecret by viewModel.multiroomSecret.collectAsState()
+        SettingsPasswordField("Multi-room shared secret", multiroomSecret) { value ->
+            viewModel.saveMultiroomSecret(value)
+        }
+        SettingsHint("Identical secret on every speaker. HMAC-SHA256 signs each envelope; mismatches are silently dropped. Minimum 16 chars recommended. QR-pair setup coming in a later release.")
 
         SettingsDivider()
 

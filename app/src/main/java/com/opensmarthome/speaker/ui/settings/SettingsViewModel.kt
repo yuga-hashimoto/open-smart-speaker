@@ -62,6 +62,9 @@ class SettingsViewModel @Inject constructor(
     private val _multiroomBroadcastEnabled = MutableStateFlow(false)
     val multiroomBroadcastEnabled: StateFlow<Boolean> = _multiroomBroadcastEnabled.asStateFlow()
 
+    private val _multiroomSecret = MutableStateFlow("")
+    val multiroomSecret: StateFlow<String> = _multiroomSecret.asStateFlow()
+
     // TTS settings
     private val _ttsSpeechRate = MutableStateFlow(1.0f)
     val ttsSpeechRate: StateFlow<Float> = _ttsSpeechRate.asStateFlow()
@@ -156,6 +159,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferences.observe(PreferenceKeys.LOCAL_LLM_MODEL).collect { _localLlmModel.value = it ?: "gemma-4-e2b" } }
         // SwitchBot token is a credential — load from SecurePreferences, not plaintext DataStore
         _switchBotToken.value = securePreferences.getString(SecurePreferences.KEY_SWITCHBOT_TOKEN)
+        _multiroomSecret.value = securePreferences.getString(SecurePreferences.KEY_MULTIROOM_SECRET)
         viewModelScope.launch { preferences.observe(PreferenceKeys.MQTT_BROKER_URL).collect { _mqttBrokerUrl.value = it ?: "" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD).collect { _wakeWord.value = it ?: "hey speaker" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD_SENSITIVITY).collect { _wakeWordSensitivity.value = it ?: 0.6f } }
@@ -241,6 +245,12 @@ class SettingsViewModel @Inject constructor(
 
     fun saveMultiroomBroadcastEnabled(enabled: Boolean) {
         viewModelScope.launch { preferences.set(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED, enabled) }
+    }
+
+    fun saveMultiroomSecret(secret: String) {
+        val trimmed = secret.trim()
+        securePreferences.putString(SecurePreferences.KEY_MULTIROOM_SECRET, trimmed)
+        _multiroomSecret.value = trimmed
     }
 
     fun saveSttProviderType(type: String) {
