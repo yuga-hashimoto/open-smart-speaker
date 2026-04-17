@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">اوپن اسمارٹ اسپیکر</string>
+    <string name="tab_chat">گفتگو</string>
+    <string name="tab_dashboard">ڈیش بورڈ</string>
+    <string name="tab_ambient">ماحولیاتی</string>
+    <string name="tab_settings">ترتیبات</string>
+    <string name="accessibility_service_description">اسمارٹ اسپیکر ایجنٹ کو اجازت دیتا ہے کہ وہ اس وقت نظر آنے والی اسکرین کا متن پڑھے اور آپ کی جانب سے یوزر انٹرفیس کے اعمال خودکار طور پر انجام دے۔</string>
+    <string name="accessibility_service_summary">فعال کریں تاکہ آلے پر موجود ایجنٹ اسکرین کو دیکھ اور کنٹرول کر سکے۔</string>
+    <string name="a11y_service_description">اوپن اسمارٹ اسپیکر اس رسائی سروس کو اس لیے استعمال کرتا ہے تاکہ آپ کی درخواست پر اسکرین پر موجود مواد پڑھ سکے اور آپ کی جانب سے بٹن دبا سکے۔ کوئی ڈیٹا آلے سے باہر نہیں جاتا۔ آپ اسے کسی بھی وقت ترتیبات میں جا کر بند کر سکتے ہیں۔</string>
+    <string name="voice_tile_label">بات کریں</string>
+    <string name="voice_tile_content_description">اوپن اسمارٹ اسپیکر کے ساتھ صوتی سیشن شروع کریں</string>
+    <string name="locale_picker_title">زبان</string>
+    <string name="locale_picker_system_default">سسٹم ڈیفالٹ</string>
+    <string name="locale_picker_requires_android_13">اینڈرائیڈ 13 یا اس سے بعد کا ورژن درکار ہے</string>
+    <string name="locale_picker_close">بند کریں</string>
+</resources>
