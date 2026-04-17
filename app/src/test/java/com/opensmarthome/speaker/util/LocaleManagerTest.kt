@@ -25,16 +25,20 @@ class LocaleManagerTest {
      * assert its shape directly here rather than instantiating the
      * manager — that mirror keeps the regression surface narrow.
      */
-    private val expectedTags = listOf("", "en", "ja", "es", "fr", "de", "zh-CN")
+    private val expectedTags =
+        listOf("", "en", "ja", "es", "fr", "de", "zh-CN", "hi", "it", "ko", "pt-BR", "ru")
 
     @Test
     fun `bundled options list covers every locale resource dir we ship`() {
         // The app ships values/ (default EN), values-ja, values-es,
-        // values-fr, values-de, values-zh-rCN. Each of those needs a
+        // values-fr, values-de, values-zh-rCN, values-hi, values-it,
+        // values-ko, values-pt-rBR, values-ru. Each of those needs a
         // Picker entry; system-default plus explicit en rounds out the
         // list. This test is the single source of truth for that
         // mapping.
-        assertThat(expectedTags).containsExactly("", "en", "ja", "es", "fr", "de", "zh-CN").inOrder()
+        assertThat(expectedTags)
+            .containsExactly("", "en", "ja", "es", "fr", "de", "zh-CN", "hi", "it", "ko", "pt-BR", "ru")
+            .inOrder()
     }
 
     @Test

@@ -64,7 +64,12 @@ class LocaleManager @Inject constructor(
         Option("es", "Español"),
         Option("fr", "Français"),
         Option("de", "Deutsch"),
-        Option("zh-CN", "简体中文")
+        Option("zh-CN", "简体中文"),
+        Option("hi", "हिन्दी"),
+        Option("it", "Italiano"),
+        Option("ko", "한국어"),
+        Option("pt-BR", "Português (Brasil)"),
+        Option("ru", "Русский")
     )
 
     /**
