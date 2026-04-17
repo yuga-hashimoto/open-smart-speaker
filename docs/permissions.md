@@ -24,10 +24,12 @@ Requested via a Settings intent because they can't be granted at runtime.
 
 | Grant | Unlocks | Intent |
 |---|---|---|
-| Notification listener | list_notifications, clear_notifications | `ACTION_NOTIFICATION_LISTENER_SETTINGS` |
-| Accessibility | read_screen | `ACCESSIBILITY_SETTINGS` |
+| Notification listener | list_notifications, clear_notifications, reply_to_notification | `ACTION_NOTIFICATION_LISTENER_SETTINGS` |
+| Accessibility | read_screen, read_active_screen, tap_by_text, scroll_screen, type_text | `ACCESSIBILITY_SETTINGS` — two services accepted (legacy `OpenSmartAccessibilityService` or new-style `OpenSmartSpeakerA11yService`); granting either satisfies onboarding |
+| Device Admin (opt-in) | lock_screen | Settings → Security → Device admin apps. Only policy requested is `force-lock` — no password forcing, no wipe |
 | MediaProjection (per-session) | start_screen_recording / stop_screen_recording | Activity result contract — re-prompts each session |
 | Voice interaction service | system-wide voice trigger | App must be set as the system voice assistant |
+| Quick Settings Tile (user-placed) | one-tap voice session from QS drawer | User drags the **Talk** tile into their strip via the system's Edit Tiles flow |
 
 ## UI
 
