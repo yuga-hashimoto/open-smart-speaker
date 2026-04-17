@@ -1312,6 +1312,64 @@ object GreetingMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * Session handoff (P17.5) — "move this to the kitchen speaker",
+ * "send to bedroom", "キッチンにハンドオフ" → `handoff_session` tool with
+ * `target=<captured peer>`. The matcher passes whatever the user said;
+ * the broadcaster performs prefix/substring matching against discovered
+ * serviceNames, so both "kitchen" and "speaker-kitchen" resolve.
+ *
+ * Deliberately narrow: the English side requires the "this / the
+ * conversation / the session / it" object to avoid swallowing every
+ * "move to X" / "send to X" utterance (those can mean a lot of things).
+ *
+ * Must sit BEFORE generic LaunchAppMatcher — "move" and "send" aren't
+ * handled by launch_app, but it's cheap insurance.
+ */
+object HandoffMatcher : FastPathMatcher {
+    // English: "move this to the kitchen speaker", "move the conversation
+    // to bedroom", "send (this|the session) to <peer>", "hand this off to <peer>",
+    // "handoff to <peer>".
+    private val englishRegex = Regex(
+        """(?:move|send|transfer|hand(?:\s+this)?\s+off)\s+""" +
+            """(?:this|the\s+(?:conversation|session|chat|call)|it)?\s*""" +
+            """(?:to\s+)(?:the\s+)?""" +
+            """(.+?)(?:\s+speaker)?\s*[!?.]*\s*$"""
+    )
+    // Also accept "handoff to <peer>" without the leading verb variants.
+    private val englishHandoff = Regex(
+        """handoff\s+to\s+(?:the\s+)?(.+?)(?:\s+speaker)?\s*[!?.]*\s*$"""
+    )
+    // Japanese: "キッチンにハンドオフ", "寝室に移して", "リビングに送って".
+    private val japaneseRegex = Regex(
+        """^(.+?)\s*(?:に|へ)\s*(?:ハンドオフ|移して|移動|送って|送信|転送)\s*[!?.]*\s*$"""
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        val trimmed = normalized.trim()
+        englishHandoff.matchEntire(trimmed)?.let { m ->
+            return buildMatch(m.groupValues[1])
+        }
+        englishRegex.matchEntire(trimmed)?.let { m ->
+            return buildMatch(m.groupValues[1])
+        }
+        japaneseRegex.matchEntire(trimmed)?.let { m ->
+            return buildMatch(m.groupValues[1])
+        }
+        return null
+    }
+
+    private fun buildMatch(rawTarget: String): FastPathMatch? {
+        val target = rawTarget.trim().removePrefix("the ").trim()
+        if (target.isEmpty()) return null
+        return FastPathMatch(
+            toolName = "handoff_session",
+            arguments = mapOf("target" to target),
+            spokenConfirmation = "Moving to $target."
+        )
+    }
+}
+
 /** "help", "what can you do", "できることを教えて" — speak-only capability summary. */
 object HelpMatcher : FastPathMatcher {
     private val englishPatterns = listOf(

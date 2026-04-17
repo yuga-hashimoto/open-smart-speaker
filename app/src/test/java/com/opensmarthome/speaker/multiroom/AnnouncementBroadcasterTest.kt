@@ -1,6 +1,7 @@
 package com.opensmarthome.speaker.multiroom
 
 import com.google.common.truth.Truth.assertThat
+import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.data.preferences.SecurePreferences
 import com.opensmarthome.speaker.util.DiscoveredSpeaker
 import com.opensmarthome.speaker.util.MulticastDiscovery
@@ -187,5 +188,115 @@ class AnnouncementBroadcasterTest {
         @Suppress("UNCHECKED_CAST")
         val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
         assertThat(envelope["from"]).isEqualTo(AnnouncementBroadcaster.DEFAULT_FROM)
+    }
+
+    @Test
+    fun `handoffConversation sends one envelope to matching peer with conversation payload`() = runTest {
+        val peers = listOf(
+            DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421),
+            DiscoveredSpeaker("speaker-bedroom", host = "10.0.0.3", port = 8421)
+        )
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        val lineSlot = slot<String>()
+        coEvery { client.send("10.0.0.2", 8421, capture(lineSlot), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            clock = { 2_000L },
+            idGenerator = { "id-handoff" }
+        )
+
+        // Friendly alias "kitchen" should resolve to "speaker-kitchen"
+        val outcome = broadcaster.handoffConversation(
+            targetServiceName = "kitchen",
+            messages = listOf(
+                AssistantMessage.User(content = "what's the weather"),
+                AssistantMessage.Assistant(content = "Sunny and 22."),
+                AssistantMessage.ToolCallResult(callId = "c", result = "drop me"),
+                AssistantMessage.Delta(contentDelta = "drop me too")
+            )
+        )
+
+        assertThat(outcome).isEqualTo(SendOutcome.Ok)
+        coVerify(exactly = 1) { client.send("10.0.0.2", 8421, any(), any()) }
+        coVerify(exactly = 0) { client.send("10.0.0.3", 8421, any(), any()) }
+
+        @Suppress("UNCHECKED_CAST")
+        val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
+        assertThat(envelope["type"]).isEqualTo(AnnouncementType.SESSION_HANDOFF)
+        @Suppress("UNCHECKED_CAST")
+        val payload = envelope["payload"] as Map<String, Any?>
+        assertThat(payload["mode"]).isEqualTo(AnnouncementBroadcaster.MODE_CONVERSATION)
+        @Suppress("UNCHECKED_CAST")
+        val msgs = payload["messages"] as List<Map<String, Any?>>
+        // Tool results and deltas must be filtered out before transmission.
+        assertThat(msgs).hasSize(2)
+        assertThat(msgs[0]["role"]).isEqualTo("user")
+        assertThat(msgs[0]["content"]).isEqualTo("what's the weather")
+        assertThat(msgs[1]["role"]).isEqualTo("assistant")
+        assertThat(msgs[1]["content"]).isEqualTo("Sunny and 22.")
+
+        // HMAC must verify under the broadcaster's secret.
+        val payloadJson = mapAdapter.toJson(payload)
+        assertThat(
+            HmacSigner.verify(
+                secret = secret,
+                type = AnnouncementType.SESSION_HANDOFF,
+                id = "id-handoff",
+                ts = 2_000L,
+                payloadJson = payloadJson,
+                expected = envelope["hmac"] as String
+            )
+        ).isTrue()
+    }
+
+    @Test
+    fun `handoffConversation returns failure when target does not match any peer`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self
+        )
+
+        val outcome = broadcaster.handoffConversation(
+            targetServiceName = "garage",
+            messages = listOf(AssistantMessage.User(content = "hi"))
+        )
+        assertThat(outcome).isInstanceOf(SendOutcome.Other::class.java)
+        assertThat((outcome as SendOutcome.Other).reason).contains("garage")
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `handoffConversation returns failure when no shared secret`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(null),
+            moshi = moshi,
+            selfServiceName = self
+        )
+
+        val outcome = broadcaster.handoffConversation(
+            targetServiceName = "kitchen",
+            messages = listOf(AssistantMessage.User(content = "hi"))
+        )
+        assertThat(outcome).isInstanceOf(SendOutcome.Other::class.java)
+        assertThat((outcome as SendOutcome.Other).reason).contains("secret")
     }
 }

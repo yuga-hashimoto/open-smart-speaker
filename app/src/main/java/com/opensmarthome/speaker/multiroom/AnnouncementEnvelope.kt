@@ -40,4 +40,18 @@ object AnnouncementType {
     const val ANNOUNCEMENT = "announcement"
     const val HEARTBEAT = "heartbeat"
     const val ERROR = "error"
+
+    /**
+     * P17.5 — transfer the current conversation (and, eventually, active
+     * media) from this speaker to another. Payload:
+     *
+     *   {
+     *     "mode": "conversation" | "media",
+     *     "messages": [ {"role": "user"|"assistant"|"system", "content": "..."}, ... ]
+     *   }
+     *
+     * Receivers seed their local history with the provided messages. Media
+     * mode is stubbed; real transport will land in a future cycle.
+     */
+    const val SESSION_HANDOFF = "session_handoff"
 }

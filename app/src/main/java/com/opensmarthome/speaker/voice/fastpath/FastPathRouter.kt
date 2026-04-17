@@ -85,6 +85,10 @@ class DefaultFastPathRouter(
             // OpenUrlMatcher must precede LaunchAppMatcher so "open example.com"
             // and "open https://..." route to open_url instead of launch_app.
             OpenUrlMatcher,
+            // HandoffMatcher owns "move this to <peer>" / "send to <peer>" /
+            // "キッチンにハンドオフ" — narrow enough that it doesn't swallow
+            // smart-home move verbs, but still before LaunchAppMatcher.
+            HandoffMatcher,
             LaunchAppMatcher,
             FindDeviceMatcher,
             // GoodnightMatcher must precede the GreetingMatcher's "good night"
