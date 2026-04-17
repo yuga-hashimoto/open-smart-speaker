@@ -20,6 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -43,6 +45,10 @@ class VoiceService : Service() {
     @Inject lateinit var peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val multiroomController = com.opensmarthome.speaker.multiroom.MultiroomLifecycleController(
+        onStart = { startMultiroom() },
+        onStop = { stopMultiroom() },
+    )
     private var wakeWordDetector: VoskWakeWordDetector? = null
     @Volatile
     private var isSessionActive = false
@@ -122,19 +128,38 @@ class VoiceService : Service() {
         // means the port accepts connections but drops every envelope —
         // safe default for users who enabled broadcast before setting the
         // shared secret.
+        //
+        // Observe the preference for the service's lifetime so toggling the
+        // Settings switch at runtime starts or tears down the subsystem
+        // without requiring a service restart.
         scope.launch {
-            val enabled = preferences.observe(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED).first() ?: false
-            if (enabled) {
-                multicastDiscovery.register()
-                multicastDiscovery.start()
-                announcementServer.start()
-                // Liveness tracker relies on the broadcaster fan-out + the
-                // dispatcher's onHeartbeat callback. Start it after the server
-                // is listening so the very first inbound heartbeat has a place
-                // to land.
-                peerLivenessTracker.start()
-            }
+            preferences.observe(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED)
+                .distinctUntilChanged()
+                .collectLatest { enabled ->
+                    multiroomController.setEnabled(enabled ?: false)
+                }
         }
+    }
+
+    private suspend fun startMultiroom() {
+        multicastDiscovery.register()
+        multicastDiscovery.start()
+        announcementServer.start()
+        // Liveness tracker relies on the broadcaster fan-out + the
+        // dispatcher's onHeartbeat callback. Start it after the server
+        // is listening so the very first inbound heartbeat has a place
+        // to land.
+        peerLivenessTracker.start()
+    }
+
+    private fun stopMultiroom() {
+        // Teardown mirrors startMultiroom in reverse. Each step is
+        // best-effort — we do not want a stray ServerSocket close
+        // failure to leave the mDNS registration stranded.
+        runCatching { peerLivenessTracker.stop() }
+        runCatching { announcementServer.stop() }
+        runCatching { multicastDiscovery.unregister() }
+        runCatching { multicastDiscovery.stop() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -272,11 +297,9 @@ class VoiceService : Service() {
         wakeWordDetector?.stop()
         voicePipeline.stopSpeaking()
         voicePipeline.destroy()
-        // Safe to call even if we never registered — unregister() is a no-op in that case.
-        runCatching { peerLivenessTracker.stop() }
-        runCatching { multicastDiscovery.unregister() }
-        runCatching { multicastDiscovery.stop() }
-        runCatching { announcementServer.stop() }
+        // Safe to call even if we never registered — controller is idempotent
+        // and each teardown step is already wrapped in runCatching.
+        stopMultiroom()
         super.onDestroy()
         Timber.d("VoiceService destroyed")
     }
