@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Sembang</string>
+    <string name="tab_dashboard">Papan Pemuka</string>
+    <string name="tab_ambient">Ambien</string>
+    <string name="tab_settings">Tetapan</string>
+    <string name="accessibility_service_description">Membenarkan ejen pembesar suara pintar membaca teks skrin yang dipaparkan dan mengautomasikan tindakan UI bagi pihak anda.</string>
+    <string name="accessibility_service_summary">Dayakan untuk membenarkan ejen atas peranti melihat dan mengawal skrin.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker menggunakan perkhidmatan kebolehaksesan ini untuk membaca apa yang ada pada skrin dan mengetik butang bagi pihak anda apabila anda memintanya. Tiada data meninggalkan peranti. Anda boleh mematikannya pada bila-bila masa di Tetapan.</string>
+    <string name="voice_tile_label">Bercakap</string>
+    <string name="voice_tile_content_description">Mulakan sesi suara dengan OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Bahasa</string>
+    <string name="locale_picker_system_default">Lalai sistem</string>
+    <string name="locale_picker_requires_android_13">Memerlukan Android 13+</string>
+    <string name="locale_picker_close">Tutup</string>
+</resources>
