@@ -83,6 +83,8 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.Start
                     ) {
+                        GreetingLine(time = time)
+                        Spacer(modifier = Modifier.height(6.dp))
                         ClockWidget(time = time)
                         Spacer(modifier = Modifier.height(20.dp))
                         val online = onlineWeather
@@ -120,6 +122,8 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.weight(0.2f))
+                GreetingLine(time = time)
+                Spacer(modifier = Modifier.height(6.dp))
                 ClockWidget(time = time)
                 Spacer(modifier = Modifier.height(28.dp))
                 val online = onlineWeather
