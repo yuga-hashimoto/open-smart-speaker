@@ -188,6 +188,27 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideAnnouncementClient(): com.opensmarthome.speaker.multiroom.AnnouncementClient =
+        com.opensmarthome.speaker.multiroom.AnnouncementClient()
+
+    @Provides
+    @Singleton
+    fun provideAnnouncementBroadcaster(
+        discovery: com.opensmarthome.speaker.util.MulticastDiscovery,
+        client: com.opensmarthome.speaker.multiroom.AnnouncementClient,
+        securePreferences: com.opensmarthome.speaker.data.preferences.SecurePreferences,
+        moshi: Moshi
+    ): com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster =
+        com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster(
+            discovery = discovery,
+            client = client,
+            securePreferences = securePreferences,
+            moshi = moshi,
+            selfServiceName = { discovery.registeredName.value }
+        )
+
+    @Provides
+    @Singleton
     fun provideSuggestionEngine(): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
         com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
             rules = listOf(
