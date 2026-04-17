@@ -41,6 +41,11 @@ class TtsManager(
     private val voiceVoxProvider: VoiceVoxTtsProvider by lazy {
         VoiceVoxTtsProvider(context, preferences, httpClient)
     }
+    private val piperProvider: PiperTtsProvider by lazy {
+        // Piper is a placeholder that falls back to Android system TTS until
+        // the piper-cpp JNI bindings land. See PiperTtsProvider.
+        PiperTtsProvider(androidProvider)
+    }
 
     @Volatile private var currentProvider: TextToSpeech = androidProvider
 
@@ -51,6 +56,7 @@ class TtsManager(
             "openai" -> openAiProvider
             "elevenlabs" -> elevenLabsProvider
             "voicevox" -> voiceVoxProvider
+            "piper" -> piperProvider
             else -> androidProvider
         }
         if (next !== currentProvider) {

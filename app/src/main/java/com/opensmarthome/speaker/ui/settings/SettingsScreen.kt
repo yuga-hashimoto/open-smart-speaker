@@ -124,7 +124,8 @@ fun SettingsScreen(
             "android" to "Android System (on-device, free)",
             "openai" to "OpenAI TTS (cloud, natural)",
             "elevenlabs" to "ElevenLabs (cloud, high quality)",
-            "voicevox" to "VOICEVOX (self-hosted, Japanese)"
+            "voicevox" to "VOICEVOX (self-hosted, Japanese)",
+            "piper" to "Piper neural (offline) — coming soon"
         ).forEach { (id, label) ->
             val isSelected = ttsProvider == id
             OutlinedButton(
