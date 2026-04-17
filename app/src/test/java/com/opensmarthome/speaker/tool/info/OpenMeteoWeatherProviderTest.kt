@@ -213,6 +213,7 @@ class OpenMeteoWeatherProviderTest {
         //   2) suffix strip → "宗像", ja search → empty
         //   3) leadingKanjiStem("宗像市") is the whole string (all kanji) →
         //      equals the query, so returns null. No third call.
+        //   4) KatakanaCityRomanizer returns null for a kanji query → skipped.
         server.enqueue(geoResponseEmpty())
         server.enqueue(geoResponseEmpty())
 
@@ -221,6 +222,43 @@ class OpenMeteoWeatherProviderTest {
         assertThat(result.isFailure).isTrue()
         assertThat(result.exceptionOrNull()?.message).contains("No geocoding results")
         assertThat(server.requestCount).isEqualTo(2)
+    }
+
+    // --- Geocoding retry: katakana foreign-city romanization ---
+
+    @Test
+    fun `getCurrent retries with romanized English name when katakana city has empty result`() = runTest {
+        // 1st: シドニー (en) empty — suffix strip & kanji stem don't apply.
+        server.enqueue(geoResponseEmpty())
+        // 2nd: "Sydney" (en) returns a hit via the romanizer fallback.
+        server.enqueue(geoResponseOne(name = "Sydney", lat = -33.87, lon = 151.21))
+        // 3rd: forecast
+        server.enqueue(weatherResponseFixture())
+
+        val info = provider.getCurrent("シドニー")
+
+        assertThat(info.location).isEqualTo("Sydney")
+        assertThat(server.requestCount).isEqualTo(3)
+
+        val first = server.takeRequest()
+        assertThat(first.path).contains("language=en")
+        val second = server.takeRequest()
+        assertThat(second.path).contains("language=en")
+        assertThat(second.path).contains("name=Sydney")
+    }
+
+    @Test
+    fun `getCurrent throws for unknown katakana city`() = runTest {
+        // Input "オフイス" — unknown katakana; romanizer returns null so we
+        // still throw after exhausting strategies.
+        server.enqueue(geoResponseEmpty())
+
+        val result = runCatching { provider.getCurrent("オフイス") }
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()?.message).contains("No geocoding results")
+        // Only one HTTP call: no suffix, no kanji stem, no romanizer hit.
+        assertThat(server.requestCount).isEqualTo(1)
     }
 
     private fun geoResponseOne(name: String, lat: Double, lon: Double): MockResponse =

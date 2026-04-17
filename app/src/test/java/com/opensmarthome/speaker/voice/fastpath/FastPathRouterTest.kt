@@ -1125,7 +1125,9 @@ class FastPathRouterTest {
     @Test
     fun `tomorrow japanese forecast drops time word even with location`() {
         // "明日の東京の天気" — must strip the "明日の" prefix and keep "東京".
+        // Also routes to get_forecast because 明日 is a future-tense token.
         val m = router.match("明日の東京の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
         assertThat(m?.arguments?.get("location")).isEqualTo("東京")
     }
 
@@ -1143,5 +1145,95 @@ class FastPathRouterTest {
         val m = router.match("what's the weather tomorrow")
         assertThat(m?.toolName).isEqualTo("get_forecast")
         assertThat(m?.arguments).doesNotContainKey("location")
+    }
+
+    // === Bug A: future-tense keywords must trigger forecast, even with a
+    // location in-between. Previous behavior routed "明日のシドニーの天気"
+    // to get_weather because the JA forecast regex required 明日 to be
+    // immediately adjacent to 天気/予報.
+
+    @Test
+    fun `japanese tomorrow sydney weather routes to forecast`() {
+        val m = router.match("明日のシドニーの天気は")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+        assertThat(m?.arguments?.get("location")).isEqualTo("シドニー")
+    }
+
+    @Test
+    fun `japanese day-after-tomorrow osaka forecast routes to forecast`() {
+        val m = router.match("明後日の大阪の予報")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+        assertThat(m?.arguments?.get("location")).isEqualTo("大阪")
+    }
+
+    @Test
+    fun `japanese this-week weather routes to forecast with no location`() {
+        val m = router.match("今週の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+        assertThat(m?.arguments).doesNotContainKey("location")
+    }
+
+    @Test
+    fun `japanese next-week weather routes to forecast`() {
+        val m = router.match("来週の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `japanese asatte weather routes to forecast`() {
+        val m = router.match("明々後日の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `japanese tonight weather routes to forecast`() {
+        val m = router.match("今夜の天気")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `english tomorrow sydney forecast routes to forecast`() {
+        // Location extraction for the "tomorrow's <loc> forecast" shape isn't
+        // wired into WeatherLocationExtractor (the extractor handles
+        // "<loc> weather" / "weather in <loc>" forms). We only assert that
+        // the forecast tool wins — downstream can default to the user's
+        // location and the LLM polisher can still surface the city.
+        val m = router.match("tomorrow's Sydney forecast")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `english day after tomorrow weather routes to forecast`() {
+        val m = router.match("the day after tomorrow's weather")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `english later today weather routes to forecast`() {
+        val m = router.match("later today weather")
+        assertThat(m?.toolName).isEqualTo("get_forecast")
+    }
+
+    @Test
+    fun `japanese now tokyo weather stays on get_weather`() {
+        // Present-tense "今の東京の天気" must NOT upgrade to forecast —
+        // "今" alone is not a forecast trigger.
+        val m = router.match("今の東京の天気")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+        assertThat(m?.arguments?.get("location")).isEqualTo("東京")
+    }
+
+    @Test
+    fun `japanese sydney weather without future keyword stays on get_weather`() {
+        val m = router.match("シドニーの天気")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+        assertThat(m?.arguments?.get("location")).isEqualTo("シドニー")
+    }
+
+    @Test
+    fun `english sydney weather without future keyword stays on get_weather`() {
+        val m = router.match("Sydney weather")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+        assertThat(m?.arguments?.get("location")).isEqualTo("sydney")
     }
 }

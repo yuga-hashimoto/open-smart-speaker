@@ -84,9 +84,8 @@ class OpenMeteoWeatherProvider(
     internal data class Coords(val latitude: Double, val longitude: Double, val name: String)
 
     /**
-     * Resolve a location string to coordinates with up to three attempts to
-     * work around Open-Meteo's patchy matching of Japanese administrative
-     * suffixes ("市", "町", "区", "村", "府", "県"):
+     * Resolve a location string to coordinates with up to four attempts to
+     * work around Open-Meteo's patchy matching of Japanese strings:
      *
      * 1. Original query, `language=en` (fast path — works for English and
      *    well-known romanized city names).
@@ -95,7 +94,11 @@ class OpenMeteoWeatherProvider(
      * 3. If still zero results and query contains leading kanji, reduce to
      *    the leading kanji run and retry with `language=ja`
      *    (e.g. "東京都新宿区" → "東京").
-     * 4. Otherwise throw RuntimeException as before.
+     * 4. If still zero results and the query is a known katakana foreign
+     *    city name, map it to its English form and retry with `language=en`
+     *    (e.g. "シドニー" → "Sydney"). Open-Meteo's geocoder does not
+     *    resolve katakana loan-word spellings.
+     * 5. Otherwise throw RuntimeException as before.
      */
     internal suspend fun resolveCoordinates(location: String?): Coords = withContext(Dispatchers.IO) {
         // If no location provided, default to Tokyo (could be enhanced with device location)
@@ -104,6 +107,7 @@ class OpenMeteoWeatherProvider(
         geocodeOnce(query, language = "en")
             ?: stripJapaneseSuffix(query)?.let { geocodeOnce(it, language = "ja") }
             ?: leadingKanjiStem(query)?.let { geocodeOnce(it, language = "ja") }
+            ?: KatakanaCityRomanizer.romanize(query)?.let { geocodeOnce(it, language = "en") }
             ?: throw RuntimeException("No geocoding results for $query")
     }
 

@@ -1020,15 +1020,58 @@ object ForecastMatcher : FastPathMatcher {
         Regex("""(?:天気)?予報""")
     )
 
+    /**
+     * Future-tense tokens that, when present alongside a weather/forecast
+     * word anywhere in the utterance, upgrade the request to a multi-day
+     * forecast. Handles compound utterances like "明日のシドニーの天気は"
+     * or "tomorrow's Sydney forecast" where the time token is separated
+     * from the weather noun by a location.
+     *
+     * Deliberately excludes the present-tense "今" alone — only longer
+     * compounds ("今夜", "今晩", "今週", "今後") count as forward-looking.
+     */
+    private val japaneseFutureTokens = listOf(
+        "明後日", "明々後日", "明日", "あした", "あす", "あさって",
+        "今週", "来週", "週末", "今夜", "今晩", "今後", "これから"
+    )
+
+    private val englishFuturePatterns = listOf(
+        Regex("""\bday\s+after\s+tomorrow\b"""),
+        Regex("""\btomorrow\b"""),
+        Regex("""\bnext\s+week\b"""),
+        Regex("""\blater\s+today\b"""),
+        Regex("""\btonight\b""")
+    )
+
+    private val weatherNounJa = Regex("""(?:天気|てんき|気温|予報)""")
+    private val weatherNounEn = Regex("""\b(?:weather|forecast)\b""")
+
     override fun tryMatch(normalized: String): FastPathMatch? {
-        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+        val matchesDirect = englishPatterns.any { it.containsMatchIn(normalized) } ||
             japanesePatterns.any { it.containsMatchIn(normalized) }
-        ) {
+
+        val matchesFutureCombo = hasFutureTenseWeather(normalized)
+
+        if (matchesDirect || matchesFutureCombo) {
             val loc = WeatherLocationExtractor.extract(normalized)
             val args = loc?.let { mapOf<String, Any?>("location" to it) } ?: emptyMap()
             return FastPathMatch(toolName = "get_forecast", arguments = args)
         }
         return null
+    }
+
+    /**
+     * True when the utterance pairs a future-tense marker with a weather
+     * noun, in either order and even if a location sits between them.
+     */
+    private fun hasFutureTenseWeather(normalized: String): Boolean {
+        val jaFuture = japaneseFutureTokens.any { normalized.contains(it) }
+        if (jaFuture && weatherNounJa.containsMatchIn(normalized)) return true
+
+        val enFuture = englishFuturePatterns.any { it.containsMatchIn(normalized) }
+        if (enFuture && weatherNounEn.containsMatchIn(normalized)) return true
+
+        return false
     }
 }
 
