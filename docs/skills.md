@@ -56,6 +56,7 @@ User-installed skills can override or supplement these.
 | `morning-routine` | Wake-up flow — morning_briefing + lights + ambient music |
 | `movie-night` | Movie ambience: lights→15, volume→30, clear notifications, optional service launch |
 | `news-briefing` | Reading the news without dumping every headline |
+| `party-mode` | Social gathering: lights→100 with colour cycle, media_play, volume→80, optional broadcast_tts to all speakers |
 | `task-manager` | "Remind me to X" → memory store + recall + forget |
 | `voice-assistant` | Conversational guardrails — keep replies under 30s of speech |
 | `workout` | Workout mode: lights→100, volume→70, interval timers, cooldown recovery |
