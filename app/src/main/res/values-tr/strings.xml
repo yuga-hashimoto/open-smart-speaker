@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Cihaz üzerindeki aracının ekranı görmesine ve kontrol etmesine izin vermek için etkinleştirin.</string>
     <string name="a11y_service_description">OpenSmartSpeaker, istediğinizde ekranda ne olduğunu okumak ve sizin adınıza düğmelere dokunmak için bu erişilebilirlik hizmetini kullanır. Hiçbir veri cihazdan dışarı çıkmaz. Ayarlar\'dan istediğiniz zaman kapatabilirsiniz.</string>
     <string name="voice_tile_label">Konuş</string>
-    <string name="voice_tile_content_description">OpenSmartSpeaker ile sesli oturum başlat</string>
+    <string name="voice_tile_content_description">OpenSmartSpeaker ile sesli oturum başlat</string>    <string name="locale_picker_title">Dil</string>
+    <string name="locale_picker_system_default">Sistem varsayılanı</string>
+    <string name="locale_picker_requires_android_13">Android 13 veya üzeri gerekli</string>
+    <string name="locale_picker_close">Kapat</string>
+
 </resources>

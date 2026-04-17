@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">เปิดใช้งานเพื่อให้เอเจนต์บนอุปกรณ์สามารถมองเห็นและควบคุมหน้าจอได้</string>
     <string name="a11y_service_description">OpenSmartSpeaker ใช้บริการการช่วยเหลือพิเศษนี้เพื่ออ่านสิ่งที่อยู่บนหน้าจอ และแตะปุ่มแทนคุณเมื่อคุณร้องขอ ข้อมูลจะไม่ถูกส่งออกจากอุปกรณ์ คุณสามารถปิดได้ทุกเมื่อในการตั้งค่า</string>
     <string name="voice_tile_label">พูด</string>
-    <string name="voice_tile_content_description">เริ่มเซสชันเสียงกับ OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">เริ่มเซสชันเสียงกับ OpenSmartSpeaker</string>    <string name="locale_picker_title">ภาษา</string>
+    <string name="locale_picker_system_default">ค่าเริ่มต้นของระบบ</string>
+    <string name="locale_picker_requires_android_13">ต้องใช้ Android 13 ขึ้นไป</string>
+    <string name="locale_picker_close">ปิด</string>
+
 </resources>

@@ -10,4 +10,8 @@
     <string name="a11y_service_description">OpenSmartSpeaker uses this accessibility service to read what\'s on screen and tap buttons on your behalf when you ask. No data leaves the device. You can turn it off anytime in Settings.</string>
     <string name="voice_tile_label">Talk</string>
     <string name="voice_tile_content_description">Start a voice session with OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Language</string>
+    <string name="locale_picker_system_default">System default</string>
+    <string name="locale_picker_requires_android_13">Requires Android 13+</string>
+    <string name="locale_picker_close">Close</string>
 </resources>

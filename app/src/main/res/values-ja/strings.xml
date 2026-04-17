@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">オンデバイスエージェントが画面を認識・操作できるようにします。</string>
     <string name="a11y_service_description">OpenSmartSpeakerは、このアクセシビリティサービスを使用して、画面に表示されている内容を読み取り、指示に応じてボタンをタップします。端末外へデータを送信することはありません。設定からいつでも無効にできます。</string>
     <string name="voice_tile_label">話す</string>
-    <string name="voice_tile_content_description">OpenSmartSpeakerで音声セッションを開始</string>
+    <string name="voice_tile_content_description">OpenSmartSpeakerで音声セッションを開始</string>    <string name="locale_picker_title">言語</string>
+    <string name="locale_picker_system_default">システムデフォルト</string>
+    <string name="locale_picker_requires_android_13">Android 13 以降が必要</string>
+    <string name="locale_picker_close">閉じる</string>
+
 </resources>

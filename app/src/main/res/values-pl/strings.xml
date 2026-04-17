@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Włącz, aby agent działający na urządzeniu mógł widzieć ekran i nim sterować.</string>
     <string name="a11y_service_description">OpenSmartSpeaker wykorzystuje tę usługę ułatwień dostępu do odczytywania zawartości ekranu i naciskania przycisków w Twoim imieniu, gdy o to poprosisz. Żadne dane nie opuszczają urządzenia. Możesz ją wyłączyć w dowolnym momencie w Ustawieniach.</string>
     <string name="voice_tile_label">Rozmawiaj</string>
-    <string name="voice_tile_content_description">Rozpocznij sesję głosową z OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Rozpocznij sesję głosową z OpenSmartSpeaker</string>    <string name="locale_picker_title">Język</string>
+    <string name="locale_picker_system_default">Domyślne systemu</string>
+    <string name="locale_picker_requires_android_13">Wymaga systemu Android 13 lub nowszego</string>
+    <string name="locale_picker_close">Zamknij</string>
+
 </resources>

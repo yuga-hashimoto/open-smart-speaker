@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">فعِّل هذا الخيار للسماح للوكيل العامل على الجهاز برؤية الشاشة والتحكم فيها.</string>
     <string name="a11y_service_description">يستخدم OpenSmartSpeaker خدمة إمكانية الوصول هذه لقراءة محتوى الشاشة والضغط على الأزرار نيابةً عنك عند الطلب. لا تغادر أي بيانات هذا الجهاز. يمكنك إيقاف هذه الخدمة في أي وقت من الإعدادات.</string>
     <string name="voice_tile_label">تحدَّث</string>
-    <string name="voice_tile_content_description">ابدأ جلسة صوتية مع OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">ابدأ جلسة صوتية مع OpenSmartSpeaker</string>    <string name="locale_picker_title">اللغة</string>
+    <string name="locale_picker_system_default">الإعداد الافتراضي للنظام</string>
+    <string name="locale_picker_requires_android_13">يتطلب Android 13 أو أحدث</string>
+    <string name="locale_picker_close">إغلاق</string>
+
 </resources>

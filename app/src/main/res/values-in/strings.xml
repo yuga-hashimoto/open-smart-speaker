@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Aktifkan agar agen di perangkat dapat melihat dan mengontrol layar.</string>
     <string name="a11y_service_description">OpenSmartSpeaker menggunakan layanan aksesibilitas ini untuk membaca apa yang ada di layar dan menekan tombol atas nama Anda saat Anda memintanya. Tidak ada data yang meninggalkan perangkat. Anda dapat mematikannya kapan saja di Pengaturan.</string>
     <string name="voice_tile_label">Bicara</string>
-    <string name="voice_tile_content_description">Mulai sesi suara dengan OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Mulai sesi suara dengan OpenSmartSpeaker</string>    <string name="locale_picker_title">Bahasa</string>
+    <string name="locale_picker_system_default">Bawaan sistem</string>
+    <string name="locale_picker_requires_android_13">Memerlukan Android 13 atau lebih baru</string>
+    <string name="locale_picker_close">Tutup</string>
+
 </resources>

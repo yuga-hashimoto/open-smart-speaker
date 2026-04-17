@@ -19,8 +19,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.R
 
 /**
  * Settings row that lets the user pick a UI language. On Android 13+ the
@@ -43,8 +45,9 @@ fun LocalePickerRow(
 
     var showDialog by remember { mutableStateOf(false) }
 
-    val currentLabel = remember(currentTag, options) {
-        options.firstOrNull { it.tag == currentTag }?.label ?: "System default"
+    val systemDefaultLabel = stringResource(R.string.locale_picker_system_default)
+    val currentLabel = remember(currentTag, options, systemDefaultLabel) {
+        options.firstOrNull { it.tag == currentTag }?.label ?: systemDefaultLabel
     }
 
     Row(
@@ -57,14 +60,14 @@ fun LocalePickerRow(
     ) {
         Column(modifier = Modifier.padding(end = 16.dp)) {
             Text(
-                text = "Language",
+                text = stringResource(R.string.locale_picker_title),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (supported) MaterialTheme.colorScheme.onSurface
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (!supported) {
                 Text(
-                    text = "Requires Android 13+",
+                    text = stringResource(R.string.locale_picker_requires_android_13),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -80,7 +83,7 @@ fun LocalePickerRow(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Language", color = MaterialTheme.colorScheme.onSurface) },
+            title = { Text(stringResource(R.string.locale_picker_title), color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 Column {
                     options.forEach { option ->
@@ -112,7 +115,7 @@ fun LocalePickerRow(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Close") }
+                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.locale_picker_close)) }
             }
         )
     }

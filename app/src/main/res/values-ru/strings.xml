@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Включите, чтобы локальный агент мог видеть экран и управлять им.</string>
     <string name="a11y_service_description">OpenSmartSpeaker использует эту службу специальных возможностей, чтобы считывать содержимое экрана и нажимать кнопки за вас по вашему запросу. Данные не покидают устройство. Вы можете отключить её в любой момент в настройках.</string>
     <string name="voice_tile_label">Говорить</string>
-    <string name="voice_tile_content_description">Начать голосовой сеанс с OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Начать голосовой сеанс с OpenSmartSpeaker</string>    <string name="locale_picker_title">Язык</string>
+    <string name="locale_picker_system_default">По умолчанию в системе</string>
+    <string name="locale_picker_requires_android_13">Требуется Android 13 или новее</string>
+    <string name="locale_picker_close">Закрыть</string>
+
 </resources>

@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Bật để tác nhân trên thiết bị có thể xem và điều khiển màn hình.</string>
     <string name="a11y_service_description">OpenSmartSpeaker sử dụng dịch vụ trợ năng này để đọc nội dung trên màn hình và chạm vào các nút thay cho bạn khi được yêu cầu. Không có dữ liệu nào rời khỏi thiết bị. Bạn có thể tắt bất cứ lúc nào trong phần Cài đặt.</string>
     <string name="voice_tile_label">Nói chuyện</string>
-    <string name="voice_tile_content_description">Bắt đầu phiên giọng nói với OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Bắt đầu phiên giọng nói với OpenSmartSpeaker</string>    <string name="locale_picker_title">Ngôn ngữ</string>
+    <string name="locale_picker_system_default">Mặc định hệ thống</string>
+    <string name="locale_picker_requires_android_13">Yêu cầu Android 13 trở lên</string>
+    <string name="locale_picker_close">Đóng</string>
+
 </resources>

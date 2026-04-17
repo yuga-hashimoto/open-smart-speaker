@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">开启后，设备端代理即可查看并控制屏幕。</string>
     <string name="a11y_service_description">OpenSmartSpeaker 使用此无障碍服务在您发出指令时读取屏幕内容并代您点按按钮。所有数据均不离开本机，您可随时在"设置"中关闭。</string>
     <string name="voice_tile_label">对话</string>
-    <string name="voice_tile_content_description">开始与 OpenSmartSpeaker 的语音会话</string>
+    <string name="voice_tile_content_description">开始与 OpenSmartSpeaker 的语音会话</string>    <string name="locale_picker_title">语言</string>
+    <string name="locale_picker_system_default">跟随系统</string>
+    <string name="locale_picker_requires_android_13">需要 Android 13 及以上</string>
+    <string name="locale_picker_close">关闭</string>
+
 </resources>

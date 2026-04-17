@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Ative para permitir que o agente no dispositivo veja e controle a tela.</string>
     <string name="a11y_service_description">O OpenSmartSpeaker usa este serviço de acessibilidade para ler o que está na tela e tocar em botões em seu nome quando você pedir. Nenhum dado sai do dispositivo. Você pode desativá-lo a qualquer momento nas Configurações.</string>
     <string name="voice_tile_label">Falar</string>
-    <string name="voice_tile_content_description">Iniciar uma sessão de voz com o OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Iniciar uma sessão de voz com o OpenSmartSpeaker</string>    <string name="locale_picker_title">Idioma</string>
+    <string name="locale_picker_system_default">Padrão do sistema</string>
+    <string name="locale_picker_requires_android_13">Requer Android 13 ou superior</string>
+    <string name="locale_picker_close">Fechar</string>
+
 </resources>

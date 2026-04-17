@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">ऑन-डिवाइस एजेंट को स्क्रीन देखने और नियंत्रित करने की अनुमति देने के लिए सक्षम करें।</string>
     <string name="a11y_service_description">OpenSmartSpeaker इस एक्सेसिबिलिटी सेवा का उपयोग यह पढ़ने के लिए करता है कि स्क्रीन पर क्या है और आपके अनुरोध पर आपकी ओर से बटन टैप करता है। कोई भी डेटा डिवाइस से बाहर नहीं जाता। आप इसे किसी भी समय सेटिंग्स में बंद कर सकते हैं।</string>
     <string name="voice_tile_label">बोलें</string>
-    <string name="voice_tile_content_description">OpenSmartSpeaker के साथ वॉइस सत्र शुरू करें</string>
+    <string name="voice_tile_content_description">OpenSmartSpeaker के साथ वॉइस सत्र शुरू करें</string>    <string name="locale_picker_title">भाषा</string>
+    <string name="locale_picker_system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="locale_picker_requires_android_13">Android 13+ आवश्यक है</string>
+    <string name="locale_picker_close">बंद करें</string>
+
 </resources>

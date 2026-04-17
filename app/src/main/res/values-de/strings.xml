@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Aktivieren, damit der lokale Assistent den Bildschirm sehen und steuern kann.</string>
     <string name="a11y_service_description">OpenSmartSpeaker verwendet diesen Bedienungshilfedienst, um den Bildschirminhalt zu lesen und auf Ihre Anfrage hin Schaltflächen für Sie zu bedienen. Es werden keine Daten an externe Server gesendet. Sie können ihn jederzeit in den Einstellungen deaktivieren.</string>
     <string name="voice_tile_label">Sprechen</string>
-    <string name="voice_tile_content_description">Sprachsitzung mit OpenSmartSpeaker starten</string>
+    <string name="voice_tile_content_description">Sprachsitzung mit OpenSmartSpeaker starten</string>    <string name="locale_picker_title">Sprache</string>
+    <string name="locale_picker_system_default">Systemstandard</string>
+    <string name="locale_picker_requires_android_13">Erfordert Android 13 oder höher</string>
+    <string name="locale_picker_close">Schließen</string>
+
 </resources>

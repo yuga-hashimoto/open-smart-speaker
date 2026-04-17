@@ -9,5 +9,9 @@
     <string name="accessibility_service_summary">Inschakelen om de on-device agent het scherm te laten zien en bedienen.</string>
     <string name="a11y_service_description">OpenSmartSpeaker gebruikt deze toegankelijkheidsservice om te lezen wat er op het scherm staat en om namens u op knoppen te tikken wanneer u dat vraagt. Er verlaten geen gegevens het apparaat. U kunt dit op elk moment uitschakelen in Instellingen.</string>
     <string name="voice_tile_label">Praten</string>
-    <string name="voice_tile_content_description">Start een spraaksessie met OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Start een spraaksessie met OpenSmartSpeaker</string>    <string name="locale_picker_title">Taal</string>
+    <string name="locale_picker_system_default">Systeemstandaard</string>
+    <string name="locale_picker_requires_android_13">Vereist Android 13 of hoger</string>
+    <string name="locale_picker_close">Sluiten</string>
+
 </resources>
