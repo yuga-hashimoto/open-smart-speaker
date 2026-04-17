@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Trò chuyện</string>
+    <string name="tab_dashboard">Bảng điều khiển</string>
+    <string name="tab_ambient">Môi trường</string>
+    <string name="tab_settings">Cài đặt</string>
+    <string name="accessibility_service_description">Cho phép tác nhân loa thông minh đọc văn bản hiển thị trên màn hình và tự động thực hiện các thao tác giao diện thay cho bạn.</string>
+    <string name="accessibility_service_summary">Bật để tác nhân trên thiết bị có thể xem và điều khiển màn hình.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker sử dụng dịch vụ trợ năng này để đọc nội dung trên màn hình và chạm vào các nút thay cho bạn khi được yêu cầu. Không có dữ liệu nào rời khỏi thiết bị. Bạn có thể tắt bất cứ lúc nào trong phần Cài đặt.</string>
+    <string name="voice_tile_label">Nói chuyện</string>
+    <string name="voice_tile_content_description">Bắt đầu phiên giọng nói với OpenSmartSpeaker</string>
+</resources>
