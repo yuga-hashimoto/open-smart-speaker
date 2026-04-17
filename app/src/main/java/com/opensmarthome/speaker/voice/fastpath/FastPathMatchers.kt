@@ -1754,3 +1754,118 @@ object PickRandomMatcher : FastPathMatcher {
             .filter { it.isNotEmpty() }
     }
 }
+
+/**
+ * "switch to Japanese", "change the language to Spanish",
+ * "日本語にして" — fast-paths to the `set_app_locale` tool on
+ * [com.opensmarthome.speaker.tool.system.LocaleToolExecutor].
+ *
+ * Maps a natural-language language mention to the BCP-47 tag that
+ * [com.opensmarthome.speaker.util.LocaleManager.options] ships. When
+ * the user says "follow system" / "system default" / "システム" we
+ * emit the empty string so the tool clears the override. Unknown
+ * languages fall through to the LLM so it can surface the bundled
+ * options or apologise.
+ *
+ * The utterance is lowercased by the router before reaching the
+ * matcher, so label lookups are keyed on lowercase forms. The BCP-47
+ * tag returned to the tool keeps its canonical case ("pt-BR", "zh-CN")
+ * because [LocaleManager] uses case-sensitive tag comparison.
+ *
+ * Keeps the "speak X" shorthand intentionally unsupported — it
+ * overlaps every "speak up", "speak slower", conversational utterance
+ * and would swallow requests that belong to the LLM.
+ */
+object LocaleSwitchMatcher : FastPathMatcher {
+    private data class LocaleOption(val tag: String, val spokenLabel: String)
+
+    // Lowercase keys (router normalizes to lowercase). Multiple aliases
+    // per tag — kana, hiragana, and language-name forms in both English
+    // and Japanese.
+    private val languageLookup: Map<String, LocaleOption> = mapOf(
+        // System default — explicit "follow system" / "default" / システム.
+        "system default" to LocaleOption("", "system default"),
+        "system" to LocaleOption("", "system default"),
+        "follow system" to LocaleOption("", "system default"),
+        "default" to LocaleOption("", "system default"),
+        "システム" to LocaleOption("", "system default"),
+        "システムデフォルト" to LocaleOption("", "system default"),
+        // English.
+        "english" to LocaleOption("en", "English"),
+        "eigo" to LocaleOption("en", "English"),
+        "えいご" to LocaleOption("en", "English"),
+        "英語" to LocaleOption("en", "English"),
+        // Japanese.
+        "japanese" to LocaleOption("ja", "日本語"),
+        "にほんご" to LocaleOption("ja", "日本語"),
+        "日本語" to LocaleOption("ja", "日本語"),
+        // Spanish.
+        "spanish" to LocaleOption("es", "Español"),
+        "español" to LocaleOption("es", "Español"),
+        "espanol" to LocaleOption("es", "Español"),
+        "スペイン語" to LocaleOption("es", "Español"),
+        // French.
+        "french" to LocaleOption("fr", "Français"),
+        "français" to LocaleOption("fr", "Français"),
+        "francais" to LocaleOption("fr", "Français"),
+        "フランス語" to LocaleOption("fr", "Français"),
+        // German.
+        "german" to LocaleOption("de", "Deutsch"),
+        "deutsch" to LocaleOption("de", "Deutsch"),
+        "ドイツ語" to LocaleOption("de", "Deutsch"),
+        // Italian.
+        "italian" to LocaleOption("it", "Italiano"),
+        "italiano" to LocaleOption("it", "Italiano"),
+        "イタリア語" to LocaleOption("it", "Italiano"),
+        // Korean.
+        "korean" to LocaleOption("ko", "한국어"),
+        "한국어" to LocaleOption("ko", "한국어"),
+        "韓国語" to LocaleOption("ko", "한국어"),
+        "かんこくご" to LocaleOption("ko", "한국어"),
+        // Portuguese (Brazilian is the bundled option).
+        "portuguese" to LocaleOption("pt-BR", "Português (Brasil)"),
+        "português" to LocaleOption("pt-BR", "Português (Brasil)"),
+        "portugues" to LocaleOption("pt-BR", "Português (Brasil)"),
+        "ポルトガル語" to LocaleOption("pt-BR", "Português (Brasil)"),
+        // Simplified Chinese.
+        "chinese" to LocaleOption("zh-CN", "简体中文"),
+        "simplified chinese" to LocaleOption("zh-CN", "简体中文"),
+        "简体中文" to LocaleOption("zh-CN", "简体中文"),
+        "中国語" to LocaleOption("zh-CN", "简体中文"),
+        "中文" to LocaleOption("zh-CN", "简体中文"),
+        // Russian.
+        "russian" to LocaleOption("ru", "Русский"),
+        "русский" to LocaleOption("ru", "Русский"),
+        "ロシア語" to LocaleOption("ru", "Русский")
+    )
+
+    // "switch/change/set the language|locale|ui to <name>"
+    private val englishRegex = Regex(
+        """^\s*(?:switch|change|set)\s+(?:the\s+)?(?:language|locale|ui)\s+to\s+(.+?)\.?\s*$"""
+    )
+
+    // "<name>にして" / "に変えて" / "に切替" / "に切り替えて"
+    private val japaneseRegex = Regex(
+        """^\s*(.+?)(?:にして|に変えて|に切替|に切り替えて)\s*(?:ください|下さい)?\s*[。.]?\s*$"""
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        englishRegex.matchEntire(normalized)?.let { m ->
+            val label = m.groupValues[1].trim()
+            val option = languageLookup[label] ?: return null
+            return buildMatch(option)
+        }
+        japaneseRegex.matchEntire(normalized)?.let { m ->
+            val label = m.groupValues[1].trim()
+            val option = languageLookup[label] ?: return null
+            return buildMatch(option)
+        }
+        return null
+    }
+
+    private fun buildMatch(option: LocaleOption): FastPathMatch = FastPathMatch(
+        toolName = "set_app_locale",
+        arguments = mapOf("tag" to option.tag),
+        spokenConfirmation = "Switching to ${option.spokenLabel}."
+    )
+}

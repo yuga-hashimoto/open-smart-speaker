@@ -153,6 +153,11 @@ class DefaultFastPathRouter(
             // unrelated "pick up the phone" / "時間を選んで" cases still
             // fall through when they don't match the full shape.
             PickRandomMatcher,
+            // LocaleSwitchMatcher before DatetimeMatcher/Greeting/Help —
+            // patterns are scoped to "switch/change/set (the) language|locale|ui
+            // to <name>" / "<name>にして" with a strict language-name whitelist,
+            // so "change the lights" / "6時にして" still fall through.
+            LocaleSwitchMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             // RollDiceMatcher uses matchEntire anchors so it's safe this low —
