@@ -65,6 +65,7 @@ fun ModeScaffold(
     val voiceState by viewModel.voiceState.collectAsState()
     val sttText by viewModel.partialText.collectAsState()
     val responseText by viewModel.lastResponse.collectAsState()
+    val spokenText by viewModel.currentSpokenText.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0) { 2 }
     var showSettings by remember { mutableStateOf(false) }
@@ -162,7 +163,8 @@ fun ModeScaffold(
             VoiceOverlay(
                 voiceState = voiceState,
                 sttText = sttText,
-                responseText = responseText
+                responseText = responseText,
+                spokenText = spokenText
             )
         }
 

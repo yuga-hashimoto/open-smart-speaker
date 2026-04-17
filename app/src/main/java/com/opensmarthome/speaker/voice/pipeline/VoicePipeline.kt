@@ -64,6 +64,16 @@ class VoicePipeline(
     private val _lastResponse = MutableStateFlow("")
     val lastResponse: StateFlow<String> = _lastResponse.asStateFlow()
 
+    /**
+     * The sentence currently being spoken by the TTS engine. Empty while
+     * idle or when the active provider does not emit per-chunk progress.
+     * The UI surfaces this for a karaoke-style rolling display during
+     * [VoicePipelineState.Speaking], falling back to [lastResponse] when
+     * empty so non-chunking providers (OpenAI, ElevenLabs, VOICEVOX, Piper)
+     * still show the full reply.
+     */
+    val currentSpokenText: StateFlow<String> = tts.currentChunk
+
     private var currentSession: AssistantSession? = null
     private val conversationHistory = mutableListOf<AssistantMessage>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)

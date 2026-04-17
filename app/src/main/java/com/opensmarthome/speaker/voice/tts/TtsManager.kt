@@ -4,10 +4,15 @@ import android.content.Context
 import com.opensmarthome.speaker.data.preferences.AppPreferences
 import com.opensmarthome.speaker.data.preferences.PreferenceKeys
 import com.opensmarthome.speaker.data.preferences.SecurePreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import timber.log.Timber
@@ -38,6 +43,27 @@ class TtsManager(
     private val _isSpeaking = MutableStateFlow(false)
     override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
 
+    /**
+     * Manager-level karaoke-style current-chunk flow. It mirrors whichever
+     * provider is currently active, switching sources whenever the user
+     * swaps TTS engines in Settings. See [bindChunkForwarder].
+     */
+    private val _currentChunk = MutableStateFlow("")
+    override val currentChunk: StateFlow<String> = _currentChunk.asStateFlow()
+
+    /**
+     * Lazy scope used only for bridging provider chunk flows into the
+     * manager-level [currentChunk]. Kept local so callers do not have to
+     * manage a lifecycle — the collectors are cancelled on every provider
+     * swap by [bindChunkForwarder].
+     */
+    // Unconfined so upstream emissions propagate synchronously — StateFlow is
+    // conflating + thread-safe and the collector only copies a string, so
+    // thread-hopping is unnecessary and would delay UI updates.
+    private val chunkForwarderScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+    private var chunkForwarderJob: Job? = null
+
     // Lazily create network-backed providers as needed
     private val openAiProvider: OpenAiTtsProvider by lazy {
         OpenAiTtsProvider(context, preferences, securePreferences, httpClient)
@@ -58,6 +84,26 @@ class TtsManager(
 
     init {
         applyPersistedSettings()
+        bindChunkForwarder(currentProvider)
+    }
+
+    /**
+     * Cancels the previous per-chunk forwarder and launches a fresh one that
+     * mirrors [provider]'s [TextToSpeech.currentChunk] into this manager's
+     * [currentChunk]. Seeds synchronously with the provider's current value
+     * so the UI can observe the active chunk without waiting for the
+     * collector to start.
+     */
+    private fun bindChunkForwarder(provider: TextToSpeech) {
+        chunkForwarderJob?.cancel()
+        // Seed synchronously: tests (and first-frame UI) expect value without
+        // waiting for the collecting coroutine to be scheduled.
+        _currentChunk.value = provider.currentChunk.value
+        chunkForwarderJob = chunkForwarderScope.launch {
+            provider.currentChunk.collect { chunk ->
+                _currentChunk.value = chunk
+            }
+        }
     }
 
     /**
@@ -102,6 +148,10 @@ class TtsManager(
             // Stop the previous provider before switching
             try { currentProvider.stop() } catch (_: Exception) {}
             currentProvider = next
+            // Clear stale chunk from the previous provider immediately so the
+            // UI does not linger on an already-spoken sentence during swap.
+            _currentChunk.value = ""
+            bindChunkForwarder(next)
         }
         return next
     }
@@ -121,6 +171,10 @@ class TtsManager(
             currentProvider.stop()
         } catch (_: Exception) {}
         _isSpeaking.value = false
+        // Clear the rolling-chunk text so the UI falls back to the full
+        // lastResponse while idle. Providers also clear their own chunk on
+        // stop(); this guards the manager-level cache.
+        _currentChunk.value = ""
     }
 
     /**

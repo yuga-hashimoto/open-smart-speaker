@@ -19,6 +19,9 @@ open class AndroidTtsProvider(context: Context) : TextToSpeech {
     private val _isSpeaking = MutableStateFlow(false)
     override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
 
+    private val _currentChunk = MutableStateFlow("")
+    override val currentChunk: StateFlow<String> = _currentChunk.asStateFlow()
+
     private var tts: AndroidTts? = null
     @Volatile
     private var isInitialized = false
@@ -127,9 +130,15 @@ open class AndroidTtsProvider(context: Context) : TextToSpeech {
             "TTS: ${chunks.size} chunk(s), totalChars=${cleanText.length}, maxChars=$maxChars"
         )
 
-        for ((i, chunk) in chunks.withIndex()) {
-            val queueMode = if (i == 0) AndroidTts.QUEUE_FLUSH else AndroidTts.QUEUE_ADD
-            speakSingle(chunk, queueMode)
+        try {
+            for ((i, chunk) in chunks.withIndex()) {
+                val queueMode = if (i == 0) AndroidTts.QUEUE_FLUSH else AndroidTts.QUEUE_ADD
+                speakSingle(chunk, queueMode)
+            }
+        } finally {
+            // Clear the karaoke-chunk when the whole response finishes so the UI
+            // can fall back to showing the full response (lastResponse).
+            _currentChunk.value = ""
         }
     }
 
@@ -147,6 +156,9 @@ open class AndroidTtsProvider(context: Context) : TextToSpeech {
                 val listener = object : UtteranceProgressListener() {
                     override fun onStart(id: String?) {
                         _isSpeaking.value = true
+                        // Publish the active chunk so the UI can render a
+                        // karaoke-style rolling display of just this sentence.
+                        _currentChunk.value = text
                         Timber.d("TTS speaking: ${text.take(40)}...")
                     }
                     override fun onDone(id: String?) {
@@ -190,6 +202,7 @@ open class AndroidTtsProvider(context: Context) : TextToSpeech {
                 cont.invokeOnCancellation {
                     tts?.stop()
                     _isSpeaking.value = false
+                    _currentChunk.value = ""
                 }
             }
         }
@@ -198,6 +211,7 @@ open class AndroidTtsProvider(context: Context) : TextToSpeech {
     override fun stop() {
         tts?.stop()
         _isSpeaking.value = false
+        _currentChunk.value = ""
     }
 
     fun shutdown() {
