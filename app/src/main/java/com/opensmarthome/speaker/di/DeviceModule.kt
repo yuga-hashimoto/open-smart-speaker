@@ -261,6 +261,7 @@ object DeviceModule {
     @Singleton
     fun provideSuggestionEngine(
         peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker,
+        deviceManager: DeviceManager,
         batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor,
     ): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
         com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
@@ -274,6 +275,9 @@ object DeviceModule {
                 com.opensmarthome.speaker.assistant.proactive.StalePeerRule(peerLivenessTracker),
                 com.opensmarthome.speaker.assistant.proactive.LowBatteryRule(
                     statusSupplier = { batteryMonitor.status.value }
+                ),
+                com.opensmarthome.speaker.assistant.proactive.ForgotLightsAtBedtimeRule(
+                    devicesSupplier = { deviceManager.devices.value.values }
                 ),
             )
         )
