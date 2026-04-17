@@ -12,9 +12,19 @@ import androidx.core.content.ContextCompat
  */
 class PermissionManager(
     private val context: Context,
-    private val notificationListenerClass: Class<*>?,
-    private val accessibilityServiceClass: Class<*>?
+    private val notificationListenerClasses: List<Class<*>>,
+    private val accessibilityServiceClasses: List<Class<*>>
 ) {
+    /** Backwards-compat single-class constructor for older callers. */
+    constructor(
+        context: Context,
+        notificationListenerClass: Class<*>?,
+        accessibilityServiceClass: Class<*>?
+    ) : this(
+        context = context,
+        notificationListenerClasses = listOfNotNull(notificationListenerClass),
+        accessibilityServiceClasses = listOfNotNull(accessibilityServiceClass)
+    )
 
     data class State(
         val entries: List<EntryState>,
@@ -49,22 +59,26 @@ class PermissionManager(
     }
 
     private fun isNotificationListenerEnabled(): Boolean {
-        val cls = notificationListenerClass ?: return false
+        if (notificationListenerClasses.isEmpty()) return false
         val enabled = Settings.Secure.getString(
             context.contentResolver,
             "enabled_notification_listeners"
         ) ?: return false
-        val cn = ComponentName(context, cls)
-        return enabled.split(":").any { it == cn.flattenToString() }
+        val tokens = enabled.split(":").toSet()
+        return notificationListenerClasses.any { cls ->
+            ComponentName(context, cls).flattenToString() in tokens
+        }
     }
 
     private fun isAccessibilityEnabled(): Boolean {
-        val cls = accessibilityServiceClass ?: return false
+        if (accessibilityServiceClasses.isEmpty()) return false
         val enabled = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: return false
-        val cn = ComponentName(context, cls)
-        return enabled.split(":").any { it == cn.flattenToString() }
+        val tokens = enabled.split(":").toSet()
+        return accessibilityServiceClasses.any { cls ->
+            ComponentName(context, cls).flattenToString() in tokens
+        }
     }
 }
