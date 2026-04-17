@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.ui.ambient.ActiveTimersCard
 import com.opensmarthome.speaker.ui.common.SuggestionBubble
 import com.opensmarthome.speaker.ui.common.isExpandedLandscape
 import com.opensmarthome.speaker.ui.theme.SpeakerBackground
@@ -46,6 +47,7 @@ fun HomeScreen(
     val chips by viewModel.deviceChips.collectAsState()
     val nowPlaying by viewModel.nowPlaying.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
+    val activeTimers by viewModel.activeTimers.collectAsState()
 
     val wide = isExpandedLandscape()
 
@@ -71,6 +73,13 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     verticalArrangement = Arrangement.Center
                 ) {
+                    if (activeTimers.isNotEmpty()) {
+                        ActiveTimersCard(
+                            timers = activeTimers,
+                            onCancelTimer = viewModel::onCancelTimer
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                     if (chips.isNotEmpty()) {
                         DeviceStatusChips(chips = chips)
                     }
@@ -85,6 +94,13 @@ fun HomeScreen(
                 ClockWidget(time = time)
                 Spacer(modifier = Modifier.height(28.dp))
                 WeatherWidget(weather = weather)
+                if (activeTimers.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    ActiveTimersCard(
+                        timers = activeTimers,
+                        onCancelTimer = viewModel::onCancelTimer
+                    )
+                }
                 Spacer(modifier = Modifier.height(36.dp))
                 if (chips.isNotEmpty()) {
                     DeviceStatusChips(chips = chips)

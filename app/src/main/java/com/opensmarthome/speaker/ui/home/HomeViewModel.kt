@@ -9,10 +9,17 @@ import com.opensmarthome.speaker.device.model.DeviceCommand
 import com.opensmarthome.speaker.device.model.DeviceType
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.tool.system.TimerInfo
+import com.opensmarthome.speaker.tool.system.TimerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -21,13 +28,55 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val deviceManager: DeviceManager,
     private val suggestionState: SuggestionState,
-    private val toolExecutor: ToolExecutor
+    private val toolExecutor: ToolExecutor,
+    private val timerManager: TimerManager
 ) : ViewModel() {
 
     val suggestions: StateFlow<List<Suggestion>> = suggestionState.current
 
+    /** IDs the user just tapped cancel on; filtered from [activeTimers] until the next poll drops them. */
+    private val pendingCancelled = MutableStateFlow<Set<String>>(emptySet())
+
+    /**
+     * Live list of active timers, polled 1 Hz so the Home tab's mm:ss
+     * countdown stays fresh without requiring TimerManager to expose a Flow.
+     * Mirrors the pattern used by [com.opensmarthome.speaker.ui.ambient.AmbientViewModel];
+     * kept as a private copy here rather than being pulled up into a shared
+     * holder to avoid a DI refactor in a bugfix PR.
+     *
+     * `WhileSubscribed(5_000)` keeps polling paused while the Home tab is
+     * not the foreground screen.
+     */
+    val activeTimers: StateFlow<List<TimerInfo>> = flow {
+        while (true) {
+            val list = runCatching { timerManager.getActiveTimers() }
+                .getOrElse { emptyList() }
+            emit(list)
+            delay(1_000L)
+        }
+    }.combine(pendingCancelled) { list, cancelled ->
+        if (cancelled.isEmpty()) list else list.filterNot { it.id in cancelled }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
     fun dismissSuggestion(id: String) {
         suggestionState.dismiss(id)
+    }
+
+    /**
+     * Cancel the timer identified by [id]. The next 1 Hz poll tick removes
+     * it from [activeTimers]; we also stash the id in [pendingCancelled]
+     * so the card row disappears immediately on tap.
+     */
+    fun onCancelTimer(id: String) {
+        pendingCancelled.value = pendingCancelled.value + id
+        viewModelScope.launch {
+            runCatching { timerManager.cancelTimer(id) }
+                .onFailure { Timber.w(it, "Failed to cancel timer $id") }
+        }
     }
 
     /**

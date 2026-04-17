@@ -4,6 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.device.model.CommandResult
 import com.opensmarthome.speaker.device.model.DeviceCommand
+import com.opensmarthome.speaker.tool.system.TimerInfo
+import com.opensmarthome.speaker.tool.system.TimerManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -12,7 +14,10 @@ import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -36,6 +41,14 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /** TimerManager mock returning no active timers — used by every test that
+     *  doesn't care about the timer wiring. */
+    private fun emptyTimerManager(): TimerManager {
+        val tm = mockk<TimerManager>()
+        coEvery { tm.getActiveTimers() } returns emptyList()
+        return tm
+    }
+
     @Test
     fun `dispatchMediaAction sends HA media_play service`() = runTest {
         val deviceManager = mockk<DeviceManager>()
@@ -46,7 +59,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
         vm.dispatchMediaAction("media_player.kitchen", MediaAction.PLAY)
         advanceUntilIdle()
 
@@ -71,7 +84,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
         vm.dispatchMediaAction("media_player.x", MediaAction.PAUSE)
         advanceUntilIdle()
 
@@ -88,7 +101,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
 
         vm.dispatchMediaVolume("media_player.den", 0.42f)
         advanceUntilIdle()
@@ -108,7 +121,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
 
         vm.dispatchShuffle("media_player.lr", true)
         advanceUntilIdle()
@@ -126,7 +139,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
 
         vm.dispatchRepeat("media_player.br", RepeatMode.ALL)
         advanceUntilIdle()
@@ -179,7 +192,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
         advanceUntilIdle()
 
         val np = vm.nowPlaying.value
@@ -216,7 +229,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
         advanceUntilIdle()
 
         val np = vm.nowPlaying.value
@@ -235,7 +248,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
 
         vm.dispatchSelectSource("media_player.lr", "Spotify")
         advanceUntilIdle()
@@ -254,7 +267,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager())
 
         vm.dispatchMediaVolume("media_player.over", 1.7f)
         advanceUntilIdle()
@@ -263,5 +276,60 @@ class HomeViewModelTest {
         vm.dispatchMediaVolume("media_player.under", -0.2f)
         advanceUntilIdle()
         assertThat(cmdSlot.captured.parameters["volume_level"]).isEqualTo(0.0f)
+    }
+
+    @Test
+    fun `activeTimers initially empty and emits from TimerManager on tick`() = runTest {
+        val deviceManager: DeviceManager = mockk()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+
+        val timerManager = mockk<TimerManager>()
+        val sample = TimerInfo(
+            id = "timer_home_1",
+            label = "tea",
+            remainingSeconds = 180,
+            totalSeconds = 300
+        )
+        coEvery { timerManager.getActiveTimers() } returns listOf(sample)
+
+        val vm = HomeViewModel(deviceManager, ss, te, timerManager)
+
+        // Before any subscriber collects the StateFlow, initial value is empty.
+        assertThat(vm.activeTimers.value).isEmpty()
+
+        // Subscribe so WhileSubscribed activates the upstream poller.
+        val collector = vm.activeTimers.onEach { /* drain */ }.launchIn(backgroundScope)
+        advanceTimeBy(50L)
+
+        assertThat(vm.activeTimers.value).hasSize(1)
+        assertThat(vm.activeTimers.value.first().id).isEqualTo("timer_home_1")
+        assertThat(vm.activeTimers.value.first().label).isEqualTo("tea")
+        assertThat(vm.activeTimers.value.first().remainingSeconds).isEqualTo(180)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun `onCancelTimer calls TimerManager cancelTimer with given id`() = runTest {
+        val deviceManager: DeviceManager = mockk()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+
+        val timerManager = mockk<TimerManager>()
+        coEvery { timerManager.getActiveTimers() } returns emptyList()
+        coEvery { timerManager.cancelTimer("timer_home_xyz") } returns true
+
+        val vm = HomeViewModel(deviceManager, ss, te, timerManager)
+        vm.onCancelTimer("timer_home_xyz")
+        advanceUntilIdle()
+
+        coVerify { timerManager.cancelTimer("timer_home_xyz") }
     }
 }

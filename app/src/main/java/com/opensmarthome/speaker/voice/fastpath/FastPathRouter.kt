@@ -115,6 +115,12 @@ class DefaultFastPathRouter(
             ForecastMatcher,
             WeatherMatcher,
             NewsMatcher,
+            // WebSearchMatcher must sit after the weather/news/briefing
+            // matchers so "search the weather" doesn't win over
+            // WeatherMatcher, and before DatetimeMatcher/GreetingMatcher so
+            // "look up the time" style wordings still route to web search
+            // when the utterance isn't a plain time query.
+            WebSearchMatcher,
             CalendarMatcher,
             // Notification matchers: clear precedes list because "clear" verb
             // dominates the "show / list" verbs on common notification utterances.

@@ -647,7 +647,18 @@ class VoicePipeline(
             val spoken = when {
                 match.spokenConfirmation != null -> match.spokenConfirmation
                 result == null -> "Done."
-                result.success -> "Done."
+                result.success -> {
+                    // Info tools (weather / forecast / web_search / news) have
+                    // meaningful JSON payloads we want spoken back to the user.
+                    // Every other success case stays on "Done." to preserve
+                    // the previous short-confirmation feel.
+                    val ttsLang = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()
+                    FastPathResultFormatter.format(
+                        toolName = match.toolName ?: "",
+                        data = result.data,
+                        ttsLanguageTag = ttsLang
+                    )
+                }
                 else -> {
                     // Route the tool's raw error through ErrorClassifier so
                     // multi-room categories (no shared secret, HMAC mismatch,

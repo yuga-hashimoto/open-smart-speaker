@@ -967,6 +967,81 @@ object NewsMatcher : FastPathMatcher {
 }
 
 /**
+ * "search for X", "look up X", "google X", "Xを検索して", "Xをググって",
+ * "Xについて調べて" → `web_search` with the extracted query.
+ *
+ * Fast-path for web search exists because the small on-device LLM
+ * frequently hallucinates "I don't have that tool" even when `web_search`
+ * is already in the tool bucket. Deterministic routing here bypasses the
+ * LLM for the most common phrasings.
+ *
+ * When the utterance is just the verb without a query (e.g. "Web検索して",
+ * "search"), we return a speak-only `FastPathMatch` that prompts the user
+ * for the actual query instead of firing a tool call with an empty string.
+ */
+object WebSearchMatcher : FastPathMatcher {
+    // Each pattern has one capture group: the search query.
+    // Order matters: more specific ("search for") must precede the bare verb
+    // ("search") so we don't leak the preposition into the captured query.
+    private val englishPatterns = listOf(
+        Regex("""^\s*web\s+search\s+(?:for\s+)?(.+?)\s*[!?.]*\s*$"""),
+        Regex("""^\s*search\s+for\s+(.+?)\s*[!?.]*\s*$"""),
+        Regex("""^\s*search\s+the\s+web\s+for\s+(.+?)\s*[!?.]*\s*$"""),
+        Regex("""^\s*(?:look\s*up|google)\s+(.+?)\s*[!?.]*\s*$"""),
+        Regex("""^\s*search\s+(.+?)\s*[!?.]*\s*$""")
+    )
+    // "Xを検索して / ググって / について調べて".
+    // The verb suffix after 検索/ググ/調べ can be any (possibly empty) tail —
+    // "して", "って", "る", "て", punctuation, etc. We permit any run of
+    // chars there so conjugations like "検索して" / "ググって" / "調べてよ" all
+    // match without enumerating every ending.
+    private val japanesePatterns = listOf(
+        Regex("""^\s*(.+?)\s*(?:を|について|に関して)\s*(?:web\s*)?(?:検索|ググ|調べ).*$""")
+    )
+
+    // Bare "search" / "web search" / "Web検索して" without a query — prompt.
+    private val englishEmptyPattern = Regex(
+        """^\s*(?:web\s+)?search(?:\s+the\s+web)?\s*[!?.]*\s*$"""
+    )
+    private val japaneseEmptyPattern = Regex(
+        """^\s*(?:web\s*)?(?:検索|ググ).*$"""
+    )
+
+    private const val EN_PROMPT = "What would you like to search for?"
+    private const val JA_PROMPT = "何を検索しますか？"
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishEmptyPattern.matches(normalized)) {
+            return FastPathMatch(toolName = null, spokenConfirmation = EN_PROMPT)
+        }
+        if (japaneseEmptyPattern.matches(normalized)) {
+            return FastPathMatch(toolName = null, spokenConfirmation = JA_PROMPT)
+        }
+        for (p in englishPatterns) {
+            val m = p.matchEntire(normalized) ?: p.find(normalized) ?: continue
+            val query = m.groupValues.getOrNull(1)?.trim().orEmpty()
+            if (query.isNotBlank()) {
+                return FastPathMatch(
+                    toolName = "web_search",
+                    arguments = mapOf("query" to query)
+                )
+            }
+        }
+        for (p in japanesePatterns) {
+            val m = p.matchEntire(normalized) ?: p.find(normalized) ?: continue
+            val query = m.groupValues.getOrNull(1)?.trim().orEmpty()
+            if (query.isNotBlank()) {
+                return FastPathMatch(
+                    toolName = "web_search",
+                    arguments = mapOf("query" to query)
+                )
+            }
+        }
+        return null
+    }
+}
+
+/**
  * "list devices", "what devices do I have", "デバイス一覧" →
  * get_devices_by_type with type=light as a sane default. Diagnostic
  * fast-path so the user can quickly check what's connected.
