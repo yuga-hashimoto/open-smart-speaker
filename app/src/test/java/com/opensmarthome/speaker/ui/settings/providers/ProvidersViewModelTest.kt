@@ -1,17 +1,27 @@
 package com.opensmarthome.speaker.ui.settings.providers
 
+import androidx.datastore.preferences.core.Preferences
 import com.google.common.truth.Truth.assertThat
 import com.opensmarthome.speaker.assistant.provider.AssistantProvider
 import com.opensmarthome.speaker.assistant.provider.ProviderCapabilities
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.assistant.router.RoutingPolicy
+import com.opensmarthome.speaker.data.preferences.AppPreferences
+import com.opensmarthome.speaker.data.preferences.PreferenceKeys
+import com.opensmarthome.speaker.data.preferences.SecurePreferences
+import com.opensmarthome.speaker.util.DiscoveredSpeaker
+import com.opensmarthome.speaker.util.MulticastDiscovery
+import com.opensmarthome.speaker.util.PeerLivenessTracker
+import com.opensmarthome.speaker.util.Staleness
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -45,7 +55,7 @@ class ProvidersViewModelTest {
         every { router.activeProvider } returns MutableStateFlow(local)
         every { router.policy } returns MutableStateFlow(RoutingPolicy.Auto)
 
-        val vm = ProvidersViewModel(router)
+        val vm = buildVm(router = router)
         advanceUntilIdle()
 
         val rows = vm.rows.value
@@ -63,11 +73,196 @@ class ProvidersViewModelTest {
         every { router.activeProvider } returns MutableStateFlow(null)
         coEvery { router.selectProvider(any()) } returns Unit
 
-        val vm = ProvidersViewModel(router)
+        val vm = buildVm(router = router)
         vm.select("remote")
         advanceUntilIdle()
 
         coVerify { router.selectProvider("remote") }
+    }
+
+    @Test
+    fun `multiroomState reports broadcast off when preference absent`() = runTest {
+        val vm = buildVm()
+        advanceUntilIdle()
+
+        val state = vm.multiroomState.value
+        assertThat(state.broadcastEnabled).isFalse()
+        assertThat(state.hasSecret).isFalse()
+        assertThat(state.broadcastingAs).isNull()
+        assertThat(state.peerCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `multiroomState reports healthy mesh when broadcast + secret + fresh peer`() = runTest {
+        val router = idleRouter()
+        val prefs = prefsWith(Pair(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED, true))
+        val secure = mockk<SecurePreferences>()
+        every { secure.getString(SecurePreferences.KEY_MULTIROOM_SECRET, any()) } returns "s3cret"
+        val discovery = mockk<MulticastDiscovery>()
+        every { discovery.registeredName } returns MutableStateFlow("living-room")
+        every { discovery.speakers } returns MutableStateFlow(
+            listOf(DiscoveredSpeaker("kitchen"), DiscoveredSpeaker("bedroom"))
+        )
+        val tracker = PeerLivenessTracker().apply {
+            update(
+                mapOf(
+                    "kitchen" to Staleness.Fresh,
+                    "bedroom" to Staleness.Stale
+                )
+            )
+        }
+
+        val vm = ProvidersViewModel(router, prefs, secure, discovery, tracker)
+        advanceUntilIdle()
+
+        val state = vm.multiroomState.value
+        assertThat(state.broadcastEnabled).isTrue()
+        assertThat(state.hasSecret).isTrue()
+        assertThat(state.broadcastingAs).isEqualTo("living-room")
+        assertThat(state.peerCount).isEqualTo(2)
+        assertThat(state.freshCount).isEqualTo(1)
+        assertThat(state.staleCount).isEqualTo(1)
+        assertThat(state.goneCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `multiroomState hides broadcastingAs when broadcast is off`() = runTest {
+        val router = idleRouter()
+        val prefs = prefsWith(Pair(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED, false))
+        val secure = mockk<SecurePreferences>()
+        every { secure.getString(SecurePreferences.KEY_MULTIROOM_SECRET, any()) } returns ""
+        val discovery = mockk<MulticastDiscovery>()
+        every { discovery.registeredName } returns MutableStateFlow("living-room")
+        every { discovery.speakers } returns MutableStateFlow(emptyList())
+        val tracker = PeerLivenessTracker()
+
+        val vm = ProvidersViewModel(router, prefs, secure, discovery, tracker)
+        advanceUntilIdle()
+
+        assertThat(vm.multiroomState.value.broadcastingAs).isNull()
+    }
+
+    @Test
+    fun `multiroomState falls back to mDNS speakers when liveness empty`() = runTest {
+        val router = idleRouter()
+        val prefs = prefsWith(Pair(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED, true))
+        val secure = mockk<SecurePreferences>()
+        every { secure.getString(SecurePreferences.KEY_MULTIROOM_SECRET, any()) } returns "x"
+        val discovery = mockk<MulticastDiscovery>()
+        every { discovery.registeredName } returns MutableStateFlow("foo")
+        every { discovery.speakers } returns MutableStateFlow(
+            listOf(DiscoveredSpeaker("a"), DiscoveredSpeaker("b"), DiscoveredSpeaker("c"))
+        )
+        val tracker = PeerLivenessTracker() // no heartbeats yet
+
+        val vm = ProvidersViewModel(router, prefs, secure, discovery, tracker)
+        advanceUntilIdle()
+
+        assertThat(vm.multiroomState.value.peerCount).isEqualTo(3)
+        assertThat(vm.multiroomState.value.freshCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `meshHealthHint prioritises broadcast off`() {
+        val state = ProvidersViewModel.MultiroomState(
+            broadcastEnabled = false,
+            hasSecret = true,
+            broadcastingAs = null,
+            peerCount = 3,
+            freshCount = 2,
+            staleCount = 0,
+            goneCount = 1
+        )
+        val hint = meshHealthHint(state)
+        assertThat(hint.healthy).isFalse()
+        assertThat(hint.message).contains("Multi-room broadcast")
+    }
+
+    @Test
+    fun `meshHealthHint prompts for secret when broadcast on but secret missing`() {
+        val state = ProvidersViewModel.MultiroomState(
+            broadcastEnabled = true,
+            hasSecret = false,
+            broadcastingAs = "foo",
+            peerCount = 1,
+            freshCount = 1,
+            staleCount = 0,
+            goneCount = 0
+        )
+        val hint = meshHealthHint(state)
+        assertThat(hint.healthy).isFalse()
+        assertThat(hint.message).isEqualTo("Set a shared secret")
+    }
+
+    @Test
+    fun `meshHealthHint prompts for peers when broadcast and secret set but no fresh`() {
+        val state = ProvidersViewModel.MultiroomState(
+            broadcastEnabled = true,
+            hasSecret = true,
+            broadcastingAs = "foo",
+            peerCount = 1,
+            freshCount = 0,
+            staleCount = 0,
+            goneCount = 1
+        )
+        val hint = meshHealthHint(state)
+        assertThat(hint.healthy).isFalse()
+        assertThat(hint.message).contains("No peers")
+    }
+
+    @Test
+    fun `meshHealthHint reports healthy when all checks pass`() {
+        val state = ProvidersViewModel.MultiroomState(
+            broadcastEnabled = true,
+            hasSecret = true,
+            broadcastingAs = "foo",
+            peerCount = 2,
+            freshCount = 2,
+            staleCount = 0,
+            goneCount = 0
+        )
+        val hint = meshHealthHint(state)
+        assertThat(hint.healthy).isTrue()
+        assertThat(hint.message).isEqualTo("Mesh is healthy.")
+    }
+
+    private fun buildVm(
+        router: ConversationRouter = idleRouter(),
+        prefs: AppPreferences = prefsWith(),
+        secure: SecurePreferences = emptySecurePrefs(),
+        discovery: MulticastDiscovery = emptyDiscovery(),
+        tracker: PeerLivenessTracker = PeerLivenessTracker()
+    ) = ProvidersViewModel(router, prefs, secure, discovery, tracker)
+
+    private fun idleRouter(): ConversationRouter {
+        val router = mockk<ConversationRouter>(relaxed = true)
+        every { router.availableProviders } returns MutableStateFlow(emptyList())
+        every { router.activeProvider } returns MutableStateFlow(null)
+        return router
+    }
+
+    private fun emptySecurePrefs(): SecurePreferences {
+        val secure = mockk<SecurePreferences>()
+        every { secure.getString(any(), any()) } returns ""
+        return secure
+    }
+
+    private fun emptyDiscovery(): MulticastDiscovery {
+        val d = mockk<MulticastDiscovery>()
+        every { d.registeredName } returns MutableStateFlow<String?>(null)
+        every { d.speakers } returns MutableStateFlow(emptyList())
+        return d
+    }
+
+    private fun prefsWith(vararg entries: Pair<Preferences.Key<*>, Any?>): AppPreferences {
+        val map = entries.toMap()
+        val prefs = mockk<AppPreferences>()
+        every { prefs.observe<Any>(any()) } answers {
+            @Suppress("UNCHECKED_CAST")
+            val key = firstArg<Preferences.Key<Any>>()
+            flowOf(map[key]) as Flow<Any?>
+        }
+        return prefs
     }
 
     private fun fakeProvider(id: String, isLocal: Boolean): AssistantProvider {

@@ -83,4 +83,8 @@ object PreferenceKeys {
 
     // Agent customization
     val CUSTOM_SYSTEM_PROMPT = stringPreferencesKey("custom_system_prompt")
+
+    // Multi-room mesh
+    /** When true, this device advertises itself via mDNS so peers can discover it. */
+    val MULTIROOM_BROADCAST_ENABLED = booleanPreferencesKey("multiroom_broadcast_enabled")
 }

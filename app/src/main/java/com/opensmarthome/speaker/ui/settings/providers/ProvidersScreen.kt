@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +37,7 @@ fun ProvidersScreen(
     viewModel: ProvidersViewModel = hiltViewModel()
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
+    val multiroom by viewModel.multiroomState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -54,6 +56,8 @@ fun ProvidersScreen(
                     "No providers registered yet. Download an on-device model or configure a gateway in Settings.",
                     style = MaterialTheme.typography.bodyMedium
                 )
+                Spacer(Modifier.size(16.dp))
+                MultiroomCard(state = multiroom)
             }
             return@Scaffold
         }
@@ -64,6 +68,10 @@ fun ProvidersScreen(
         ) {
             items(rows, key = { it.id }) { row ->
                 ProviderRow(row = row, onSelect = { viewModel.select(row.id) })
+            }
+            item(key = "__multiroom__") {
+                Spacer(Modifier.size(8.dp))
+                MultiroomCard(state = multiroom)
             }
         }
     }
@@ -120,4 +128,96 @@ private fun Badge(label: String) {
         label = { Text(label) },
         colors = AssistChipDefaults.assistChipColors()
     )
+}
+
+@Composable
+private fun MultiroomCard(state: ProvidersViewModel.MultiroomState) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Multi-room", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = "Broadcast: ${if (state.broadcastEnabled) "On" else "Off"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "Shared secret: ${if (state.hasSecret) "Set" else "Not set"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            if (state.broadcastEnabled && state.broadcastingAs != null) {
+                Text(
+                    text = "Broadcasting as: ${state.broadcastingAs}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = "Peers: ${state.peerCount} " +
+                    "(${state.freshCount} fresh, ${state.staleCount} stale, ${state.goneCount} gone)",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.size(8.dp))
+            MeshHealthHint(state = state)
+        }
+    }
+}
+
+@Composable
+private fun MeshHealthHint(state: ProvidersViewModel.MultiroomState) {
+    val hint = meshHealthHint(state)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = hint.icon,
+            color = hint.color,
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(Modifier.size(6.dp))
+        Text(
+            text = hint.message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (hint.healthy) hint.color else MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+internal data class MeshHealthHintText(
+    val healthy: Boolean,
+    val icon: String,
+    val color: Color,
+    val message: String
+)
+
+/**
+ * Resolve the single most actionable hint. Order matters: fix broadcast first,
+ * then secret, then peers — a missing earlier step makes later steps moot.
+ * Exposed internal for unit testing.
+ */
+internal fun meshHealthHint(state: ProvidersViewModel.MultiroomState): MeshHealthHintText {
+    val green = Color(0xFF2E7D32)
+    return when {
+        !state.broadcastEnabled -> MeshHealthHintText(
+            healthy = false,
+            icon = "!",
+            color = Color(0xFFB26A00),
+            message = "Turn on Multi-room broadcast to join the mesh."
+        )
+        !state.hasSecret -> MeshHealthHintText(
+            healthy = false,
+            icon = "!",
+            color = Color(0xFFB26A00),
+            message = "Set a shared secret"
+        )
+        state.freshCount == 0 -> MeshHealthHintText(
+            healthy = false,
+            icon = "!",
+            color = Color(0xFFB26A00),
+            message = "No peers yet — check that other tablets have Multi-room broadcast on."
+        )
+        else -> MeshHealthHintText(
+            healthy = true,
+            icon = "\u2713",
+            color = green,
+            message = "Mesh is healthy."
+        )
+    }
 }

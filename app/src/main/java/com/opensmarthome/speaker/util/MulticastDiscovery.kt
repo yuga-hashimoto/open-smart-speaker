@@ -44,6 +44,14 @@ class MulticastDiscovery @Inject constructor(
     private val _speakers = MutableStateFlow<List<DiscoveredSpeaker>>(emptyList())
     val speakers: StateFlow<List<DiscoveredSpeaker>> = _speakers.asStateFlow()
 
+    /**
+     * Name this device is currently advertising as. Null when broadcasting is
+     * off or the register handshake hasn't completed. Observed by the UI to
+     * tell the user whether the mesh knows about them.
+     */
+    private val _registeredName = MutableStateFlow<String?>(null)
+    val registeredName: StateFlow<String?> = _registeredName.asStateFlow()
+
     private var discoveryListener: NsdManager.DiscoveryListener? = null
 
     companion object {
@@ -89,6 +97,15 @@ class MulticastDiscovery @Inject constructor(
             runCatching { nsdManager.stopServiceDiscovery(it) }
         }
         discoveryListener = null
+    }
+
+    /**
+     * Update the name this device is advertising. A null value clears the
+     * broadcast state. Registration itself is handled by a follow-up PR; this
+     * is the observable hook the UI keys off.
+     */
+    fun setRegisteredName(name: String?) {
+        _registeredName.value = name
     }
 
     private fun resolve(service: NsdServiceInfo) {
