@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Klepet</string>
+    <string name="tab_dashboard">Nadzorna plošča</string>
+    <string name="tab_ambient">Ambient</string>
+    <string name="tab_settings">Nastavitve</string>
+    <string name="accessibility_service_description">Agentu pametnega zvočnika omogoča branje trenutno vidnega besedila na zaslonu in samodejno izvajanje dejanj uporabniškega vmesnika v vašem imenu.</string>
+    <string name="accessibility_service_summary">Omogočite, da lahko agent v napravi vidi zaslon in ga upravlja.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker uporablja to storitev za ljudi s posebnimi potrebami za branje vsebine zaslona in pritiskanje gumbov v vašem imenu, ko to zahtevate. Nobeni podatki ne zapustijo naprave. Storitev lahko kadar koli izklopite v Nastavitvah.</string>
+    <string name="voice_tile_label">Pogovor</string>
+    <string name="voice_tile_content_description">Zaženi glasovno sejo z aplikacijo OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Jezik</string>
+    <string name="locale_picker_system_default">Privzeto za sistem</string>
+    <string name="locale_picker_requires_android_13">Zahteva Android 13 ali novejši</string>
+    <string name="locale_picker_close">Zapri</string>
+</resources>
