@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.ui.settings.locale.LocalePickerRow
 
 @Composable
 fun SettingsScreen(
@@ -274,6 +275,16 @@ fun SettingsScreen(
                 }
             }
         }
+
+        SettingsDivider()
+
+        // === App Language ===
+        SectionHeader("App Language")
+        LocalePickerRow()
+        SettingsHint(
+            "Overrides the UI language for this app only. Android 13 or later required; " +
+                "the change takes effect immediately without a restart."
+        )
 
         SettingsDivider()
 
