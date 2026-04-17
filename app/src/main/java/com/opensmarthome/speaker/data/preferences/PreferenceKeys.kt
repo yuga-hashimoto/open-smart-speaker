@@ -86,4 +86,15 @@ object PreferenceKeys {
 
     // Agent customization
     val CUSTOM_SYSTEM_PROMPT = stringPreferencesKey("custom_system_prompt")
+
+    /**
+     * User-selected UI locale as a BCP-47 language tag ("", "ja", "es",
+     * "fr", "de", "zh-CN", etc.). Blank / unset means "follow the system
+     * locale" — mirrors openclaw-assistant's `appLanguage` semantics so
+     * the empty string is always a valid "no override" value.
+     *
+     * `LocaleManager` writes it; `OpenSmartSpeakerApplication` reads it
+     * on startup and applies it via `AppCompatDelegate.setApplicationLocales`.
+     */
+    val APP_LOCALE_TAG = stringPreferencesKey("app_locale_tag")
 }
