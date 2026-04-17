@@ -250,10 +250,17 @@ object DeviceModule {
     ): com.opensmarthome.speaker.permission.PermissionManager =
         com.opensmarthome.speaker.permission.PermissionManager(
             context = context,
-            notificationListenerClass = com.opensmarthome.speaker.tool.system
-                .OpenSmartSpeakerNotificationListener::class.java,
-            accessibilityServiceClass = com.opensmarthome.speaker.tool.accessibility
-                .OpenSmartAccessibilityService::class.java
+            notificationListenerClasses = listOf(
+                com.opensmarthome.speaker.tool.system.OpenSmartSpeakerNotificationListener::class.java
+            ),
+            // Accept grant on EITHER accessibility service — the legacy
+            // OpenSmartAccessibilityService (tool/accessibility) and the
+            // newer OpenSmartSpeakerA11yService (a11y/) coexist during the
+            // Phase 15 migration. Granting either satisfies onboarding.
+            accessibilityServiceClasses = listOf(
+                com.opensmarthome.speaker.tool.accessibility.OpenSmartAccessibilityService::class.java,
+                com.opensmarthome.speaker.a11y.OpenSmartSpeakerA11yService::class.java
+            )
         )
 
     @Provides
