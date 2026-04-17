@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Ћаскање</string>
+    <string name="tab_dashboard">Контролна табла</string>
+    <string name="tab_ambient">Амбијент</string>
+    <string name="tab_settings">Подешавања</string>
+    <string name="accessibility_service_description">Омогућава агенту паметног звучника да чита текст тренутно видљив на екрану и аутоматизује радње у корисничком интерфејсу у ваше име.</string>
+    <string name="accessibility_service_summary">Омогућите да би агент на уређају могао да види и контролише екран.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker користи ову услугу приступачности да прочита шта је на екрану и додирне дугмад уместо вас када затражите. Ниједан податак не напушта уређај. Можете је искључити у сваком тренутку у Подешавањима.</string>
+    <string name="voice_tile_label">Разговор</string>
+    <string name="voice_tile_content_description">Започните гласовну сесију са OpenSmartSpeaker-ом</string>
+    <string name="locale_picker_title">Језик</string>
+    <string name="locale_picker_system_default">Подразумевани системски</string>
+    <string name="locale_picker_requires_android_13">Захтева Android 13+</string>
+    <string name="locale_picker_close">Затвори</string>
+</resources>
