@@ -47,6 +47,8 @@ class MainActivity : ComponentActivity() {
     @javax.inject.Inject lateinit var appPreferences: AppPreferences
     @javax.inject.Inject lateinit var cameraProviderHolder: com.opensmarthome.speaker.tool.system.CameraProviderHolder
     @javax.inject.Inject lateinit var screenRecorderHolder: com.opensmarthome.speaker.tool.system.ScreenRecorderHolder
+    @javax.inject.Inject lateinit var toolExecutor: com.opensmarthome.speaker.tool.ToolExecutor
+    @javax.inject.Inject lateinit var routineShortcutPublisher: com.opensmarthome.speaker.shortcuts.RoutineShortcutPublisher
 
     private lateinit var intentCameraProvider: com.opensmarthome.speaker.tool.system.IntentCameraProvider
     private lateinit var screenRecorder: com.opensmarthome.speaker.tool.system.MediaProjectionScreenRecorder
@@ -145,12 +147,37 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra("trigger_voice", false) == true) {
             VoiceService.triggerListening(this)
         }
+        intent?.let { handleRoutineShortcut(it) }
+        scope.launch { routineShortcutPublisher.refresh() }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra("trigger_voice", false)) {
             VoiceService.triggerListening(this)
+        }
+        handleRoutineShortcut(intent)
+    }
+
+    private fun handleRoutineShortcut(intent: Intent) {
+        val id = intent.getStringExtra(
+            com.opensmarthome.speaker.shortcuts.RoutineShortcutPublisher.EXTRA_ROUTINE_ID
+        )?.takeIf { it.isNotBlank() } ?: return
+        // Clear so configuration changes don't re-fire.
+        intent.removeExtra(com.opensmarthome.speaker.shortcuts.RoutineShortcutPublisher.EXTRA_ROUTINE_ID)
+        Timber.d("Launching routine from shortcut: $id")
+        scope.launch {
+            try {
+                toolExecutor.execute(
+                    com.opensmarthome.speaker.tool.ToolCall(
+                        id = "shortcut_${java.util.UUID.randomUUID()}",
+                        name = "run_routine",
+                        arguments = mapOf("id" to id)
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.w(e, "Shortcut routine dispatch failed")
+            }
         }
     }
 
