@@ -17,21 +17,28 @@ import timber.log.Timber
  *
  * Acts as a TextToSpeech implementation so VoicePipeline doesn't need to know about
  * the provider selection. Settings changes take effect on the next speak() call.
+ *
+ * On construction, persisted TTS_SPEECH_RATE, TTS_PITCH, and TTS_ENGINE are read from
+ * [preferences] and applied to [androidTtsProvider] so that user-configured settings
+ * survive app restarts.
  */
 class TtsManager(
     private val context: Context,
     private val preferences: AppPreferences,
     private val securePreferences: SecurePreferences,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    /**
+     * Visible internally for testing. Production callers omit this parameter;
+     * the default creates and initialises a real [AndroidTtsProvider].
+     */
+    internal val androidTtsProvider: AndroidTtsProvider =
+        AndroidTtsProvider(context).also { it.initialize() }
 ) : TextToSpeech {
 
     private val _isSpeaking = MutableStateFlow(false)
     override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
 
-    // Lazily create providers as needed
-    private val androidProvider: AndroidTtsProvider by lazy {
-        AndroidTtsProvider(context).also { it.initialize() }
-    }
+    // Lazily create network-backed providers as needed
     private val openAiProvider: OpenAiTtsProvider by lazy {
         OpenAiTtsProvider(context, preferences, securePreferences, httpClient)
     }
@@ -44,10 +51,41 @@ class TtsManager(
     private val piperProvider: PiperTtsProvider by lazy {
         // Piper is a placeholder that falls back to Android system TTS until
         // the piper-cpp JNI bindings land. See PiperTtsProvider.
-        PiperTtsProvider(androidProvider)
+        PiperTtsProvider(androidTtsProvider)
     }
 
-    @Volatile private var currentProvider: TextToSpeech = androidProvider
+    @Volatile private var currentProvider: TextToSpeech = androidTtsProvider
+
+    init {
+        applyPersistedSettings()
+    }
+
+    /**
+     * Reads persisted TTS settings from [preferences] and applies them to
+     * [androidTtsProvider] so that user-configured speech rate, pitch, and
+     * engine survive app restarts.
+     *
+     * Uses [runBlocking] — the same pattern as [resolveProvider] — because this
+     * runs during construction before any coroutine scope is available.
+     */
+    private fun applyPersistedSettings() {
+        val rate = runBlocking { preferences.observe(PreferenceKeys.TTS_SPEECH_RATE).first() }
+        val pitch = runBlocking { preferences.observe(PreferenceKeys.TTS_PITCH).first() }
+        val engine = runBlocking { preferences.observe(PreferenceKeys.TTS_ENGINE).first() }
+
+        if (rate != null) {
+            Timber.d("TTS: restoring speech rate=$rate from preferences")
+            androidTtsProvider.setSpeechRate(rate)
+        }
+        if (pitch != null) {
+            Timber.d("TTS: restoring pitch=$pitch from preferences")
+            androidTtsProvider.setPitch(pitch)
+        }
+        if (!engine.isNullOrBlank()) {
+            Timber.d("TTS: restoring engine=$engine from preferences")
+            androidTtsProvider.reinitialize(engine)
+        }
+    }
 
     private fun resolveProvider(): TextToSpeech {
         val id = runBlocking { preferences.observe(PreferenceKeys.TTS_PROVIDER).first() }
@@ -57,7 +95,7 @@ class TtsManager(
             "elevenlabs" -> elevenLabsProvider
             "voicevox" -> voiceVoxProvider
             "piper" -> piperProvider
-            else -> androidProvider
+            else -> androidTtsProvider
         }
         if (next !== currentProvider) {
             Timber.d("TTS provider switched: $id")
@@ -89,8 +127,8 @@ class TtsManager(
      * Expose AndroidTtsProvider configuration methods for Settings UI.
      * Other providers pull their config from preferences directly at speak time.
      */
-    fun setSpeechRate(rate: Float) = androidProvider.setSpeechRate(rate)
-    fun setPitch(pitch: Float) = androidProvider.setPitch(pitch)
-    fun setLanguage(tag: String) = androidProvider.setLanguage(tag)
-    fun reinitialize(engine: String? = null) = androidProvider.reinitialize(engine)
+    fun setSpeechRate(rate: Float) = androidTtsProvider.setSpeechRate(rate)
+    fun setPitch(pitch: Float) = androidTtsProvider.setPitch(pitch)
+    fun setLanguage(tag: String) = androidTtsProvider.setLanguage(tag)
+    fun reinitialize(engine: String? = null) = androidTtsProvider.reinitialize(engine)
 }

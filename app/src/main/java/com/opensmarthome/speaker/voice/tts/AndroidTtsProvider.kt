@@ -13,7 +13,7 @@ import java.util.UUID
 import kotlin.coroutines.resume
 import android.speech.tts.TextToSpeech as AndroidTts
 
-class AndroidTtsProvider(context: Context) : TextToSpeech {
+open class AndroidTtsProvider(context: Context) : TextToSpeech {
 
     private val appContext = context.applicationContext
     private val _isSpeaking = MutableStateFlow(false)
@@ -30,7 +30,7 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
     private var preferredEngine: String? = null
     private var languageTag: String? = null
 
-    fun initialize(engine: String? = null) {
+    open fun initialize(engine: String? = null) {
         preferredEngine = engine
         Timber.d("TTS: initializing with engine=${engine ?: "default"}")
 
@@ -90,12 +90,12 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
         }
     }
 
-    fun setSpeechRate(rate: Float) {
+    open fun setSpeechRate(rate: Float) {
         speechRate = rate.coerceIn(0.25f, 4.0f)
         tts?.setSpeechRate(speechRate)
     }
 
-    fun setPitch(value: Float) {
+    open fun setPitch(value: Float) {
         pitch = value.coerceIn(0.25f, 2.0f)
         tts?.setPitch(pitch)
     }
@@ -105,7 +105,7 @@ class AndroidTtsProvider(context: Context) : TextToSpeech {
         if (isInitialized) setupVoice()
     }
 
-    fun reinitialize(engine: String? = null) {
+    open fun reinitialize(engine: String? = null) {
         tts?.shutdown()
         isInitialized = false
         initialize(engine)
