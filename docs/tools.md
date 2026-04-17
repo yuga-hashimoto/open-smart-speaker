@@ -32,6 +32,7 @@ analytics per call.
 | `get_device_health` | DeviceHealthToolExecutor | battery / storage / memory |
 | `open_settings_page` | OpenSettingsToolExecutor | `{ page }` — wifi/bluetooth/display/brightness/sound/volume/accessibility/notifications/apps/battery/home |
 | `open_url` | OpenUrlToolExecutor | `{ url }` — http/https only; intent://, content://, javascript:, file:// rejected |
+| `lock_screen` | LockScreenToolExecutor | Locks the device. Requires user to grant Device Admin in Settings → Security → Device admin apps (force-lock policy only; no password forcing) |
 
 ## Information
 
@@ -93,6 +94,12 @@ analytics per call.
 |---|---|---|
 | `get_skill` / `list_skills` | SkillToolExecutor | |
 | `install_skill_from_url` | SkillInstaller | Downloads + validates SKILL.md |
+
+## Multi-room
+
+| Tool | Source | Notes |
+|---|---|---|
+| `broadcast_tts` | BroadcastTtsToolExecutor | `{ text, language? }` — speaks the message on every mDNS-discovered OpenSmartSpeaker peer. Requires `Multi-room broadcast` enabled and a shared secret set in Settings. Returns `sent` + `failed` counts; "no shared secret" and "no peers" surface as spoken messages. See [Multi-room protocol](multi-room-protocol.md) |
 
 ## Composite tools
 
