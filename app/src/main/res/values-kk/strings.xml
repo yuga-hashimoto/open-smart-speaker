@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Чат</string>
+    <string name="tab_dashboard">Басқару тақтасы</string>
+    <string name="tab_ambient">Фон режимі</string>
+    <string name="tab_settings">Параметрлер</string>
+    <string name="accessibility_service_description">Смарт-динамик агентіне ағымдағы экрандағы мәтінді оқуға және сіздің атыңыздан интерфейс әрекеттерін автоматтандыруға мүмкіндік береді.</string>
+    <string name="accessibility_service_summary">Құрылғыдағы агентке экранды көруге және басқаруға рұқсат беру үшін қосыңыз.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker экрандағы мазмұнды оқу және сұрағаныңызда түймелерді басу үшін осы арнайы мүмкіндіктер қызметін пайдаланады. Ешқандай дерек құрылғыдан шықпайды. Оны кез келген уақытта Параметрлерде өшіре аласыз.</string>
+    <string name="voice_tile_label">Сөйлесу</string>
+    <string name="voice_tile_content_description">OpenSmartSpeaker-мен дауыстық сеансты бастау</string>
+    <string name="locale_picker_title">Тіл</string>
+    <string name="locale_picker_system_default">Жүйе әдепкі тілі</string>
+    <string name="locale_picker_requires_android_13">Android 13+ қажет</string>
+    <string name="locale_picker_close">Жабу</string>
+</resources>
