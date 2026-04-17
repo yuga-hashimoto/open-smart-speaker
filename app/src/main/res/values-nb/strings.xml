@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Chat</string>
+    <string name="tab_dashboard">Dashbord</string>
+    <string name="tab_ambient">Omgivelse</string>
+    <string name="tab_settings">Innstillinger</string>
+    <string name="accessibility_service_description">Lar smarthøyttaleragenten lese teksten på den synlige skjermen og automatisere grensesnittshandlinger på dine vegne.</string>
+    <string name="accessibility_service_summary">Aktiver for å la agenten på enheten se og styre skjermen.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker bruker denne tilgjengelighetstjenesten til å lese det som vises på skjermen og trykke på knapper på dine vegne når du ber om det. Ingen data forlater enheten. Du kan slå den av når som helst i Innstillinger.</string>
+    <string name="voice_tile_label">Snakk</string>
+    <string name="voice_tile_content_description">Start en stemmeøkt med OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Språk</string>
+    <string name="locale_picker_system_default">Systemstandard</string>
+    <string name="locale_picker_requires_android_13">Krever Android 13 eller nyere</string>
+    <string name="locale_picker_close">Lukk</string>
+</resources>
