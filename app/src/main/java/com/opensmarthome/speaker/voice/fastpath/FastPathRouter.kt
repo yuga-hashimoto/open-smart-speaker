@@ -59,6 +59,11 @@ class DefaultFastPathRouter(
             // CancelAllTimersMatcher must precede TimerMatcher because "cancel timer" contains "timer".
             CancelAllTimersMatcher,
             TimerMatcher,
+            // AlarmMatcher must sit AFTER TimerMatcher — if the utterance
+            // contains "timer" (duration-based) TimerMatcher wins; otherwise
+            // wall-clock "set an alarm for 7am" / "wake me up at 6:30" / "7時にアラーム"
+            // fall through to AlarmMatcher.
+            AlarmMatcher,
             TimeQueryMatcher,
             VolumeMatcher,
             ThermostatMatcher,

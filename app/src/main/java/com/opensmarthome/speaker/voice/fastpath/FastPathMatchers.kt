@@ -1,5 +1,7 @@
 package com.opensmarthome.speaker.voice.fastpath
 
+import java.time.LocalDateTime
+
 /**
  * All bundled FastPathMatcher implementations.
  *
@@ -55,6 +57,97 @@ object TimerMatcher : FastPathMatcher {
         unit.startsWith("hour") || unit == "hr" -> n * 3600
         else -> null
     }
+}
+
+/**
+ * Alarm at a wall-clock time: "set an alarm for 7am", "wake me up at 6:30",
+ * "7時にアラーム". Must sit AFTER [TimerMatcher] in the router order — if
+ * the utterance is a duration-based "timer", TimerMatcher wins first and
+ * this matcher never runs.
+ *
+ * No dedicated `set_alarm` tool exists on-device, so the matcher computes
+ * the remaining seconds until the requested wall-clock time (rolls to
+ * tomorrow if the target has already passed today) and dispatches
+ * `set_timer` with that payload.
+ *
+ * `nowProvider` is injected for deterministic tests; production uses
+ * [LocalDateTime.now].
+ */
+class AlarmMatcherImpl(
+    private val nowProvider: () -> LocalDateTime = { LocalDateTime.now() }
+) : FastPathMatcher {
+    private val englishSetAlarm = Regex(
+        """set\s+(?:an?\s+|the\s+)?alarm\s+(?:for\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"""
+    )
+    private val englishWakeMeUp = Regex(
+        """wake\s+me\s+up\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"""
+    )
+    private val japaneseRegex = Regex(
+        """(\d{1,2})時(?:(\d{1,2})分?)?\s*(?:に)?\s*(?:アラーム|目覚まし|起こして)"""
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        // English variants
+        val enMatch = englishSetAlarm.find(normalized) ?: englishWakeMeUp.find(normalized)
+        if (enMatch != null) {
+            val rawHour = enMatch.groupValues[1].toIntOrNull() ?: return null
+            val minute = enMatch.groupValues[2].toIntOrNull() ?: 0
+            val amPm = enMatch.groupValues[3].takeIf { it.isNotEmpty() }
+            val hour = AlarmTimeCalculator.normalizeHour(rawHour, amPm) ?: return null
+            if (minute !in 0..59) return null
+            val seconds = AlarmTimeCalculator.secondsUntil(nowProvider(), hour, minute)
+            return FastPathMatch(
+                toolName = "set_timer",
+                arguments = mapOf("seconds" to seconds.toDouble()),
+                spokenConfirmation = englishConfirmation(hour, minute, amPm)
+            )
+        }
+        // Japanese
+        japaneseRegex.find(normalized)?.let { m ->
+            val rawHour = m.groupValues[1].toIntOrNull() ?: return null
+            val minute = m.groupValues[2].toIntOrNull() ?: 0
+            if (rawHour !in 0..23 || minute !in 0..59) return null
+            val seconds = AlarmTimeCalculator.secondsUntil(nowProvider(), rawHour, minute)
+            val label = if (minute == 0) "${rawHour}時" else "${rawHour}時${minute}分"
+            return FastPathMatch(
+                toolName = "set_timer",
+                arguments = mapOf("seconds" to seconds.toDouble()),
+                spokenConfirmation = "${label}のアラームを設定しました。"
+            )
+        }
+        return null
+    }
+
+    private fun englishConfirmation(hour: Int, minute: Int, originalAmPm: String?): String {
+        // Echo back the user's chosen format when possible.
+        val suffix = originalAmPm?.lowercase()
+        val displayHour: Int
+        val displaySuffix: String
+        if (suffix != null) {
+            displayHour = when {
+                hour == 0 -> 12
+                hour > 12 -> hour - 12
+                else -> hour
+            }
+            displaySuffix = if (hour < 12) "am" else "pm"
+        } else {
+            displayHour = hour
+            displaySuffix = ""
+        }
+        val minStr = if (minute == 0) "" else ":%02d".format(minute)
+        val trailing = if (displaySuffix.isEmpty()) "" else " $displaySuffix"
+        return "Alarm set for $displayHour$minStr$trailing."
+    }
+}
+
+/**
+ * Singleton default [AlarmMatcherImpl] with real system time, registered
+ * in [DefaultFastPathRouter.DEFAULT_MATCHERS]. Tests should construct a
+ * fresh [AlarmMatcherImpl] with a fixed `nowProvider`.
+ */
+object AlarmMatcher : FastPathMatcher {
+    private val delegate = AlarmMatcherImpl()
+    override fun tryMatch(normalized: String): FastPathMatch? = delegate.tryMatch(normalized)
 }
 
 /** "cancel all timers", "stop all timers", "タイマー全部止めて" */
