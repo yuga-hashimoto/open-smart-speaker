@@ -85,4 +85,16 @@ class AnalyticsViewModel @Inject constructor(
             refresh()
         }
     }
+
+    /**
+     * Clears only the persistent tool usage table (not latency). Mirrors
+     * the "Clear multi-room counters" pattern — rendered inline by the
+     * screen only when there is at least one row to clear.
+     */
+    fun clearToolUsageStats() {
+        viewModelScope.launch {
+            repository.clearToolUsageStats()
+            refresh()
+        }
+    }
 }

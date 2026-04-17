@@ -87,7 +87,8 @@ fun AnalyticsScreen(
                 allTime = state.allTime,
                 latency = state.latency,
                 fastPathRate = state.fastPathRate,
-                padding = padding
+                padding = padding,
+                onClearToolUsageStats = viewModel::clearToolUsageStats
             )
         }
     }
@@ -99,7 +100,8 @@ private fun LoadedContent(
     allTime: List<ToolUsageEntity>,
     latency: List<AnalyticsViewModel.LatencyRow>,
     fastPathRate: Double?,
-    padding: PaddingValues
+    padding: PaddingValues,
+    onClearToolUsageStats: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding),
@@ -147,6 +149,15 @@ private fun LoadedContent(
         }
         items(allTime, key = { it.toolName }) { entry ->
             ToolUsageRow(entry = entry)
+        }
+
+        if (allTime.isNotEmpty()) {
+            item(key = "clear-tool-usage-stats") {
+                TextButton(
+                    onClick = onClearToolUsageStats,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Clear tool usage stats") }
+            }
         }
     }
 }

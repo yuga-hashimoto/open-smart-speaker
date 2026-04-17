@@ -42,4 +42,12 @@ class AnalyticsRepository(
     }
 
     suspend fun reset() = stats.resetAll()
+
+    /**
+     * Clears the persistent tool usage stats (Room table + in-memory session
+     * counters). Unlike [reset], this does NOT touch latency metrics — it
+     * only zeroes the per-tool invocation rows surfaced by the Settings
+     * "Clear tool usage stats" action.
+     */
+    suspend fun clearToolUsageStats() = stats.resetAll()
 }
