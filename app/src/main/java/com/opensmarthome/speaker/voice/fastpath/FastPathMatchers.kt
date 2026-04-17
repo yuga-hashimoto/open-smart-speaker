@@ -1167,21 +1167,20 @@ object ListTimersMatcher : FastPathMatcher {
  * through to the LLM.
  */
 object BroadcastTtsMatcher : FastPathMatcher {
-    // Order matters: the broader pattern last. Each regex captures group 1 = message.
+    // Order matters: more specific first. Each regex captures group 1 = message.
     private val englishPatterns = listOf(
-        Regex("""^\s*(?:broadcast|announce)\s+["""" + "\u201c" + """](.+?)["""" + "\u201d" + """]\s*(?:to\s+(?:all|everyone))?$"""),
-        Regex("""^\s*(?:broadcast|announce)\s+(.+?)\s+to\s+(?:all|everyone|every\s+speaker)s?\.?$"""),
-        Regex("""^\s*tell\s+(?:all|every)\s+speakers?\s+(.+?)\.?$""")
+        Regex("^\\s*(?:broadcast|announce)\\s+(.+?)\\s+to\\s+(?:all|everyone|every\\s+speaker)s?\\.?$"),
+        Regex("^\\s*tell\\s+(?:all|every)\\s+speakers?\\s+(.+?)\\.?$")
     )
     private val japanesePatterns = listOf(
-        Regex("""(?:全スピーカー|全員|みんな|全部屋)(?:に)?(?:アナウンス|放送)(?:して)?[:：]?\s*(.+?)[\s。]*$"""),
-        Regex("""^(.+?)(?:って|を)(?:全員|みんな|全スピーカー)(?:に|へ)(?:伝えて|アナウンスして|放送して)$""")
+        Regex("(?:全スピーカー|全員|みんな|全部屋)(?:に)?(?:アナウンス|放送)(?:して)?[:：]\\s*(.+?)[\\s。]*$"),
+        Regex("^(.+?)(?:って|を)(?:全員|みんな|全スピーカー)(?:に|へ)(?:伝えて|アナウンスして|放送して)$")
     )
 
     override fun tryMatch(normalized: String): FastPathMatch? {
         for (regex in englishPatterns) {
             regex.find(normalized)?.let { m ->
-                val msg = m.groupValues[1].trim().trim('"', '\u201c', '\u201d')
+                val msg = m.groupValues[1].trim().trim('"')
                 if (msg.isNotBlank()) {
                     return FastPathMatch(
                         toolName = "broadcast_tts",
@@ -1192,7 +1191,7 @@ object BroadcastTtsMatcher : FastPathMatcher {
         }
         for (regex in japanesePatterns) {
             regex.find(normalized)?.let { m ->
-                val msg = m.groupValues[1].trim().trim('「', '」', '"', '\u201c', '\u201d')
+                val msg = m.groupValues[1].trim().trim('「', '」', '"')
                 if (msg.isNotBlank()) {
                     return FastPathMatch(
                         toolName = "broadcast_tts",
