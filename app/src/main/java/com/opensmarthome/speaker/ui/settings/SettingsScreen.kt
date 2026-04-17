@@ -354,6 +354,8 @@ fun SettingsScreen(
         }
         SettingsHint("Identical secret on every speaker. HMAC-SHA256 signs each envelope; mismatches are silently dropped. Minimum 16 chars recommended. QR-pair setup coming in a later release.")
 
+        SettingsMultiroomPairingCard(secret = multiroomSecret)
+
         if (onOpenSpeakerGroups != null) {
             OutlinedButton(
                 onClick = onOpenSpeakerGroups,
