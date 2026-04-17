@@ -850,4 +850,82 @@ class FastPathRouterTest {
         val m = router.match("open the camera")
         assertThat(m?.toolName).isEqualTo("launch_app")
     }
+
+    // --- DeviceHealthMatcher ---
+
+    @Test
+    fun `system status routes to get_device_health`() {
+        val m = router.match("System status")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+        assertThat(m?.arguments).isEmpty()
+        assertThat(m?.spokenConfirmation).isNull()
+    }
+
+    @Test
+    fun `device health routes to get_device_health`() {
+        val m = router.match("Device health")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `how is the device running`() {
+        val m = router.match("How is the device running?")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `how much storage`() {
+        val m = router.match("How much storage?")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `storage available`() {
+        val m = router.match("storage available")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `memory free`() {
+        val m = router.match("memory free")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `japanese system status`() {
+        val m = router.match("システム状態")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `japanese diagnostic`() {
+        val m = router.match("診断")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `japanese storage remaining`() {
+        val m = router.match("ストレージの残り")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `japanese memory free space`() {
+        val m = router.match("メモリの空き")
+        assertThat(m?.toolName).isEqualTo("get_device_health")
+    }
+
+    @Test
+    fun `device health matcher does not fire on storage room`() {
+        // Isolate to prove DeviceHealthMatcher itself ignores unrelated "storage".
+        val match = DeviceHealthMatcher.tryMatch("storage room")
+        assertThat(match).isNull()
+    }
+
+    @Test
+    fun `device health matcher does not fire on what time is it`() {
+        // Isolate so the router's DatetimeMatcher doesn't mask the behavior.
+        val match = DeviceHealthMatcher.tryMatch("what time is it")
+        assertThat(match).isNull()
+    }
 }

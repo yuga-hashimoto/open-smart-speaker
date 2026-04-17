@@ -104,6 +104,11 @@ class DefaultFastPathRouter(
             ListMemoryMatcher,
             ListDevicesMatcher,
             ListTimersMatcher,
+            // DeviceHealthMatcher must precede DatetimeMatcher / GreetingMatcher /
+            // HelpMatcher so "system status", "診断", "storage space" don't fall
+            // through to pleasantries. Patterns are scoped to device/system/
+            // storage/memory terms so unrelated utterances still pass through.
+            DeviceHealthMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             HelpMatcher

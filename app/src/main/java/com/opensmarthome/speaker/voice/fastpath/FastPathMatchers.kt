@@ -1036,6 +1036,42 @@ object ListTimersMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * "system status", "device health", "how much storage", "診断", "ストレージ残り" →
+ * get_device_health. The tool itself produces the spoken answer, so this
+ * matcher sets no spokenConfirmation.
+ *
+ * Registered before [DatetimeMatcher] / [GreetingMatcher] / [HelpMatcher] so
+ * pleasantries like "how is it going" don't swallow "how is the device
+ * running". The patterns here require device/system/storage/memory context.
+ */
+object DeviceHealthMatcher : FastPathMatcher {
+    private val englishPatterns = listOf(
+        Regex("""\bsystem\s+status\b"""),
+        Regex("""\bdevice\s+health\b"""),
+        Regex("""\bhow\s+is\s+the\s+(?:device|system)\s+(?:doing|running)\b"""),
+        Regex("""\bstorage\s+(?:space|available|free)\b"""),
+        Regex("""\bmemory\s+(?:available|free)\b"""),
+        Regex("""\bhow\s+much\s+storage\b""")
+    )
+    private val japanesePatterns = listOf(
+        Regex("""システム(?:状態|状況|ステータス)"""),
+        Regex("""端末状態"""),
+        Regex("""診断"""),
+        Regex("""ストレージ.*(?:残り|空き|容量)"""),
+        Regex("""メモリ.*(?:残り|空き|容量)""")
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        if (englishPatterns.any { it.containsMatchIn(normalized) } ||
+            japanesePatterns.any { it.containsMatchIn(normalized) }
+        ) {
+            return FastPathMatch(toolName = "get_device_health", arguments = emptyMap())
+        }
+        return null
+    }
+}
+
 /** "what's today's date" / "今日は何日" */
 object DatetimeMatcher : FastPathMatcher {
     private val patterns = listOf(
