@@ -19,6 +19,7 @@ Tablet-first Android smart speaker with on-device LLM agent, inspired by Alexa a
 - **[Tablet control cookbook](tablet-control-cookbook.md)** — Phase 15 recipes (open apps, tap buttons, reply to notifications) without root
 - **[Multi-room quickstart](multi-room-quickstart.md)** — how to pair two tablets and broadcast
 - **[Multi-room protocol](multi-room-protocol.md)** — WebSocket message bus design
+- **[Multi-room FAQ](multi-room-faq.md)** — answers to common questions about pairing, privacy, and scope
 - **[Real-device smoke test](real-device-smoke-test.md)** — on-device validation run before each release
 
 ## Running locally
