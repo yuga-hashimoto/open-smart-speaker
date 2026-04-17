@@ -193,6 +193,19 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideAnnouncementDispatcher(
+        tts: com.opensmarthome.speaker.voice.tts.TextToSpeech
+    ): com.opensmarthome.speaker.multiroom.AnnouncementDispatcher =
+        com.opensmarthome.speaker.multiroom.AnnouncementDispatcher(
+            tts = tts,
+            // TODO(P17.5 follow-up): wire historyProvider to the live
+            // ConversationHistoryManager once VoicePipeline exposes it so
+            // session_handoff messages can actually seed future turns.
+            historyProvider = { null }
+        )
+
+    @Provides
+    @Singleton
     fun provideAnnouncementBroadcaster(
         discovery: com.opensmarthome.speaker.util.MulticastDiscovery,
         client: com.opensmarthome.speaker.multiroom.AnnouncementClient,
@@ -415,7 +428,15 @@ object DeviceModule {
             com.opensmarthome.speaker.tool.composite.MorningBriefingTool { delegatingExecutor },
             com.opensmarthome.speaker.tool.composite.EveningBriefingTool { delegatingExecutor },
             com.opensmarthome.speaker.tool.composite.GoodnightTool { delegatingExecutor },
-            com.opensmarthome.speaker.tool.composite.PresenceTool { delegatingExecutor }
+            com.opensmarthome.speaker.tool.composite.PresenceTool { delegatingExecutor },
+            // TODO(P17.5 follow-up): wire historyProvider to VoicePipeline's
+            // live conversation history once the pipeline exposes it. For now
+            // the tool ships the structural plumbing with an empty history
+            // provider so the envelope/dispatch path is testable end-to-end.
+            com.opensmarthome.speaker.tool.multiroom.HandoffToolExecutor(
+                broadcaster = announcementBroadcaster,
+                historyProvider = { emptyList() }
+            )
             )
         )
         compositeHolder[0] = composite

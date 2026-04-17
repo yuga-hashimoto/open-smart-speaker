@@ -1,5 +1,6 @@
 package com.opensmarthome.speaker.multiroom
 
+import com.opensmarthome.speaker.assistant.model.AssistantMessage
 import com.opensmarthome.speaker.data.preferences.SecurePreferences
 import com.opensmarthome.speaker.util.DiscoveredSpeaker
 import com.opensmarthome.speaker.util.MulticastDiscovery
@@ -65,6 +66,69 @@ class AnnouncementBroadcaster @Inject constructor(
         return fanOut(line)
     }
 
+    /**
+     * Send a `session_handoff` envelope for mode=conversation to exactly
+     * one peer. [targetServiceName] is matched against discovered peers'
+     * mDNS `serviceName` using a case-insensitive prefix/substring match,
+     * so either a full name ("speaker-kitchen") or a friendly alias
+     * ("kitchen") works.
+     *
+     * Returns the [SendOutcome] from the single send, or a failure outcome
+     * when the target can't be resolved or the secret is missing.
+     */
+    suspend fun handoffConversation(
+        targetServiceName: String,
+        messages: List<AssistantMessage>
+    ): SendOutcome {
+        val secret = securePreferences
+            .getString(SecurePreferences.KEY_MULTIROOM_SECRET)
+            .takeIf { it.isNotBlank() }
+            ?: return SendOutcome.Other("no shared secret")
+
+        val peer = resolvePeer(targetServiceName)
+            ?: return SendOutcome.Other("no peer matching '$targetServiceName'")
+
+        val payload: Map<String, Any?> = mapOf(
+            "mode" to MODE_CONVERSATION,
+            "messages" to messages.mapNotNull { it.toWirePair() }
+        )
+        val line = buildEnvelopeLine(
+            type = AnnouncementType.SESSION_HANDOFF,
+            payload = payload,
+            secret = secret
+        )
+        return client.send(host = peer.host!!, port = peer.port!!, line = line)
+    }
+
+    /**
+     * Resolve [target] to a fully-routable [DiscoveredSpeaker]. Match order:
+     * exact serviceName, case-insensitive equality, then case-insensitive
+     * substring (so "kitchen" hits "speaker-kitchen"). Only peers with a
+     * non-null host + port are considered.
+     */
+    private fun resolvePeer(target: String): DiscoveredSpeaker? {
+        val routable = discovery.speakers.value.filter {
+            !it.host.isNullOrBlank() && it.port != null && it.port > 0
+        }
+        if (routable.isEmpty()) return null
+        val trimmed = target.trim()
+        if (trimmed.isEmpty()) return null
+        routable.firstOrNull { it.serviceName == trimmed }?.let { return it }
+        val lower = trimmed.lowercase()
+        routable.firstOrNull { it.serviceName.equals(trimmed, ignoreCase = true) }?.let { return it }
+        return routable.firstOrNull { it.serviceName.lowercase().contains(lower) }
+    }
+
+    private fun AssistantMessage.toWirePair(): Map<String, Any?>? = when (this) {
+        is AssistantMessage.User -> mapOf("role" to "user", "content" to content)
+        is AssistantMessage.Assistant -> mapOf("role" to "assistant", "content" to content)
+        is AssistantMessage.System -> mapOf("role" to "system", "content" to content)
+        // Tool results and deltas aren't portable across a fresh session on
+        // the target — skip them to keep the handoff payload sane.
+        is AssistantMessage.ToolCallResult -> null
+        is AssistantMessage.Delta -> null
+    }
+
     private fun buildEnvelopeLine(
         type: String,
         payload: Map<String, Any?>,
@@ -114,6 +178,12 @@ class AnnouncementBroadcaster @Inject constructor(
     companion object {
         /** Fallback `from` value when mDNS registration hasn't happened yet. */
         const val DEFAULT_FROM = "speaker"
+
+        /** Value for session_handoff `payload.mode` when transferring conversation history. */
+        const val MODE_CONVERSATION = "conversation"
+
+        /** Value for session_handoff `payload.mode` when transferring active media (stub). */
+        const val MODE_MEDIA = "media"
     }
 }
 

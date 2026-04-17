@@ -1,6 +1,8 @@
 package com.opensmarthome.speaker.multiroom
 
 import com.google.common.truth.Truth.assertThat
+import com.opensmarthome.speaker.assistant.model.AssistantMessage
+import com.opensmarthome.speaker.assistant.session.ConversationHistoryManager
 import com.opensmarthome.speaker.voice.tts.TextToSpeech
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -12,8 +14,11 @@ import org.junit.jupiter.api.Test
 
 class AnnouncementDispatcherTest {
 
-    private fun dispatcher(tts: TextToSpeech = stubTts()): AnnouncementDispatcher =
-        AnnouncementDispatcher(tts)
+    private fun dispatcher(
+        tts: TextToSpeech = stubTts(),
+        history: ConversationHistoryManager? = null
+    ): AnnouncementDispatcher =
+        AnnouncementDispatcher(tts, historyProvider = { history })
 
     private fun stubTts(): TextToSpeech {
         val tts = mockk<TextToSpeech>(relaxed = true)
@@ -67,5 +72,71 @@ class AnnouncementDispatcherTest {
         assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Unhandled::class.java)
         assertThat((r as AnnouncementDispatcher.DispatchOutcome.Unhandled).type)
             .isEqualTo("future_message_type")
+    }
+
+    @Test
+    fun `session_handoff conversation seeds history replacing prior state`() {
+        val history = ConversationHistoryManager()
+        // Pre-existing unrelated chatter on the receiver — should be cleared,
+        // not appended to, because the user said "move this".
+        history.add(AssistantMessage.User(content = "old unrelated"))
+
+        val payload = mapOf(
+            "mode" to "conversation",
+            "messages" to listOf(
+                mapOf("role" to "user", "content" to "what's the weather"),
+                mapOf("role" to "assistant", "content" to "Sunny and 22."),
+                mapOf("role" to "system", "content" to "Handoff from living room."),
+                mapOf("role" to "tool", "content" to "should be dropped"), // unknown role
+                mapOf("role" to "user") // missing content — drop
+            )
+        )
+        val r = dispatcher(history = history).dispatch(envelope("session_handoff", payload))
+
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.HandoffSeeded::class.java)
+        assertThat((r as AnnouncementDispatcher.DispatchOutcome.HandoffSeeded).count).isEqualTo(3)
+
+        val seeded = history.history
+        assertThat(seeded).hasSize(3)
+        assertThat(seeded[0]).isInstanceOf(AssistantMessage.User::class.java)
+        assertThat((seeded[0] as AssistantMessage.User).content).isEqualTo("what's the weather")
+        assertThat(seeded[1]).isInstanceOf(AssistantMessage.Assistant::class.java)
+        assertThat(seeded[2]).isInstanceOf(AssistantMessage.System::class.java)
+    }
+
+    @Test
+    fun `session_handoff missing mode is rejected`() {
+        val history = ConversationHistoryManager()
+        val r = dispatcher(history = history).dispatch(envelope("session_handoff", emptyMap()))
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+    }
+
+    @Test
+    fun `session_handoff media is Unhandled with TODO reason`() {
+        val history = ConversationHistoryManager()
+        val payload = mapOf("mode" to "media")
+        val r = dispatcher(history = history).dispatch(envelope("session_handoff", payload))
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Unhandled::class.java)
+        assertThat((r as AnnouncementDispatcher.DispatchOutcome.Unhandled).type)
+            .contains("session_handoff media")
+    }
+
+    @Test
+    fun `session_handoff conversation without history wired is rejected gracefully`() {
+        // No history manager available; dispatcher shouldn't crash.
+        val payload = mapOf(
+            "mode" to "conversation",
+            "messages" to listOf(mapOf("role" to "user", "content" to "hi"))
+        )
+        val r = dispatcher(history = null).dispatch(envelope("session_handoff", payload))
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+    }
+
+    @Test
+    fun `session_handoff conversation missing messages is rejected`() {
+        val history = ConversationHistoryManager()
+        val payload = mapOf("mode" to "conversation")
+        val r = dispatcher(history = history).dispatch(envelope("session_handoff", payload))
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
     }
 }
