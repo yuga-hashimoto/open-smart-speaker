@@ -232,7 +232,9 @@ object DeviceModule {
 
     @Provides
     @Singleton
-    fun provideSuggestionEngine(): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
+    fun provideSuggestionEngine(
+        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
+    ): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
         com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
             rules = listOf(
                 com.opensmarthome.speaker.assistant.proactive.MorningGreetingRule(),
@@ -240,7 +242,8 @@ object DeviceModule {
                 com.opensmarthome.speaker.assistant.proactive.WeekendMorningRule(),
                 com.opensmarthome.speaker.assistant.proactive.EveningLightsRule(),
                 com.opensmarthome.speaker.assistant.proactive.EveningBriefingRule(),
-                com.opensmarthome.speaker.assistant.proactive.NightQuietRule()
+                com.opensmarthome.speaker.assistant.proactive.NightQuietRule(),
+                com.opensmarthome.speaker.assistant.proactive.StalePeerRule(peerLivenessTracker)
             )
         )
 
