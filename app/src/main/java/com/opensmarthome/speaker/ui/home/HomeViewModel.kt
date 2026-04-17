@@ -13,6 +13,10 @@ import com.opensmarthome.speaker.tool.info.NewsItem
 import com.opensmarthome.speaker.tool.info.WeatherInfo
 import com.opensmarthome.speaker.tool.system.TimerInfo
 import com.opensmarthome.speaker.tool.system.TimerManager
+import com.opensmarthome.speaker.util.BatteryMonitor
+import com.opensmarthome.speaker.util.BatteryStatus
+import com.opensmarthome.speaker.util.ThermalLevel
+import com.opensmarthome.speaker.util.ThermalMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +37,8 @@ class HomeViewModel @Inject constructor(
     private val toolExecutor: ToolExecutor,
     private val timerManager: TimerManager,
     private val briefingSource: OnlineBriefingSource,
+    batteryMonitor: BatteryMonitor,
+    thermalMonitor: ThermalMonitor,
 ) : ViewModel() {
 
     companion object {
@@ -49,6 +55,16 @@ class HomeViewModel @Inject constructor(
          *  at a glance on a tablet; deeper browsing is a voice command. */
         internal const val HEADLINES_LIMIT = 5
     }
+
+    /**
+     * Pass-through tablet-self battery + thermal state. Surfaces them on
+     * the Home dashboard as a persistent chip strip so users can tell at
+     * a glance that the device is healthy (battery-backed, cool) — the
+     * same "always-on status" that Echo Show / Nest Hub expose as icons
+     * in the status bar.
+     */
+    val batteryStatus: StateFlow<BatteryStatus> = batteryMonitor.status
+    val thermalLevel: StateFlow<ThermalLevel> = thermalMonitor.status
 
     val suggestions: StateFlow<List<Suggestion>> = suggestionState.current
 

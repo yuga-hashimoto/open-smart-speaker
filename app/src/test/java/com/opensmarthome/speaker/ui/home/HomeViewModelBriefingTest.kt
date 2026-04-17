@@ -71,7 +71,15 @@ class HomeViewModelBriefingTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        return HomeViewModel(deviceManager, ss, te, stubbedTimerManager(), briefing)
+        val bm = mockk<com.opensmarthome.speaker.util.BatteryMonitor>().apply {
+            every { status } returns MutableStateFlow(
+                com.opensmarthome.speaker.util.BatteryStatus(level = 80, isCharging = true)
+            )
+        }
+        val tm = mockk<com.opensmarthome.speaker.util.ThermalMonitor>().apply {
+            every { status } returns MutableStateFlow(com.opensmarthome.speaker.util.ThermalLevel.NORMAL)
+        }
+        return HomeViewModel(deviceManager, ss, te, stubbedTimerManager(), briefing, bm, tm)
     }
 
     @Test

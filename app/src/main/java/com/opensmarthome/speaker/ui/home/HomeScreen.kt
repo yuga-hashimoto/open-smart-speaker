@@ -51,6 +51,8 @@ fun HomeScreen(
     val nowPlaying by viewModel.nowPlaying.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
     val activeTimers by viewModel.activeTimers.collectAsState()
+    val battery by viewModel.batteryStatus.collectAsState()
+    val thermal by viewModel.thermalLevel.collectAsState()
 
     val wide = isExpandedLandscape()
 
@@ -167,6 +169,17 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
             )
         }
+
+        // Top-right: persistent tablet-self health strip (battery +
+        // thermal throttle badge). Kept to a single row so it never
+        // competes with the primary clock/weather for attention.
+        TabletStatusChips(
+            battery = battery,
+            thermal = thermal,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        )
 
         // Top: most recent proactive suggestion (one at a time so it doesn't
         // dominate the ambient view).

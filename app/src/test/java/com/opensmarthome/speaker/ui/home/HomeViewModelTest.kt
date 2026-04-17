@@ -6,6 +6,10 @@ import com.opensmarthome.speaker.device.model.CommandResult
 import com.opensmarthome.speaker.device.model.DeviceCommand
 import com.opensmarthome.speaker.tool.system.TimerInfo
 import com.opensmarthome.speaker.tool.system.TimerManager
+import com.opensmarthome.speaker.util.BatteryMonitor
+import com.opensmarthome.speaker.util.BatteryStatus
+import com.opensmarthome.speaker.util.ThermalLevel
+import com.opensmarthome.speaker.util.ThermalMonitor
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -49,6 +53,25 @@ class HomeViewModelTest {
         return tm
     }
 
+    /** Stub monitors exposing constant "plugged in at 80%, thermally nominal"
+     *  status. Tests that actually exercise battery/thermal wiring override.
+     */
+    private fun stubBatteryMonitor(
+        initial: BatteryStatus = BatteryStatus(level = 80, isCharging = true)
+    ): BatteryMonitor {
+        val bm = mockk<BatteryMonitor>()
+        every { bm.status } returns MutableStateFlow(initial)
+        return bm
+    }
+
+    private fun stubThermalMonitor(
+        initial: ThermalLevel = ThermalLevel.NORMAL
+    ): ThermalMonitor {
+        val tm = mockk<ThermalMonitor>()
+        every { tm.status } returns MutableStateFlow(initial)
+        return tm
+    }
+
     @Test
     fun `dispatchMediaAction sends HA media_play service`() = runTest {
         val deviceManager = mockk<DeviceManager>()
@@ -59,7 +82,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
         vm.dispatchMediaAction("media_player.kitchen", MediaAction.PLAY)
         advanceUntilIdle()
 
@@ -84,7 +107,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
         vm.dispatchMediaAction("media_player.x", MediaAction.PAUSE)
         advanceUntilIdle()
 
@@ -101,7 +124,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         vm.dispatchMediaVolume("media_player.den", 0.42f)
         advanceUntilIdle()
@@ -121,7 +144,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         vm.dispatchShuffle("media_player.lr", true)
         advanceUntilIdle()
@@ -139,7 +162,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         vm.dispatchRepeat("media_player.br", RepeatMode.ALL)
         advanceUntilIdle()
@@ -192,7 +215,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
         advanceUntilIdle()
 
         val np = vm.nowPlaying.value
@@ -229,7 +252,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
         advanceUntilIdle()
 
         val np = vm.nowPlaying.value
@@ -248,7 +271,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         vm.dispatchSelectSource("media_player.lr", "Spotify")
         advanceUntilIdle()
@@ -267,7 +290,7 @@ class HomeViewModelTest {
         val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
         every { ss.current } returns MutableStateFlow(emptyList())
         val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
-        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         vm.dispatchMediaVolume("media_player.over", 1.7f)
         advanceUntilIdle()
@@ -296,7 +319,7 @@ class HomeViewModelTest {
         )
         coEvery { timerManager.getActiveTimers() } returns listOf(sample)
 
-        val vm = HomeViewModel(deviceManager, ss, te, timerManager, OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, timerManager, OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
 
         // Before any subscriber collects the StateFlow, initial value is empty.
         assertThat(vm.activeTimers.value).isEmpty()
@@ -314,6 +337,36 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `batteryStatus and thermalLevel expose underlying monitor flows`() = runTest {
+        val deviceManager: DeviceManager = mockk()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        coEvery { deviceManager.executeCommand(any()) } returns CommandResult(success = true)
+        val ss = mockk<com.opensmarthome.speaker.assistant.proactive.SuggestionState>(relaxed = true)
+        every { ss.current } returns MutableStateFlow(emptyList())
+        val te = mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+
+        val batteryFlow = MutableStateFlow(BatteryStatus(level = 42, isCharging = false))
+        val thermalFlow = MutableStateFlow(ThermalLevel.WARM)
+        val bm = mockk<BatteryMonitor>()
+        every { bm.status } returns batteryFlow
+        val tm = mockk<ThermalMonitor>()
+        every { tm.status } returns thermalFlow
+
+        val vm = HomeViewModel(deviceManager, ss, te, emptyTimerManager(), OnlineBriefingSource.Empty, bm, tm)
+
+        assertThat(vm.batteryStatus.value.level).isEqualTo(42)
+        assertThat(vm.batteryStatus.value.isCharging).isFalse()
+        assertThat(vm.thermalLevel.value).isEqualTo(ThermalLevel.WARM)
+
+        // StateFlows are pass-through — updating the source updates the VM.
+        batteryFlow.value = BatteryStatus(level = 15, isCharging = false)
+        thermalFlow.value = ThermalLevel.HOT
+        assertThat(vm.batteryStatus.value.level).isEqualTo(15)
+        assertThat(vm.batteryStatus.value.isLow).isTrue()
+        assertThat(vm.thermalLevel.value).isEqualTo(ThermalLevel.HOT)
+    }
+
+    @Test
     fun `onCancelTimer calls TimerManager cancelTimer with given id`() = runTest {
         val deviceManager: DeviceManager = mockk()
         every { deviceManager.devices } returns MutableStateFlow(emptyMap())
@@ -326,7 +379,7 @@ class HomeViewModelTest {
         coEvery { timerManager.getActiveTimers() } returns emptyList()
         coEvery { timerManager.cancelTimer("timer_home_xyz") } returns true
 
-        val vm = HomeViewModel(deviceManager, ss, te, timerManager, OnlineBriefingSource.Empty)
+        val vm = HomeViewModel(deviceManager, ss, te, timerManager, OnlineBriefingSource.Empty, stubBatteryMonitor(), stubThermalMonitor())
         vm.onCancelTimer("timer_home_xyz")
         advanceUntilIdle()
 
