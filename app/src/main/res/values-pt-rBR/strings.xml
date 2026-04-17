@@ -14,4 +14,19 @@
     <string name="locale_picker_requires_android_13">Requer Android 13 ou superior</string>
     <string name="locale_picker_close">Fechar</string>
 
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_voice_interaction">Voice Interaction</string>
+    <string name="settings_read_ai_responses">Read AI Responses Aloud</string>
+    <string name="settings_continuous_conversation">Continuous Conversation</string>
+    <string name="settings_continuous_conversation_hint">Auto-restart listening after response finishes</string>
+    <string name="settings_thinking_sound">Thinking Sound</string>
+    <string name="settings_thinking_sound_hint">Play a beep when processing starts</string>
+    <string name="settings_filler_phrases">Filler Phrases</string>
+    <string name="settings_filler_phrases_hint">Speak short phrases while the AI is thinking</string>
+    <string name="settings_resume_last_session">Resume Last Session</string>
+    <string name="settings_resume_last_session_hint">Restore previous conversation history on app start</string>
+    <string name="settings_wake_word_interrupts_tts">Wake Word Interrupts TTS</string>
+    <string name="settings_media_button_trigger">Media Button Trigger</string>
+    <string name="settings_media_button_trigger_hint">Use Bluetooth headset button to start voice input</string>
 </resources>

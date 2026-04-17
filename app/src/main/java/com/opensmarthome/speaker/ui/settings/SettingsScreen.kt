@@ -32,9 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.ui.settings.locale.LocalePickerRow
 
 @Composable
@@ -62,13 +64,13 @@ fun SettingsScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.settings_back),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
             Text(
-                "Settings",
+                stringResource(R.string.settings_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -80,7 +82,7 @@ fun SettingsScreen(
         SettingsDivider()
 
         // === Voice Interaction ===
-        SectionHeader("Voice Interaction")
+        SectionHeader(stringResource(R.string.settings_voice_interaction))
         val continuousMode by viewModel.continuousMode.collectAsState()
         val thinkingSound by viewModel.thinkingSound.collectAsState()
         val bargeInEnabled by viewModel.bargeInEnabled.collectAsState()
@@ -88,20 +90,37 @@ fun SettingsScreen(
         val mediaButtonEnabled by viewModel.mediaButtonEnabled.collectAsState()
         val silenceTimeoutMs by viewModel.silenceTimeoutMs.collectAsState()
 
-        SettingsToggle("Read AI Responses Aloud", ttsEnabled) { viewModel.saveTtsEnabled(it) }
-        SettingsToggle("Continuous Conversation", continuousMode) { viewModel.saveContinuousMode(it) }
-        SettingsHint("Auto-restart listening after response finishes")
-        SettingsToggle("Thinking Sound", thinkingSound) { viewModel.saveThinkingSound(it) }
-        SettingsHint("Play a beep when processing starts")
+        SettingsToggle(stringResource(R.string.settings_read_ai_responses), ttsEnabled) {
+            viewModel.saveTtsEnabled(it)
+        }
+        SettingsToggle(
+            stringResource(R.string.settings_continuous_conversation),
+            continuousMode
+        ) { viewModel.saveContinuousMode(it) }
+        SettingsHint(stringResource(R.string.settings_continuous_conversation_hint))
+        SettingsToggle(stringResource(R.string.settings_thinking_sound), thinkingSound) {
+            viewModel.saveThinkingSound(it)
+        }
+        SettingsHint(stringResource(R.string.settings_thinking_sound_hint))
         val fillerEnabled by viewModel.fillerPhrasesEnabled.collectAsState()
-        SettingsToggle("Filler Phrases", fillerEnabled) { viewModel.saveFillerPhrasesEnabled(it) }
-        SettingsHint("Speak short phrases like \"少々お待ちください\" while the AI is thinking")
+        SettingsToggle(stringResource(R.string.settings_filler_phrases), fillerEnabled) {
+            viewModel.saveFillerPhrasesEnabled(it)
+        }
+        SettingsHint(stringResource(R.string.settings_filler_phrases_hint))
         val resumeLast by viewModel.resumeLastSession.collectAsState()
-        SettingsToggle("Resume Last Session", resumeLast) { viewModel.saveResumeLastSession(it) }
-        SettingsHint("Restore previous conversation history on app start")
-        SettingsToggle("Wake Word Interrupts TTS", bargeInEnabled) { viewModel.saveBargeInEnabled(it) }
-        SettingsToggle("Media Button Trigger", mediaButtonEnabled) { viewModel.saveMediaButtonEnabled(it) }
-        SettingsHint("Use Bluetooth headset button to start voice input")
+        SettingsToggle(stringResource(R.string.settings_resume_last_session), resumeLast) {
+            viewModel.saveResumeLastSession(it)
+        }
+        SettingsHint(stringResource(R.string.settings_resume_last_session_hint))
+        SettingsToggle(
+            stringResource(R.string.settings_wake_word_interrupts_tts),
+            bargeInEnabled
+        ) { viewModel.saveBargeInEnabled(it) }
+        SettingsToggle(
+            stringResource(R.string.settings_media_button_trigger),
+            mediaButtonEnabled
+        ) { viewModel.saveMediaButtonEnabled(it) }
+        SettingsHint(stringResource(R.string.settings_media_button_trigger_hint))
 
         Text(
             text = "Silence Timeout: ${silenceTimeoutMs / 1000.0}s",

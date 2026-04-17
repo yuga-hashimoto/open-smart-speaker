@@ -399,17 +399,8 @@ class VoicePipeline(
                             }
                         }
 
-                        // Continuous conversation mode
-                        val continuousMode = preferences.observe(PreferenceKeys.CONTINUOUS_MODE).first() ?: false
-                        if (continuousMode) {
-                            Timber.d("Continuous mode: restarting listening after delay")
-                            delay(CONTINUOUS_MODE_DELAY_MS)
-                            startListening()
-                        } else {
-                            abandonAudioFocus()
-                            resumeWakeWord()
-                            _state.value = VoicePipelineState.Idle
-                        }
+                        // Continuous conversation mode (see finishTurnAndMaybeContinue)
+                        finishTurnAndMaybeContinue()
                         return
                     }
                     else -> {
@@ -570,6 +561,35 @@ class VoicePipeline(
         }
     }
 
+    // --- Turn End ---
+
+    /**
+     * End the current turn. When the user has enabled the "Continuous
+     * Conversation" preference, re-arm the mic after a short delay so the
+     * user can keep talking without having to say the wake word or tap the
+     * mic button again. Otherwise fall back to the classic Idle-with-
+     * wake-word behaviour.
+     *
+     * Called from both the LLM path (after speaking the assistant reply)
+     * and the fast-path success branch (after speaking the fast-path
+     * confirmation) so users who turn the preference on see the same
+     * behaviour regardless of which route handled the turn. Error paths
+     * deliberately do NOT call this — falling back to Idle lets the user
+     * regroup rather than trapping them in a retry loop.
+     */
+    private suspend fun finishTurnAndMaybeContinue() {
+        val continuousMode = preferences.observe(PreferenceKeys.CONTINUOUS_MODE).first() ?: false
+        if (continuousMode) {
+            Timber.d("Continuous mode: restarting listening after delay")
+            delay(CONTINUOUS_MODE_DELAY_MS)
+            startListening()
+        } else {
+            abandonAudioFocus()
+            resumeWakeWord()
+            _state.value = VoicePipelineState.Idle
+        }
+    }
+
     // --- Wake Word Resume ---
 
     private fun resumeWakeWord() {
@@ -724,9 +744,11 @@ class VoicePipeline(
                 }
             }
 
-            abandonAudioFocus()
-            resumeWakeWord()
-            _state.value = VoicePipelineState.Idle
+            // Share the continuous-conversation logic with the LLM path so
+            // fast-path turns (weather / timer / web search / …) also honour
+            // the "Continuous Conversation" toggle. Before this was a bug —
+            // users who enabled it still saw fast-path turns end in Idle.
+            finishTurnAndMaybeContinue()
             true
         } catch (e: Exception) {
             Timber.w(e, "Fast-path execution failed, falling back to LLM")

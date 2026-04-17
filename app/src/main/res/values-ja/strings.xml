@@ -14,4 +14,19 @@
     <string name="locale_picker_requires_android_13">Android 13 以降が必要</string>
     <string name="locale_picker_close">閉じる</string>
 
+    <string name="settings_title">設定</string>
+    <string name="settings_back">戻る</string>
+    <string name="settings_voice_interaction">音声操作</string>
+    <string name="settings_read_ai_responses">AIの応答を読み上げる</string>
+    <string name="settings_continuous_conversation">連続会話</string>
+    <string name="settings_continuous_conversation_hint">応答後に自動的にリスニングを再開します</string>
+    <string name="settings_thinking_sound">考え中の効果音</string>
+    <string name="settings_thinking_sound_hint">処理開始時にビープ音を鳴らします</string>
+    <string name="settings_filler_phrases">つなぎのフレーズ</string>
+    <string name="settings_filler_phrases_hint">AIが考えている間に「少々お待ちください」などを発話します</string>
+    <string name="settings_resume_last_session">前回のセッションを再開</string>
+    <string name="settings_resume_last_session_hint">アプリ起動時に前回の会話履歴を復元します</string>
+    <string name="settings_wake_word_interrupts_tts">ウェイクワードでTTSを割り込み</string>
+    <string name="settings_media_button_trigger">メディアボタンでトリガー</string>
+    <string name="settings_media_button_trigger_hint">Bluetoothヘッドセットのボタンで音声入力を開始します</string>
 </resources>
