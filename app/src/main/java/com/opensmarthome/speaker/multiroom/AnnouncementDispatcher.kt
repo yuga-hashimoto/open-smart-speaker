@@ -24,7 +24,8 @@ import timber.log.Timber
  */
 class AnnouncementDispatcher(
     private val tts: TextToSpeech,
-    private val historyProvider: () -> ConversationHistoryManager? = { null }
+    private val historyProvider: () -> ConversationHistoryManager? = { null },
+    private val announcementState: AnnouncementState? = null
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -35,6 +36,7 @@ class AnnouncementDispatcher(
     fun dispatch(envelope: AnnouncementEnvelope): DispatchOutcome {
         return when (envelope.type) {
             AnnouncementType.TTS_BROADCAST -> handleTtsBroadcast(envelope)
+            AnnouncementType.ANNOUNCEMENT -> handleAnnouncement(envelope)
             AnnouncementType.HEARTBEAT -> DispatchOutcome.AcknowledgedHeartbeat
             AnnouncementType.SESSION_HANDOFF -> handleSessionHandoff(envelope)
             else -> {
@@ -54,6 +56,32 @@ class AnnouncementDispatcher(
                 .onFailure { Timber.w(it, "TTS speak from announcement failed") }
         }
         return DispatchOutcome.Spoke(text)
+    }
+
+    /**
+     * Handle an `announcement` envelope — persistent variant of `tts_broadcast`.
+     * The receiver both speaks the text (so nobody in the room misses it live)
+     * AND pushes it into [AnnouncementState] as a banner on the Ambient screen
+     * for `ttl_seconds` so anyone who walked in mid-announcement still gets
+     * the message visually.
+     *
+     * TTL is clamped to [TTL_MIN_SECONDS]..[TTL_MAX_SECONDS] on the receive
+     * side — the send side does the same clamp, but we can't trust remote
+     * senders to honour the protocol.
+     */
+    private fun handleAnnouncement(envelope: AnnouncementEnvelope): DispatchOutcome {
+        val text = (envelope.payload["text"] as? String)?.takeIf { it.isNotBlank() }
+            ?: return DispatchOutcome.Rejected("announcement missing text")
+        val rawTtl = (envelope.payload["ttl_seconds"] as? Number)?.toInt()
+            ?: return DispatchOutcome.Rejected("announcement missing ttl_seconds")
+        val ttl = rawTtl.coerceIn(TTL_MIN_SECONDS, TTL_MAX_SECONDS)
+        announcementState?.setAnnouncement(text = text, ttlSeconds = ttl, from = envelope.from)
+            ?: Timber.w("announcement received but no AnnouncementState wired (from=${envelope.from})")
+        scope.launch {
+            runCatching { tts.speak(text) }
+                .onFailure { Timber.w(it, "TTS speak from announcement failed") }
+        }
+        return DispatchOutcome.Announcement(text = text, ttlSeconds = ttl)
     }
 
     /**
@@ -115,5 +143,19 @@ class AnnouncementDispatcher(
 
         /** session_handoff (mode=conversation) seeded [count] messages into local history. */
         data class HandoffSeeded(val count: Int) : DispatchOutcome
+
+        /**
+         * `announcement` envelope handled — [text] was pushed to the Ambient
+         * banner for [ttlSeconds] AND queued for TTS speak.
+         */
+        data class Announcement(val text: String, val ttlSeconds: Int) : DispatchOutcome
+    }
+
+    companion object {
+        /** Minimum TTL (seconds) for an announcement banner. */
+        const val TTL_MIN_SECONDS = 5
+
+        /** Maximum TTL (seconds) for an announcement banner — 1 hour. */
+        const val TTL_MAX_SECONDS = 3600
     }
 }

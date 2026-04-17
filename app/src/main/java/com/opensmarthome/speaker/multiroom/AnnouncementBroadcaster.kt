@@ -111,6 +111,44 @@ class AnnouncementBroadcaster @Inject constructor(
     }
 
     /**
+     * Broadcast a persistent `announcement` envelope to every resolved peer.
+     *
+     * Receivers speak the text AND surface it as a banner on their Ambient
+     * screen for [ttlSeconds]. See [AnnouncementType.ANNOUNCEMENT] and
+     * [AnnouncementDispatcher.handleAnnouncement].
+     *
+     * [ttlSeconds] is clamped to
+     * [AnnouncementDispatcher.TTL_MIN_SECONDS]..[AnnouncementDispatcher.TTL_MAX_SECONDS];
+     * out-of-range values are quietly coerced rather than rejected so a caller
+     * passing `0` still gets the minimum sensible banner instead of a silent
+     * no-op.
+     */
+    suspend fun broadcastAnnouncement(
+        text: String,
+        ttlSeconds: Int = DEFAULT_ANNOUNCEMENT_TTL_SECONDS
+    ): BroadcastResult {
+        val secret = requireSecret()
+            ?: return BroadcastResult(
+                sentCount = 0,
+                failures = listOf("none" to SendOutcome.Other("no shared secret"))
+            )
+        val clampedTtl = ttlSeconds.coerceIn(
+            AnnouncementDispatcher.TTL_MIN_SECONDS,
+            AnnouncementDispatcher.TTL_MAX_SECONDS
+        )
+        val payload: Map<String, Any?> = mapOf(
+            "text" to text,
+            "ttl_seconds" to clampedTtl
+        )
+        val line = buildEnvelopeLine(
+            type = AnnouncementType.ANNOUNCEMENT,
+            payload = payload,
+            secret = secret
+        )
+        return fanOut(line, filter = null)
+    }
+
+    /**
      * Send a `session_handoff` envelope for mode=conversation to exactly
      * one peer. [targetServiceName] is matched against discovered peers'
      * mDNS `serviceName` using a case-insensitive prefix/substring match,
@@ -232,6 +270,9 @@ class AnnouncementBroadcaster @Inject constructor(
 
         /** Value for session_handoff `payload.mode` when transferring active media (stub). */
         const val MODE_MEDIA = "media"
+
+        /** Default TTL (seconds) for a persistent announcement banner. */
+        const val DEFAULT_ANNOUNCEMENT_TTL_SECONDS = 60
     }
 }
 

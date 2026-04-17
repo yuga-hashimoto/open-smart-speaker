@@ -5,6 +5,7 @@ import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.device.model.Device
 import com.opensmarthome.speaker.device.model.DeviceState
 import com.opensmarthome.speaker.device.model.DeviceType
+import com.opensmarthome.speaker.multiroom.AnnouncementState
 import com.opensmarthome.speaker.util.BatteryMonitor
 import com.opensmarthome.speaker.util.BatteryStatus
 import com.opensmarthome.speaker.util.DiscoveredSpeaker
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -66,7 +68,7 @@ class AmbientViewModelTest {
             every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
             val md = mockk<MulticastDiscovery>()
             every { md.speakers } returns MutableStateFlow(emptyList())
-            AmbientViewModel(deviceManager, builder, te, bm, tm, md)
+            AmbientViewModel(deviceManager, builder, te, bm, tm, md, AnnouncementState(TestScope()))
         }
         advanceUntilIdle()
 
@@ -91,7 +93,7 @@ class AmbientViewModelTest {
             every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
             val md = mockk<MulticastDiscovery>()
             every { md.speakers } returns MutableStateFlow(emptyList())
-            AmbientViewModel(deviceManager, builder, te, bm, tm, md)
+            AmbientViewModel(deviceManager, builder, te, bm, tm, md, AnnouncementState(TestScope()))
         }
         advanceUntilIdle()
         assertThat(vm.snapshot.value.recentDeviceActivity).isEmpty()
@@ -123,7 +125,7 @@ class AmbientViewModelTest {
         val md = mockk<MulticastDiscovery>()
         every { md.speakers } returns MutableStateFlow(emptyList())
 
-        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md)
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md, AnnouncementState(TestScope()))
         advanceUntilIdle()
 
         assertThat(vm.snapshot.value.batteryLevel).isEqualTo(42)
@@ -151,7 +153,7 @@ class AmbientViewModelTest {
         val md = mockk<MulticastDiscovery>()
         every { md.speakers } returns MutableStateFlow(emptyList())
 
-        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md)
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md, AnnouncementState(TestScope()))
         advanceUntilIdle()
         assertThat(vm.snapshot.value.thermalBucket).isNull()
 
@@ -169,6 +171,43 @@ class AmbientViewModelTest {
     }
 
     @Test
+    fun `announcement text and from are piped through the snapshot`() = runTest {
+        val deviceManager: DeviceManager = mockk()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        val builder = AmbientSnapshotBuilder(clock = { 0L })
+        val te = io.mockk.mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val bm = mockk<BatteryMonitor>()
+        every { bm.status } returns MutableStateFlow(BatteryStatus(level = 100, isCharging = true))
+        val tm = mockk<ThermalMonitor>()
+        every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
+        val md = mockk<MulticastDiscovery>()
+        every { md.speakers } returns MutableStateFlow(emptyList())
+        // Use a real (non-Test) CoroutineScope for AnnouncementState so the
+        // clear-timer's delay() isn't advanced by this test's
+        // advanceUntilIdle() — runTest fast-forwards virtual time through
+        // *all* pending delays on scopes it owns, which would prematurely
+        // clear a long-TTL banner.
+        val announcement = AnnouncementState(kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined
+        ))
+
+        announcement.setAnnouncement("dinner ready", ttlSeconds = 600, from = "kitchen")
+
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md, announcement)
+        advanceUntilIdle()
+
+        assertThat(vm.snapshot.value.announcementText).isEqualTo("dinner ready")
+        assertThat(vm.snapshot.value.announcementFrom).isEqualTo("kitchen")
+
+        // Dismissal flips the 5th flow back to null; the VM's combine must
+        // re-run and produce a snapshot without the banner fields set.
+        vm.dismissAnnouncement()
+        advanceUntilIdle()
+        assertThat(vm.snapshot.value.announcementText).isNull()
+        assertThat(vm.snapshot.value.announcementFrom).isNull()
+    }
+
+    @Test
     fun `nearbySpeakerCount reflects MulticastDiscovery speakers list size`() = runTest {
         val deviceManager: DeviceManager = mockk()
         every { deviceManager.devices } returns MutableStateFlow(emptyMap())
@@ -182,7 +221,7 @@ class AmbientViewModelTest {
         val md = mockk<MulticastDiscovery>()
         every { md.speakers } returns peers
 
-        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md)
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm, md, AnnouncementState(TestScope()))
         advanceUntilIdle()
         assertThat(vm.snapshot.value.nearbySpeakerCount).isEqualTo(0)
 

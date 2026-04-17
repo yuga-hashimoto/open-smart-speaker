@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Speaker
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,6 +63,18 @@ fun AmbientScreen(
     val wide = isExpandedLandscape()
 
     Column(modifier = modifier.fillMaxSize()) {
+        // Household announcement banner sits above the quick-action row so it
+        // dominates the viewport — the whole point of a persistent announcement
+        // is that someone walking into the room can't miss it.
+        snapshot.announcementText?.let { text ->
+            AnnouncementBanner(
+                text = text,
+                from = snapshot.announcementFrom,
+                onDismiss = { viewModel.dismissAnnouncement() },
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+        }
         QuickActionRow(
             onLightsOff = {
                 viewModel.runAction(
@@ -322,6 +337,57 @@ private fun CountsStrip(snapshot: AmbientSnapshot) {
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+        }
+    }
+}
+
+/**
+ * Persistent household-announcement banner. Tap-to-dismiss — the whole card
+ * acts as a click target because the expected user flow is "glance, ack,
+ * move on". No explicit close button: keeps the surface uncluttered and the
+ * banner will auto-clear after its TTL anyway.
+ */
+@Composable
+private fun AnnouncementBanner(
+    text: String,
+    from: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onDismiss() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Campaign,
+                contentDescription = "Announcement"
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (!from.isNullOrBlank()) {
+                    Text(
+                        text = "from $from",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+            Text(
+                text = "Tap to dismiss",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
         }
     }
 }

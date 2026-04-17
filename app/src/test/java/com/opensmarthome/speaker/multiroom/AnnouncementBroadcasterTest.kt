@@ -382,6 +382,121 @@ class AnnouncementBroadcasterTest {
     }
 
     @Test
+    fun `broadcastAnnouncement builds signed announcement envelope with ttl_seconds`() = runTest {
+        val peers = listOf(
+            DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421),
+            DiscoveredSpeaker("speaker-bedroom", host = "10.0.0.3", port = 8421)
+        )
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        val lineSlot = slot<String>()
+        coEvery { client.send(any(), any(), capture(lineSlot), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            clock = { 3_000L },
+            idGenerator = { "id-announce" }
+        )
+
+        val result = broadcaster.broadcastAnnouncement(text = "dinner ready", ttlSeconds = 90)
+        assertThat(result.sentCount).isEqualTo(2)
+        assertThat(result.failures).isEmpty()
+
+        @Suppress("UNCHECKED_CAST")
+        val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
+        assertThat(envelope["type"]).isEqualTo(AnnouncementType.ANNOUNCEMENT)
+        @Suppress("UNCHECKED_CAST")
+        val payload = envelope["payload"] as Map<String, Any?>
+        assertThat(payload["text"]).isEqualTo("dinner ready")
+        assertThat((payload["ttl_seconds"] as Number).toInt()).isEqualTo(90)
+
+        // Re-serialize payload for HMAC verify — Moshi decoded ttl_seconds
+        // as Double, so we normalise back to Int to match the JSON the
+        // broadcaster signed over (otherwise "90.0" vs "90" diverges).
+        val normalised: Map<String, Any?> = mapOf(
+            "text" to payload["text"],
+            "ttl_seconds" to (payload["ttl_seconds"] as Number).toInt()
+        )
+        val payloadJson = mapAdapter.toJson(normalised)
+        assertThat(
+            HmacSigner.verify(
+                secret = secret,
+                type = AnnouncementType.ANNOUNCEMENT,
+                id = "id-announce",
+                ts = 3_000L,
+                payloadJson = payloadJson,
+                expected = envelope["hmac"] as String
+            )
+        ).isTrue()
+    }
+
+    @Test
+    fun `broadcastAnnouncement clamps ttl below the minimum`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        val lineSlot = slot<String>()
+        coEvery { client.send(any(), any(), capture(lineSlot), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d, client = client,
+            securePreferences = securePrefs(secret), moshi = moshi, selfServiceName = self
+        )
+
+        broadcaster.broadcastAnnouncement(text = "hi", ttlSeconds = 1)
+        @Suppress("UNCHECKED_CAST")
+        val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
+        @Suppress("UNCHECKED_CAST")
+        val payload = envelope["payload"] as Map<String, Any?>
+        assertThat((payload["ttl_seconds"] as Number).toInt())
+            .isEqualTo(AnnouncementDispatcher.TTL_MIN_SECONDS)
+    }
+
+    @Test
+    fun `broadcastAnnouncement clamps ttl above the maximum`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        val lineSlot = slot<String>()
+        coEvery { client.send(any(), any(), capture(lineSlot), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d, client = client,
+            securePreferences = securePrefs(secret), moshi = moshi, selfServiceName = self
+        )
+
+        broadcaster.broadcastAnnouncement(text = "hi", ttlSeconds = 99_999)
+        @Suppress("UNCHECKED_CAST")
+        val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
+        @Suppress("UNCHECKED_CAST")
+        val payload = envelope["payload"] as Map<String, Any?>
+        assertThat((payload["ttl_seconds"] as Number).toInt())
+            .isEqualTo(AnnouncementDispatcher.TTL_MAX_SECONDS)
+    }
+
+    @Test
+    fun `broadcastAnnouncement returns missing-secret failure without sending`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d, client = client,
+            securePreferences = securePrefs(null), moshi = moshi, selfServiceName = self
+        )
+
+        val result = broadcaster.broadcastAnnouncement("silent", 60)
+        assertThat(result.sentCount).isEqualTo(0)
+        assertThat(result.failures)
+            .containsExactly("none" to SendOutcome.Other("no shared secret"))
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `handoffConversation returns failure when no shared secret`() = runTest {
         val peers = listOf(DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421))
         val (d, self) = discovery(peers)

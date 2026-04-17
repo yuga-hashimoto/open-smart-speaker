@@ -7,18 +7,27 @@ import com.opensmarthome.speaker.voice.tts.TextToSpeech
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AnnouncementDispatcherTest {
 
     private fun dispatcher(
         tts: TextToSpeech = stubTts(),
-        history: ConversationHistoryManager? = null
+        history: ConversationHistoryManager? = null,
+        announcementState: AnnouncementState? = null
     ): AnnouncementDispatcher =
-        AnnouncementDispatcher(tts, historyProvider = { history })
+        AnnouncementDispatcher(
+            tts = tts,
+            historyProvider = { history },
+            announcementState = announcementState
+        )
 
     private fun stubTts(): TextToSpeech {
         val tts = mockk<TextToSpeech>(relaxed = true)
@@ -138,5 +147,83 @@ class AnnouncementDispatcherTest {
         val payload = mapOf("mode" to "conversation")
         val r = dispatcher(history = history).dispatch(envelope("session_handoff", payload))
         assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+    }
+
+    @Test
+    fun `announcement publishes to state AND queues tts speak`() = runTest {
+        val tts = stubTts()
+        val state = AnnouncementState(TestScope())
+        val payload = mapOf("text" to "dinner is ready", "ttl_seconds" to 45)
+
+        val r = dispatcher(tts = tts, announcementState = state)
+            .dispatch(envelope("announcement", payload))
+
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Announcement::class.java)
+        val outcome = r as AnnouncementDispatcher.DispatchOutcome.Announcement
+        assertThat(outcome.text).isEqualTo("dinner is ready")
+        assertThat(outcome.ttlSeconds).isEqualTo(45)
+
+        val active = state.activeAnnouncement.value
+        assertThat(active).isNotNull()
+        assertThat(active!!.text).isEqualTo("dinner is ready")
+        assertThat(active.from).isEqualTo("peer")
+        // TTS speak is launched on the dispatcher's internal scope; drain it.
+        advanceUntilIdle()
+        coVerify(atLeast = 1) { tts.speak("dinner is ready") }
+    }
+
+    @Test
+    fun `announcement missing text is rejected`() {
+        val state = AnnouncementState(TestScope())
+        val r = dispatcher(announcementState = state).dispatch(
+            envelope("announcement", mapOf("ttl_seconds" to 30))
+        )
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+        assertThat(state.activeAnnouncement.value).isNull()
+    }
+
+    @Test
+    fun `announcement missing ttl_seconds is rejected`() {
+        val state = AnnouncementState(TestScope())
+        val r = dispatcher(announcementState = state).dispatch(
+            envelope("announcement", mapOf("text" to "hi"))
+        )
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Rejected::class.java)
+        assertThat(state.activeAnnouncement.value).isNull()
+    }
+
+    @Test
+    fun `announcement ttl is clamped to 5 when too small`() = runTest {
+        val state = AnnouncementState(TestScope())
+        val r = dispatcher(announcementState = state).dispatch(
+            envelope("announcement", mapOf("text" to "hi", "ttl_seconds" to 1))
+        )
+        val outcome = r as AnnouncementDispatcher.DispatchOutcome.Announcement
+        assertThat(outcome.ttlSeconds).isEqualTo(AnnouncementDispatcher.TTL_MIN_SECONDS)
+    }
+
+    @Test
+    fun `announcement ttl is clamped to 3600 when too large`() = runTest {
+        val state = AnnouncementState(TestScope())
+        val r = dispatcher(announcementState = state).dispatch(
+            envelope("announcement", mapOf("text" to "hi", "ttl_seconds" to 99_999))
+        )
+        val outcome = r as AnnouncementDispatcher.DispatchOutcome.Announcement
+        assertThat(outcome.ttlSeconds).isEqualTo(AnnouncementDispatcher.TTL_MAX_SECONDS)
+    }
+
+    @Test
+    fun `announcement without announcementState still returns outcome and speaks`() = runTest {
+        // If the dispatcher is wired without a state (test/shim context), it
+        // should still return the structural outcome and speak the text — we
+        // shouldn't drop the message silently just because the banner channel
+        // isn't wired yet.
+        val tts = stubTts()
+        val r = dispatcher(tts = tts, announcementState = null).dispatch(
+            envelope("announcement", mapOf("text" to "hi", "ttl_seconds" to 30))
+        )
+        assertThat(r).isInstanceOf(AnnouncementDispatcher.DispatchOutcome.Announcement::class.java)
+        advanceUntilIdle()
+        coVerify(atLeast = 1) { tts.speak("hi") }
     }
 }

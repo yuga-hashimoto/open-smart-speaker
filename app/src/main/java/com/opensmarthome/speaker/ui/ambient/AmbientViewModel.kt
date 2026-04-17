@@ -3,6 +3,7 @@ package com.opensmarthome.speaker.ui.ambient
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.opensmarthome.speaker.device.DeviceManager
+import com.opensmarthome.speaker.multiroom.AnnouncementState
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.util.BatteryMonitor
@@ -32,7 +33,8 @@ class AmbientViewModel @Inject constructor(
     private val toolExecutor: ToolExecutor,
     private val batteryMonitor: BatteryMonitor,
     private val thermalMonitor: ThermalMonitor,
-    private val multicastDiscovery: MulticastDiscovery
+    private val multicastDiscovery: MulticastDiscovery,
+    private val announcementState: AnnouncementState
 ) : ViewModel() {
 
     private val _snapshot = MutableStateFlow(AmbientSnapshot(nowMs = System.currentTimeMillis()))
@@ -40,22 +42,34 @@ class AmbientViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // 5-arity combine: deviceMap, battery, thermal, peers, announcement.
+            // AnnouncementState is an independent push source that can fire
+            // without any other input changing, so it joins the existing
+            // four flows here rather than via a side-channel.
             combine(
                 deviceManager.devices,
                 batteryMonitor.status,
                 thermalMonitor.status,
-                multicastDiscovery.speakers
-            ) { deviceMap, battery, thermal, peers ->
+                multicastDiscovery.speakers,
+                announcementState.activeAnnouncement
+            ) { deviceMap, battery, thermal, peers, announcement ->
                 snapshotBuilder.build(deviceMap.values).copy(
                     batteryLevel = battery.level,
                     batteryCharging = battery.isCharging,
                     // Only surface a non-NORMAL state — ambient is a glance view;
                     // NORMAL should stay invisible so the chip isn't always lit.
                     thermalBucket = thermal.takeIf { it != ThermalLevel.NORMAL }?.name,
-                    nearbySpeakerCount = peers.size
+                    nearbySpeakerCount = peers.size,
+                    announcementText = announcement?.text,
+                    announcementFrom = announcement?.from
                 )
             }.collect { _snapshot.value = it }
         }
+    }
+
+    /** Dismiss the currently-showing announcement banner (user tapped it). */
+    fun dismissAnnouncement() {
+        announcementState.clear()
     }
 
     /** Fire a quick-action button. Best-effort — logs failures, doesn't surface them. */
