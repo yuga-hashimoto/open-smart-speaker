@@ -7,8 +7,8 @@ import com.opensmarthome.speaker.tool.ToolResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.test.runTest
-import org.json.JSONArray
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -124,14 +124,29 @@ class RoutineToolExecutorTest {
         val result = executor.execute(ToolCall("json", "list_routines", emptyMap()))
 
         assertThat(result.success).isTrue()
-        val parsed = JSONArray(result.data)
-        assertThat(parsed.length()).isEqualTo(1)
-        val entry = parsed.getJSONObject(0)
-        assertThat(entry.getString("name"))
+        // Parse with Moshi so the test runs in a JVM-only Android unit test —
+        // org.json.JSONArray/JSONObject are not mocked in the Android stub
+        // runtime and would throw "Method not mocked" at call time.
+        val moshi = Moshi.Builder().build()
+        val listAdapter = moshi.adapter<List<Map<String, Any?>>>(
+            com.squareup.moshi.Types.newParameterizedType(
+                List::class.java,
+                com.squareup.moshi.Types.newParameterizedType(
+                    Map::class.java,
+                    String::class.java,
+                    Any::class.java,
+                ),
+            )
+        )
+        val parsed = listAdapter.fromJson(result.data) ?: error("Invalid JSON: ${result.data}")
+        assertThat(parsed).hasSize(1)
+        val entry = parsed[0]
+        assertThat(entry["name"])
             .isEqualTo("morning\troutine\r\nwith \"quotes\" and \\ slash")
-        assertThat(entry.getString("description")).isEqualTo("desc with\ttab")
-        assertThat(entry.getJSONArray("actions").getJSONObject(0).getString("tool"))
-            .isEqualTo("tool\twith_tab")
+        assertThat(entry["description"]).isEqualTo("desc with\ttab")
+        @Suppress("UNCHECKED_CAST")
+        val actions = entry["actions"] as List<Map<String, Any?>>
+        assertThat(actions[0]["tool"]).isEqualTo("tool\twith_tab")
     }
 
     @Test
