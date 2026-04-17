@@ -1008,4 +1008,61 @@ class FastPathRouterTest {
         val match = RollDiceMatcher.tryMatch("roll a d20 and tell me the weather")
         assertThat(match).isNull()
     }
+
+    @Test
+    fun `pick one of three options`() {
+        val m = router.match("Pick one of pizza, sushi, ramen")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        assertThat(m?.arguments?.get("options")).isEqualTo("pizza,sushi,ramen")
+    }
+
+    @Test
+    fun `choose between two options with and`() {
+        val m = router.match("Choose between coffee and tea")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        assertThat(m?.arguments?.get("options")).isEqualTo("coffee,tea")
+    }
+
+    @Test
+    fun `select from options with or`() {
+        val m = router.match("Select from red or blue or green")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        assertThat(m?.arguments?.get("options")).isEqualTo("red,blue,green")
+    }
+
+    @Test
+    fun `japanese pick from comma-separated list`() {
+        val m = router.match("ピザ、寿司、ラーメンから選んで")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        assertThat(m?.arguments?.get("options")).isEqualTo("ピザ,寿司,ラーメン")
+    }
+
+    @Test
+    fun `japanese pick with no-naka-kara phrasing`() {
+        val m = router.match("りんご、みかん、ぶどうの中からどれか選んでください")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        assertThat(m?.arguments?.get("options")).isEqualTo("りんご,みかん,ぶどう")
+    }
+
+    @Test
+    fun `pick with trailing punctuation and mixed commas`() {
+        val m = router.match("pick one of apple, banana, and cherry.")
+        assertThat(m?.toolName).isEqualTo("pick_random")
+        // "and cherry" should be normalized to "cherry" after the and-split.
+        assertThat(m?.arguments?.get("options")).isEqualTo("apple,banana,cherry")
+    }
+
+    @Test
+    fun `pick up the phone does not match pick_random`() {
+        // Guard: bare "pick up …" must not be swallowed by PickRandomMatcher.
+        val match = PickRandomMatcher.tryMatch("pick up the phone")
+        assertThat(match).isNull()
+    }
+
+    @Test
+    fun `pick one option does not fire when only one candidate`() {
+        // Single-option utterance is ambiguous — let it fall through.
+        val match = PickRandomMatcher.tryMatch("pick one of pizza")
+        assertThat(match).isNull()
+    }
 }

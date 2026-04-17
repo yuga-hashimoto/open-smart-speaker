@@ -147,6 +147,12 @@ class DefaultFastPathRouter(
             // FlipCoinMatcher before DatetimeMatcher/Greeting/Help so
             // "flip a coin" / "コイン投げて" don't fall through to pleasantries.
             FlipCoinMatcher,
+            // PickRandomMatcher before DatetimeMatcher/GreetingMatcher.
+            // Patterns are anchored on explicit "pick/choose/select …
+            // of/from/between" verbs or the JA "…から選んで" suffix, so
+            // unrelated "pick up the phone" / "時間を選んで" cases still
+            // fall through when they don't match the full shape.
+            PickRandomMatcher,
             DatetimeMatcher,
             GreetingMatcher,
             // RollDiceMatcher uses matchEntire anchors so it's safe this low —

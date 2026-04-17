@@ -1681,3 +1681,76 @@ object RollDiceMatcher : FastPathMatcher {
         spokenConfirmation = "Rolling $count d$sides…"
     )
 }
+
+/**
+ * "pick one of pizza, sushi, ramen", "choose between coffee and tea",
+ * "ピザ、ラーメン、寿司から選んで".
+ *
+ * Extracts the candidate list, splits on commas (JA "、"/","), and
+ * forwards as a comma-joined string to the `pick_random` tool on
+ * [com.opensmarthome.speaker.tool.info.RandomToolExecutor].
+ *
+ * Sits near the tail of the router — patterns are narrow (explicit
+ * "pick/choose/select … of/from/between" verbs or the JA
+ * "…から選んで" / "…の中から…選んで" suffix) so plain "pick up the phone"
+ * utterances pass through to later matchers or the LLM path. Requires
+ * at least two options — a single candidate is meaningless for a
+ * random pick, so we let it fall through rather than silently
+ * returning the only input.
+ */
+object PickRandomMatcher : FastPathMatcher {
+    private val englishRegex = Regex(
+        """^\s*(?:pick|choose|select)\s+(?:one|something)?\s*(?:of|from|between)\s+(.+?)\.?\s*$"""
+    )
+    private val japaneseRegex = Regex(
+        // Try "の中から" before "から" — the longer suffix is a strict prefix
+        // of the shorter match position, and regex alternation is leftmost
+        // so we need the specific form to win when both are viable.
+        """^\s*(.+?)(?:の中から|から)\s*(?:一つ|ひとつ|どれか)?(?:選んで|ランダムで)\s*(?:ください|下さい)?\s*[。.]?\s*$"""
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        englishRegex.find(normalized)?.let { m ->
+            val options = splitEnglish(m.groupValues[1])
+            if (options.size < 2) return null
+            return FastPathMatch(
+                toolName = "pick_random",
+                arguments = mapOf("options" to options.joinToString(","))
+            )
+        }
+        japaneseRegex.find(normalized)?.let { m ->
+            val options = splitJapanese(m.groupValues[1])
+            if (options.size < 2) return null
+            return FastPathMatch(
+                toolName = "pick_random",
+                arguments = mapOf("options" to options.joinToString(","))
+            )
+        }
+        return null
+    }
+
+    private fun splitEnglish(raw: String): List<String> {
+        // Accept "a, b, c" / "a, b, and c" / "a and b" / "a or b".
+        val commaParts = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        val expanded = commaParts.flatMap { part ->
+            part.split(Regex("""\s+(?:and|or)\s+"""))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+        }
+        // Strip leading "and "/"or " that survive the Oxford-comma form
+        // ("apple, banana, and cherry" → the tail piece starts with "and ").
+        return expanded
+            .map { it.removePrefix("and ").removePrefix("or ").trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun splitJapanese(raw: String): List<String> {
+        // Accept "A、B、C" / "A,B,C". Do NOT split on "か" — it's a
+        // legitimate mid-word mora (みかん, すいか, からあげ…), and getting
+        // it wrong silently corrupts options rather than falling through
+        // to the LLM path.
+        return raw.split(Regex("""[、,]"""))
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+}
