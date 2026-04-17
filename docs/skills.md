@@ -57,6 +57,8 @@ User-installed skills can override or supplement these.
 | `movie-night` | Movie ambience: lights→15, volume→30, clear notifications, optional service launch |
 | `news-briefing` | Reading the news without dumping every headline |
 | `party-mode` | Social gathering: lights→100 with colour cycle, media_play, volume→80, optional broadcast_tts to all speakers |
+| `dinner-call` | "Call everyone to dinner" — broadcast_tts + broadcast_announcement with 5-min TTL banner |
+| `bedtime-for-kids` | 15-min bedtime warning: broadcast_announcement + broadcast_timer across every speaker, then local goodnight |
 | `task-manager` | "Remind me to X" → memory store + recall + forget |
 | `voice-assistant` | Conversational guardrails — keep replies under 30s of speech |
 | `workout` | Workout mode: lights→100, volume→70, interval timers, cooldown recovery |
