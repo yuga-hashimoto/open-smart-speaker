@@ -26,3 +26,37 @@ Each implements `AssistantProvider`. Switch via **Settings → Assistant provide
 - `Auto` — best available (may consult `HeavyTaskDetector`)
 - `Failover(ordered)` — try in order
 - `LowestLatency` — benchmark
+
+## Speech-to-Text providers
+
+`DelegatingSttProvider` routes `startListening()` to the backend selected in
+**Settings → Speech Recognition**. The selection is stored in
+`PreferenceKeys.STT_PROVIDER_TYPE` and resolved through `SttProviderType`.
+
+| Provider | Id | Offline | Status | Notes |
+|---|---|---|---|---|
+| AndroidSttProvider | `android` | no | shipping | `android.speech.SpeechRecognizer`, GMS-backed; default |
+| Vosk (offline) | `vosk` | yes | coming soon | `OfflineSttStub` — emits a spoken "coming soon" error via `ErrorClassifier` |
+| Whisper (offline) | `whisper` | yes | coming soon | `OfflineSttStub` — placeholder for whisper.cpp JNI bindings |
+
+Tracked by roadmap **P14.1**. The stubs let the Settings UI and routing code
+ship today; future whisper.cpp / Vosk PRs only touch implementation files.
+
+## Text-to-Speech providers
+
+`TtsManager` picks the active backend from `PreferenceKeys.TTS_PROVIDER`
+(**Settings → Text-to-Speech**). All backends implement `TextToSpeech`.
+
+| Provider | Id | Local | Status | Notes |
+|---|---|---|---|---|
+| AndroidTtsProvider | `android` | yes | shipping | `android.speech.tts.TextToSpeech`, default |
+| OpenAiTtsProvider | `openai` | no | shipping | `/v1/audio/speech`, configurable voice + model |
+| ElevenLabsTtsProvider | `elevenlabs` | no | shipping | Cloud neural voice, voice-id + model selectable |
+| VoiceVoxTtsProvider | `voicevox` | yes* | shipping | Self-hosted VOICEVOX ENGINE on LAN; Japanese |
+| PiperTtsProvider | `piper` | yes | coming soon | On-device neural (VITS) placeholder — falls back to Android system TTS today |
+
+\* VOICEVOX runs locally on the user's LAN but requires a separate engine
+process (Docker / PC).
+
+Tracked by roadmap **P14.9**. The `piper` option is live in Settings so users
+can opt in once the piper-cpp JNI bindings land — no routing change needed.
