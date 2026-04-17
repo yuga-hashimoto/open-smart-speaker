@@ -106,6 +106,31 @@ class AnnouncementBroadcaster @Inject constructor(
             .takeIf { it.isNotBlank() }
 
     /**
+     * Broadcast a `heartbeat` envelope to every resolved peer. Payload is
+     * empty by design — the envelope's purpose is liveness signalling, not
+     * data transport. Receivers update their per-peer `lastSeenMs` via
+     * [PeerLivenessTracker.onHeartbeat] and ack the envelope through
+     * [AnnouncementDispatcher].
+     *
+     * Missing shared secret short-circuits (same policy as every other
+     * broadcaster call): we'd rather emit nothing than send envelopes every
+     * peer will drop on HMAC mismatch.
+     */
+    suspend fun broadcastHeartbeat(): BroadcastResult {
+        val secret = requireSecret()
+            ?: return BroadcastResult(
+                sentCount = 0,
+                failures = listOf("none" to SendOutcome.Other("no shared secret"))
+            )
+        val line = buildEnvelopeLine(
+            type = AnnouncementType.HEARTBEAT,
+            payload = emptyMap(),
+            secret = secret
+        )
+        return fanOut(line, filter = null)
+    }
+
+    /**
      * Broadcast a `start_timer` envelope to every resolved peer. Cross-speaker
      * timer sync — saying "set a 5-minute timer on every speaker" fires the
      * same `set_timer` effect on each peer so all devices alert in unison.

@@ -35,6 +35,7 @@ fun SystemInfoScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val nearby by viewModel.nearbySpeakers.collectAsStateWithLifecycle()
     val registeredName by viewModel.registeredName.collectAsStateWithLifecycle()
+    val freshness by viewModel.peerFreshness.collectAsStateWithLifecycle()
 
     DisposableEffect(Unit) {
         viewModel.startDiscovery()
@@ -79,8 +80,17 @@ fun SystemInfoScreen(
             add("Broadcasting as" to (registeredName ?: "(not broadcasting)"))
             add("Nearby speakers (mDNS)" to if (nearby.isEmpty()) "(none)" else "${nearby.size}")
             nearby.forEach { speaker ->
-                val suffix = speaker.host?.let { host -> speaker.port?.let { " — $host:$it" } ?: " — $host" } ?: ""
-                add("  • ${speaker.serviceName}" to suffix.trimStart(' ', '—', ' '))
+                val hostSuffix = speaker.host?.let { host ->
+                    speaker.port?.let { " — $host:$it" } ?: " — $host"
+                } ?: ""
+                val freshnessSuffix = when (freshness[speaker.serviceName]) {
+                    com.opensmarthome.speaker.multiroom.PeerFreshness.Fresh -> " · fresh"
+                    com.opensmarthome.speaker.multiroom.PeerFreshness.Stale -> " · stale"
+                    com.opensmarthome.speaker.multiroom.PeerFreshness.Gone -> " · gone"
+                    null -> ""
+                }
+                val value = (hostSuffix + freshnessSuffix).trimStart(' ', '—', ' ')
+                add("  • ${speaker.serviceName}" to value)
             }
         }
         LazyColumn(

@@ -24,13 +24,15 @@ class AnnouncementDispatcherTest {
         tts: TextToSpeech = stubTts(),
         history: ConversationHistoryManager? = null,
         timerManager: TimerManager? = null,
-        announcementState: AnnouncementState? = null
+        announcementState: AnnouncementState? = null,
+        onHeartbeat: (AnnouncementEnvelope) -> Unit = {}
     ): AnnouncementDispatcher =
         AnnouncementDispatcher(
             tts = tts,
             historyProvider = { history },
             timerManagerProvider = { timerManager },
-            announcementState = announcementState
+            announcementState = announcementState,
+            onHeartbeat = onHeartbeat
         )
 
     private fun recordingTimerManager(): Pair<TimerManager, MutableList<Pair<Int, String>>> {
@@ -113,6 +115,24 @@ class AnnouncementDispatcherTest {
         val r = dispatcher(tts).dispatch(envelope("heartbeat"))
         assertThat(r).isEqualTo(AnnouncementDispatcher.DispatchOutcome.AcknowledgedHeartbeat)
         coVerify(exactly = 0) { tts.speak(any()) }
+    }
+
+    @Test
+    fun `heartbeat invokes onHeartbeat callback with the envelope`() {
+        val received = mutableListOf<AnnouncementEnvelope>()
+        val env = envelope("heartbeat")
+        val r = dispatcher(onHeartbeat = { received.add(it) }).dispatch(env)
+        assertThat(r).isEqualTo(AnnouncementDispatcher.DispatchOutcome.AcknowledgedHeartbeat)
+        assertThat(received).hasSize(1)
+        assertThat(received[0]).isEqualTo(env)
+    }
+
+    @Test
+    fun `heartbeat callback exception does not block acknowledgement`() {
+        val r = dispatcher(onHeartbeat = { error("boom") }).dispatch(envelope("heartbeat"))
+        // The dispatcher must not bubble the error up — the envelope was still
+        // processed, we just couldn't update the tracker.
+        assertThat(r).isEqualTo(AnnouncementDispatcher.DispatchOutcome.AcknowledgedHeartbeat)
     }
 
     @Test

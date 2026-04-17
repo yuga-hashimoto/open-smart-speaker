@@ -196,7 +196,8 @@ object DeviceModule {
     fun provideAnnouncementDispatcher(
         tts: com.opensmarthome.speaker.voice.tts.TextToSpeech,
         timerManager: com.opensmarthome.speaker.tool.system.TimerManager,
-        announcementState: com.opensmarthome.speaker.multiroom.AnnouncementState
+        announcementState: com.opensmarthome.speaker.multiroom.AnnouncementState,
+        peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
     ): com.opensmarthome.speaker.multiroom.AnnouncementDispatcher =
         com.opensmarthome.speaker.multiroom.AnnouncementDispatcher(
             tts = tts,
@@ -205,7 +206,8 @@ object DeviceModule {
             // session_handoff messages can actually seed future turns.
             historyProvider = { null },
             timerManagerProvider = { timerManager },
-            announcementState = announcementState
+            announcementState = announcementState,
+            onHeartbeat = { envelope -> peerLivenessTracker.onHeartbeat(envelope) }
         )
 
     @Provides

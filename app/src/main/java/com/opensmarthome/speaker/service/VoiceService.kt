@@ -40,6 +40,7 @@ class VoiceService : Service() {
     @Inject lateinit var thermalMonitor: com.opensmarthome.speaker.util.ThermalMonitor
     @Inject lateinit var multicastDiscovery: com.opensmarthome.speaker.util.MulticastDiscovery
     @Inject lateinit var announcementServer: com.opensmarthome.speaker.multiroom.AnnouncementServer
+    @Inject lateinit var peerLivenessTracker: com.opensmarthome.speaker.multiroom.PeerLivenessTracker
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var wakeWordDetector: VoskWakeWordDetector? = null
@@ -125,7 +126,13 @@ class VoiceService : Service() {
             val enabled = preferences.observe(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED).first() ?: false
             if (enabled) {
                 multicastDiscovery.register()
+                multicastDiscovery.start()
                 announcementServer.start()
+                // Liveness tracker relies on the broadcaster fan-out + the
+                // dispatcher's onHeartbeat callback. Start it after the server
+                // is listening so the very first inbound heartbeat has a place
+                // to land.
+                peerLivenessTracker.start()
             }
         }
     }
@@ -266,7 +273,9 @@ class VoiceService : Service() {
         voicePipeline.stopSpeaking()
         voicePipeline.destroy()
         // Safe to call even if we never registered — unregister() is a no-op in that case.
+        runCatching { peerLivenessTracker.stop() }
         runCatching { multicastDiscovery.unregister() }
+        runCatching { multicastDiscovery.stop() }
         runCatching { announcementServer.stop() }
         super.onDestroy()
         Timber.d("VoiceService destroyed")

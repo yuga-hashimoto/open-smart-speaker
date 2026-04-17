@@ -713,6 +713,62 @@ class AnnouncementBroadcasterTest {
     }
 
     @Test
+    fun `broadcastHeartbeat builds signed heartbeat envelope with empty payload`() = runTest {
+        val peers = listOf(
+            DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421),
+            DiscoveredSpeaker("speaker-bedroom", host = "10.0.0.3", port = 8421)
+        )
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+        val lineSlot = slot<String>()
+        coEvery { client.send(any(), any(), capture(lineSlot), any()) } returns SendOutcome.Ok
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(secret),
+            moshi = moshi,
+            selfServiceName = self,
+            clock = { 5_000L },
+            idGenerator = { "id-hb" }
+        )
+
+        val result = broadcaster.broadcastHeartbeat()
+        assertThat(result.sentCount).isEqualTo(2)
+        assertThat(result.failures).isEmpty()
+
+        @Suppress("UNCHECKED_CAST")
+        val envelope = mapAdapter.fromJson(lineSlot.captured) as Map<String, Any?>
+        assertThat(envelope["type"]).isEqualTo(AnnouncementType.HEARTBEAT)
+        assertThat(envelope["id"]).isEqualTo("id-hb")
+        @Suppress("UNCHECKED_CAST")
+        val payload = envelope["payload"] as Map<String, Any?>
+        assertThat(payload).isEmpty()
+        assertThat(envelope["hmac"] as? String).isNotEmpty()
+    }
+
+    @Test
+    fun `broadcastHeartbeat short-circuits when shared secret missing`() = runTest {
+        val peers = listOf(DiscoveredSpeaker("k", host = "10.0.0.2", port = 8421))
+        val (d, self) = discovery(peers)
+        val client = mockk<AnnouncementClient>()
+
+        val broadcaster = AnnouncementBroadcaster(
+            discovery = d,
+            client = client,
+            securePreferences = securePrefs(null),
+            moshi = moshi,
+            selfServiceName = self
+        )
+
+        val result = broadcaster.broadcastHeartbeat()
+        assertThat(result.sentCount).isEqualTo(0)
+        assertThat(result.failures)
+            .containsExactly("none" to SendOutcome.Other("no shared secret"))
+        coVerify(exactly = 0) { client.send(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `handoffConversation returns failure when no shared secret`() = runTest {
         val peers = listOf(DiscoveredSpeaker("speaker-kitchen", host = "10.0.0.2", port = 8421))
         val (d, self) = discovery(peers)

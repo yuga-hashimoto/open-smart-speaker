@@ -7,6 +7,8 @@ import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.data.db.MemoryDao
 import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.device.DeviceManager
+import com.opensmarthome.speaker.multiroom.PeerFreshness
+import com.opensmarthome.speaker.multiroom.PeerLivenessTracker
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.rag.RagRepository
 import com.opensmarthome.speaker.util.DiscoveredSpeaker
@@ -39,7 +41,8 @@ class SystemInfoViewModel @Inject constructor(
     private val routineDao: RoutineDao,
     private val ragRepository: RagRepository,
     private val multicastDiscovery: MulticastDiscovery,
-    private val thermalMonitor: ThermalMonitor
+    private val thermalMonitor: ThermalMonitor,
+    private val peerLivenessTracker: PeerLivenessTracker
 ) : ViewModel() {
 
     val nearbySpeakers: StateFlow<List<DiscoveredSpeaker>> = multicastDiscovery.speakers
@@ -47,6 +50,13 @@ class SystemInfoViewModel @Inject constructor(
 
     val registeredName: StateFlow<String?> = multicastDiscovery.registeredName
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * Per-peer freshness map keyed by mDNS serviceName. UI renders each
+     * discovered peer's suffix (fresh / stale / gone) from this.
+     */
+    val peerFreshness: StateFlow<Map<String, PeerFreshness>> = peerLivenessTracker.staleness
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Start (idempotent) mDNS discovery. Callers trigger this when the screen is visible. */
     fun startDiscovery() = multicastDiscovery.start()

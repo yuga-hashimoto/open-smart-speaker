@@ -28,7 +28,14 @@ class AnnouncementDispatcher(
     private val tts: TextToSpeech,
     private val historyProvider: () -> ConversationHistoryManager? = { null },
     private val timerManagerProvider: () -> TimerManager? = { null },
-    private val announcementState: AnnouncementState? = null
+    private val announcementState: AnnouncementState? = null,
+    /**
+     * Hook fired when a `heartbeat` envelope is dispatched. Defaults to a
+     * no-op so tests and legacy callers don't need to care. DI wires this
+     * to [PeerLivenessTracker.onHeartbeat] so receivers update their
+     * per-peer `lastSeenMs` on every incoming heartbeat.
+     */
+    private val onHeartbeat: (AnnouncementEnvelope) -> Unit = {}
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -49,7 +56,11 @@ class AnnouncementDispatcher(
         return when (envelope.type) {
             AnnouncementType.TTS_BROADCAST -> handleTtsBroadcast(envelope)
             AnnouncementType.ANNOUNCEMENT -> handleAnnouncement(envelope)
-            AnnouncementType.HEARTBEAT -> DispatchOutcome.AcknowledgedHeartbeat
+            AnnouncementType.HEARTBEAT -> {
+                runCatching { onHeartbeat(envelope) }
+                    .onFailure { Timber.w(it, "onHeartbeat callback threw") }
+                DispatchOutcome.AcknowledgedHeartbeat
+            }
             AnnouncementType.SESSION_HANDOFF -> handleSessionHandoff(envelope)
             AnnouncementType.START_TIMER -> handleStartTimer(envelope)
             AnnouncementType.CANCEL_TIMER -> handleCancelTimer(envelope)
