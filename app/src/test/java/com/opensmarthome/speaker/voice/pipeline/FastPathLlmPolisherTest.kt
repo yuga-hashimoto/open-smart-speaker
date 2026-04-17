@@ -159,6 +159,13 @@ class FastPathLlmPolisherTest {
     }
 
     @Test
+    fun `default timeout is 20 seconds for slow on-device LLM`() {
+        // Gemma 4 E2B takes 5-10s to polish on real devices; 4s was causing
+        // near-100% fallback. Default must be well above p99 generation time.
+        assertThat(FastPathLlmPolisher.DEFAULT_TIMEOUT_MS).isEqualTo(20_000L)
+    }
+
+    @Test
     fun `buildPrompt handles other supported locales`() {
         val es = polisher.buildPrompt("hola", "{}", "es-ES")
         assertThat(es).contains("español")

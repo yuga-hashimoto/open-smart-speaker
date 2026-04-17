@@ -231,6 +231,118 @@ I'll tell you shortly."""
         assertThat(result.toolCalls[0].name).isEqualTo("get_weather")
     }
 
+    // --- Hybrid-tag format: Gemma 4 E2B's invented `<|tool_call>call:X{...}` shape ---
+
+    @Test
+    fun `parse hybrid tag with call prefix and JSON-lite args`() {
+        // Real log emission from Gemma 4 E2B on-device.
+        val response = """<|tool_call>call:web_search{query: "Tokyo weather"}<tool_call|>"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("web_search")
+        assertThat(result.toolCalls[0].arguments).contains("\"query\"")
+        assertThat(result.toolCalls[0].arguments).contains("Tokyo weather")
+        assertThat(result.text).isEmpty()
+    }
+
+    @Test
+    fun `parse hybrid tag tolerates truncated closing tag`() {
+        // Real log — model cut off mid-closing.
+        val response = """<|tool_call>call:web_search{query: "トマト ウェブ"}<tool..."""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("web_search")
+        assertThat(result.toolCalls[0].arguments).contains("トマト ウェブ")
+    }
+
+    @Test
+    fun `parse hybrid tag with parenthesis args and equals syntax`() {
+        val response = """<tool_call>web_search(query="Python")</tool_call>"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("web_search")
+        assertThat(result.toolCalls[0].arguments).contains("Python")
+    }
+
+    @Test
+    fun `parse hybrid tag without pipe delimiters`() {
+        val response = """<tool_call>call:get_weather{location: "Tokyo"}</tool_call>"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("get_weather")
+        assertThat(result.toolCalls[0].arguments).contains("Tokyo")
+    }
+
+    @Test
+    fun `parse hybrid tag with multiple key-value pairs`() {
+        val response = """<|tool_call>call:set_timer{seconds: 60, label: "pasta"}<tool_call|>"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("set_timer")
+        assertThat(result.toolCalls[0].arguments).contains("60")
+        assertThat(result.toolCalls[0].arguments).contains("pasta")
+    }
+
+    @Test
+    fun `parse hybrid tag does not break existing JSON-in-XML parsing`() {
+        // Canonical JSON-in-XML should still work — hybrid regex requires a
+        // letter before the opening bracket, so it doesn't match `<tag>{...`.
+        val response = """<tool_call>{"name": "get_weather", "arguments": {"location": "NY"}}</tool_call>"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("get_weather")
+        assertThat(result.toolCalls[0].arguments).contains("NY")
+    }
+
+    @Test
+    fun `parse preserves existing JSON tool_call wrapper unchanged`() {
+        // Regression guard: the canonical {"tool_call":{"name":...}} path
+        // must still work after the hybrid addition.
+        val response = """{"tool_call": {"name": "list_timers", "arguments": {}}}"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("list_timers")
+    }
+
+    @Test
+    fun `parse preserves TOOL_CALL natural form unchanged`() {
+        // Regression guard: the natural TOOL_CALL: form still works.
+        val response = """TOOL_CALL: get_weather(location="Tokyo")"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("get_weather")
+        assertThat(result.toolCalls[0].arguments).contains("Tokyo")
+    }
+
+    @Test
+    fun `parse preserves fenced JSON block unchanged`() {
+        // Regression guard: markdown-fenced JSON still parses.
+        val response = """```json
+{"tool_call": {"name": "get_datetime", "arguments": {}}}
+```"""
+
+        val result = parser.parse(response)
+
+        assertThat(result.toolCalls).hasSize(1)
+        assertThat(result.toolCalls[0].name).isEqualTo("get_datetime")
+    }
+
     @Test
     fun `detectsRefusal returns true for common refusal phrases`() {
         assertThat(ToolCallParser.looksLikeRefusal("I don't have access to tools.")).isTrue()

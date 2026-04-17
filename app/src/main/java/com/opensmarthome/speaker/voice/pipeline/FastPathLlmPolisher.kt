@@ -118,7 +118,15 @@ class FastPathLlmPolisher(
     }
 
     companion object {
-        const val DEFAULT_TIMEOUT_MS: Long = 4_000L
+        /**
+         * 20 seconds — Gemma 4 E2B (2B params, on-device) typically takes
+         * 5-10s to produce a 1-2 sentence polish reply. The previous 4s budget
+         * timed out almost every request on real devices, which caused the
+         * fast path to silently fall back to the raw regex formatter (English
+         * weather conditions, no translation). 20s keeps us comfortably above
+         * p99 generation time while still giving up if the model is wedged.
+         */
+        const val DEFAULT_TIMEOUT_MS: Long = 20_000L
 
         val SUPPORTED_TOOLS: Set<String> = setOf(
             "get_weather",

@@ -15,6 +15,9 @@ import timber.log.Timber
  * - Single-level:  {"name": "...", "arguments": {...}}      (bare form)
  * - XML wrapper:   <tool_call>{"name": "...", "arguments": {...}}</tool_call>
  * - Gemma 4 style: <|tool_call>{"name": "...", "arguments": {...}}<tool_call|>
+ * - Hybrid tag:    <|tool_call>call:name{key: "value"}<tool_call|>
+ *                  <tool_call>name(key="value")</tool_call>
+ *   (Gemma 4 E2B frequently invents this when it copies few-shot syntax.)
  * - Natural form:  TOOL_CALL: name(key="value", key2=42)
  * - Markdown fenced JSON (```json ... ```) is also tolerated.
  *
@@ -35,7 +38,26 @@ class ToolCallParser {
         // Strip markdown code fences before parsing (```json, ``` etc.).
         var cleaned = stripCodeFences(response)
 
-        // First: extract XML/Gemma-style tool calls (may span multiple lines)
+        // First: hybrid-tag format, e.g. `<|tool_call>call:name{args}<tool_call|>`.
+        // Small on-device models (Gemma 4 E2B) emit this when they copy
+        // few-shot syntax. We run it before the generic XML pass because the
+        // inner payload isn't valid JSON. When any hybrid body matches we
+        // also strip lingering orphan closers (`<tool_call|>`, `<tool...`)
+        // that the main regex couldn't consume because they appeared after
+        // the body with intervening text.
+        var hybridMatched = false
+        for (match in HYBRID_TAG_REGEX.findAll(cleaned)) {
+            hybridMatched = true
+            parseHybridTagMatch(match.groupValues[1], match.groupValues[2])?.let {
+                toolCalls.add(it)
+            }
+        }
+        cleaned = cleaned.replace(HYBRID_TAG_REGEX, "")
+        if (hybridMatched) {
+            cleaned = cleaned.replace(HYBRID_TRAILING_CLOSER_REGEX, "")
+        }
+
+        // Next: extract XML/Gemma-style tool calls (may span multiple lines)
         for (xmlRegex in XML_REGEXES) {
             xmlRegex.findAll(cleaned).forEach { match ->
                 val inner = match.groupValues[1].trim()
@@ -96,6 +118,101 @@ class ToolCallParser {
             name = name,
             arguments = arguments
         )
+    }
+
+    /**
+     * Parse the hybrid-tag match.
+     *
+     * @param name Tool name captured between `(call:)?` and the opening
+     *     bracket. May include leading/trailing whitespace.
+     * @param rawArgs The body between the brackets. Accepts either
+     *     `key="value", n=42` (function-call form, same as natural form)
+     *     or `key: "value", n: 42` (JSON-object-lite form, which is what
+     *     Gemma actually emits most often).
+     */
+    private fun parseHybridTagMatch(name: String, rawArgs: String): ToolCallRequest? {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) return null
+        val args = rawArgs.trim()
+        val arguments = when {
+            args.isEmpty() -> "{}"
+            // JSON-lite: `key: "val"` style — normalize colons to equals then
+            // reuse the natural-call converter. Distinguishing token is the
+            // absence of `=` combined with presence of `:` at top level.
+            containsTopLevelColon(args) && !containsTopLevelEquals(args) ->
+                jsonLiteArgsToJson(args)
+            else -> naturalArgsToJson(args)
+        }
+        return ToolCallRequest(
+            id = "call_${System.currentTimeMillis()}",
+            name = trimmedName,
+            arguments = arguments
+        )
+    }
+
+    /**
+     * Convert `key: "val", num: 42` → `{"key":"val","num":42}`. Works on the
+     * JSON-object-lite form that `<|tool_call>` bodies often use. The split is
+     * done at the top level only, so nested `{...}` / `[...]` / quoted
+     * strings containing colons or commas survive.
+     */
+    private fun jsonLiteArgsToJson(raw: String): String {
+        val pairs = splitTopLevelCommas(raw)
+        if (pairs.isEmpty()) return "{}"
+        val sb = StringBuilder("{")
+        var first = true
+        for (pair in pairs) {
+            val colon = topLevelColonIndex(pair)
+            if (colon == -1) continue
+            val key = pair.substring(0, colon).trim().trim('"', '\'')
+            val value = pair.substring(colon + 1).trim()
+            if (key.isEmpty()) continue
+            if (!first) sb.append(",")
+            first = false
+            sb.append('"').append(escapeJson(key)).append('"').append(':')
+            sb.append(normalizeValue(value))
+        }
+        sb.append('}')
+        return sb.toString()
+    }
+
+    /** True when [raw] has a `:` outside of strings/brackets. */
+    private fun containsTopLevelColon(raw: String): Boolean =
+        topLevelColonIndex(raw) != -1
+
+    /** True when [raw] has an `=` outside of strings/brackets. */
+    private fun containsTopLevelEquals(raw: String): Boolean {
+        var depth = 0
+        var inString = false
+        var stringChar = '"'
+        for (c in raw) {
+            when {
+                inString -> if (c == stringChar) inString = false
+                c == '"' || c == '\'' -> { inString = true; stringChar = c }
+                c == '(' || c == '[' || c == '{' -> depth++
+                c == ')' || c == ']' || c == '}' -> depth--
+                c == '=' && depth == 0 -> return true
+            }
+        }
+        return false
+    }
+
+    /** First top-level `:` index, or -1 if none. */
+    private fun topLevelColonIndex(raw: String): Int {
+        var depth = 0
+        var inString = false
+        var stringChar = '"'
+        for (i in raw.indices) {
+            val c = raw[i]
+            when {
+                inString -> if (c == stringChar) inString = false
+                c == '"' || c == '\'' -> { inString = true; stringChar = c }
+                c == '(' || c == '[' || c == '{' -> depth++
+                c == ')' || c == ']' || c == '}' -> depth--
+                c == ':' && depth == 0 -> return i
+            }
+        }
+        return -1
     }
 
     /**
@@ -317,6 +434,40 @@ class ToolCallParser {
             // Gemma 4 style: <|tool_call>...<tool_call|>
             """<\|tool_call>([\s\S]*?)<tool_call\|>""".toRegex()
         )
+
+        /**
+         * Hybrid-tag: `<|?tool_call|?>(call:)?name{args}` or `(args)`.
+         *
+         * - Accepts `<tool_call>` or `<|tool_call>` as the opening.
+         * - The optional `call:` prefix is what Gemma actually emits.
+         * - Name is a snake-case identifier.
+         * - Args body is captured lazily up to the matching closing `}` or `)`.
+         * - A trailing closing tag (`<tool_call|>`, `</tool_call>`, `<tool...`)
+         *   is optional because the model frequently truncates or garbles it.
+         *
+         * Example: `<|tool_call>call:web_search{query: "トマト ウェブ"}<tool...`
+         */
+        internal val HYBRID_TAG_REGEX =
+            """<\|?tool_call\|?>\s*(?:call:)?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*[({]([^)}]*)[)}]""".toRegex()
+
+        /**
+         * Lingering close tags left behind after the primary hybrid match.
+         * Only applied when a hybrid body was matched, so `<toolbox>` in
+         * normal prose is safe.
+         *
+         * - `<tool_call|>` (Gemma pipe-style closer)
+         * - `</tool_call>` (well-formed closer — sometimes stand-alone)
+         * - `<|tool_call>` (pipe-style opener without a matching body)
+         * - `<tool_call>` (plain opener without a matching body)
+         * - `<tool_call...` / `<tool...` truncated closers — we only match
+         *   this shape when the `tool_call` prefix or the literal ellipsis
+         *   is present to keep the pattern conservative.
+         */
+        internal val HYBRID_TRAILING_CLOSER_REGEX =
+            (
+                """(?:<tool_call\|>|</tool_call>|<\|tool_call>|<tool_call>""" +
+                    """|<tool_call\S*|<tool\.{2,})"""
+            ).toRegex()
 
         /**
          * Phrases that signal the model is refusing or hallucinating "I have
