@@ -15,6 +15,7 @@ Tablet-first Android smart speaker with on-device LLM agent, inspired by Alexa a
 - **[Providers](providers.md)** — AssistantProvider implementations
 - **[Skills](skills.md)** — authoring `SKILL.md` files
 - **[Permissions](permissions.md)** — runtime + special permissions
+- **[Multi-room protocol](multi-room-protocol.md)** — WebSocket message bus design
 - **[Real-device smoke test](real-device-smoke-test.md)** — on-device validation run before each release
 
 ## Running locally
