@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Vestlus</string>
+    <string name="tab_dashboard">Töölaud</string>
+    <string name="tab_ambient">Taustarežiim</string>
+    <string name="tab_settings">Seaded</string>
+    <string name="accessibility_service_description">Võimaldab nutika kõlari agendil lugeda praegu nähtava ekraani teksti ja automatiseerida kasutajaliidese toiminguid teie eest.</string>
+    <string name="accessibility_service_summary">Lubage, et seadmel töötav agent näeks ja juhiks ekraani.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker kasutab seda juurdepääsetavuse teenust, et lugeda ekraanil olevat teavet ja vajutada teie palvel nuppe. Andmed ei lahku seadmest. Võite selle igal ajal seadetes välja lülitada.</string>
+    <string name="voice_tile_label">Räägi</string>
+    <string name="voice_tile_content_description">Alusta hääleseanssi OpenSmartSpeakeriga</string>
+    <string name="locale_picker_title">Keel</string>
+    <string name="locale_picker_system_default">Süsteemi vaikeseade</string>
+    <string name="locale_picker_requires_android_13">Nõuab Android 13 või uuemat</string>
+    <string name="locale_picker_close">Sulge</string>
+</resources>
