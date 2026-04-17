@@ -27,7 +27,9 @@ data class AmbientSnapshot(
     /** Host device battery level 0..100, or null if not yet sampled. */
     val batteryLevel: Int? = null,
     /** True while the host device is plugged in. */
-    val batteryCharging: Boolean = false
+    val batteryCharging: Boolean = false,
+    /** Host thermal bucket — NORMAL / WARM / HOT. Only surfaced when non-NORMAL. */
+    val thermalBucket: String? = null
 ) {
     data class DeviceLine(val name: String, val state: String)
 

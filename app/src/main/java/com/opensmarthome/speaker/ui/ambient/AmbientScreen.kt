@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Thermostat
@@ -192,22 +193,40 @@ private fun ClockBlock(snapshot: AmbientSnapshot, now: LocalDateTime, centered: 
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        snapshot.batteryLevel?.let { level ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Icon(
-                    imageVector = if (snapshot.batteryCharging) Icons.Filled.BatteryChargingFull
-                    else Icons.Filled.BatteryFull,
-                    contentDescription = if (snapshot.batteryCharging) "Charging" else "Battery",
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-                Text(
-                    text = "$level%",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            snapshot.batteryLevel?.let { level ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (snapshot.batteryCharging) Icons.Filled.BatteryChargingFull
+                        else Icons.Filled.BatteryFull,
+                        contentDescription = if (snapshot.batteryCharging) "Charging" else "Battery",
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text(
+                        text = "$level%",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            snapshot.thermalBucket?.let { bucket ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.LocalFireDepartment,
+                        contentDescription = "Thermal state",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text(
+                        text = bucket.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

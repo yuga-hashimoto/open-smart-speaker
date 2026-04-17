@@ -7,6 +7,8 @@ import com.opensmarthome.speaker.device.model.DeviceState
 import com.opensmarthome.speaker.device.model.DeviceType
 import com.opensmarthome.speaker.util.BatteryMonitor
 import com.opensmarthome.speaker.util.BatteryStatus
+import com.opensmarthome.speaker.util.ThermalLevel
+import com.opensmarthome.speaker.util.ThermalMonitor
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +60,9 @@ class AmbientViewModelTest {
             val te = io.mockk.mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
             val bm = mockk<BatteryMonitor>()
             every { bm.status } returns MutableStateFlow(BatteryStatus(level = 100, isCharging = true))
-            AmbientViewModel(deviceManager, builder, te, bm)
+            val tm = mockk<ThermalMonitor>()
+            every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
+            AmbientViewModel(deviceManager, builder, te, bm, tm)
         }
         advanceUntilIdle()
 
@@ -79,7 +83,9 @@ class AmbientViewModelTest {
             val te = io.mockk.mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
             val bm = mockk<BatteryMonitor>()
             every { bm.status } returns MutableStateFlow(BatteryStatus(level = 100, isCharging = true))
-            AmbientViewModel(deviceManager, builder, te, bm)
+            val tm = mockk<ThermalMonitor>()
+            every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
+            AmbientViewModel(deviceManager, builder, te, bm, tm)
         }
         advanceUntilIdle()
         assertThat(vm.snapshot.value.recentDeviceActivity).isEmpty()
@@ -106,17 +112,49 @@ class AmbientViewModelTest {
         val battery = MutableStateFlow(BatteryStatus(level = 42, isCharging = false))
         val bm = mockk<BatteryMonitor>()
         every { bm.status } returns battery
+        val tm = mockk<ThermalMonitor>()
+        every { tm.status } returns MutableStateFlow(ThermalLevel.NORMAL)
 
-        val vm = AmbientViewModel(deviceManager, builder, te, bm)
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm)
         advanceUntilIdle()
 
         assertThat(vm.snapshot.value.batteryLevel).isEqualTo(42)
         assertThat(vm.snapshot.value.batteryCharging).isFalse()
+        assertThat(vm.snapshot.value.thermalBucket).isNull()
 
         battery.value = BatteryStatus(level = 78, isCharging = true)
         advanceUntilIdle()
 
         assertThat(vm.snapshot.value.batteryLevel).isEqualTo(78)
         assertThat(vm.snapshot.value.batteryCharging).isTrue()
+    }
+
+    @Test
+    fun `thermalBucket is populated only when state is non-NORMAL`() = runTest {
+        val deviceManager: DeviceManager = mockk()
+        every { deviceManager.devices } returns MutableStateFlow(emptyMap())
+        val builder = AmbientSnapshotBuilder(clock = { 0L })
+        val te = io.mockk.mockk<com.opensmarthome.speaker.tool.ToolExecutor>(relaxed = true)
+        val bm = mockk<BatteryMonitor>()
+        every { bm.status } returns MutableStateFlow(BatteryStatus(level = 100, isCharging = true))
+        val thermal = MutableStateFlow(ThermalLevel.NORMAL)
+        val tm = mockk<ThermalMonitor>()
+        every { tm.status } returns thermal
+
+        val vm = AmbientViewModel(deviceManager, builder, te, bm, tm)
+        advanceUntilIdle()
+        assertThat(vm.snapshot.value.thermalBucket).isNull()
+
+        thermal.value = ThermalLevel.WARM
+        advanceUntilIdle()
+        assertThat(vm.snapshot.value.thermalBucket).isEqualTo("WARM")
+
+        thermal.value = ThermalLevel.HOT
+        advanceUntilIdle()
+        assertThat(vm.snapshot.value.thermalBucket).isEqualTo("HOT")
+
+        thermal.value = ThermalLevel.NORMAL
+        advanceUntilIdle()
+        assertThat(vm.snapshot.value.thermalBucket).isNull()
     }
 }

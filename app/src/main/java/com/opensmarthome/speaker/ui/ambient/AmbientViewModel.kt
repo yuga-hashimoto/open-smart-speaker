@@ -6,6 +6,8 @@ import com.opensmarthome.speaker.device.DeviceManager
 import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.util.BatteryMonitor
+import com.opensmarthome.speaker.util.ThermalLevel
+import com.opensmarthome.speaker.util.ThermalMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +29,8 @@ class AmbientViewModel @Inject constructor(
     private val deviceManager: DeviceManager,
     private val snapshotBuilder: AmbientSnapshotBuilder,
     private val toolExecutor: ToolExecutor,
-    private val batteryMonitor: BatteryMonitor
+    private val batteryMonitor: BatteryMonitor,
+    private val thermalMonitor: ThermalMonitor
 ) : ViewModel() {
 
     private val _snapshot = MutableStateFlow(AmbientSnapshot(nowMs = System.currentTimeMillis()))
@@ -35,10 +38,17 @@ class AmbientViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(deviceManager.devices, batteryMonitor.status) { deviceMap, battery ->
+            combine(
+                deviceManager.devices,
+                batteryMonitor.status,
+                thermalMonitor.status
+            ) { deviceMap, battery, thermal ->
                 snapshotBuilder.build(deviceMap.values).copy(
                     batteryLevel = battery.level,
-                    batteryCharging = battery.isCharging
+                    batteryCharging = battery.isCharging,
+                    // Only surface a non-NORMAL state — ambient is a glance view;
+                    // NORMAL should stay invisible so the chip isn't always lit.
+                    thermalBucket = thermal.takeIf { it != ThermalLevel.NORMAL }?.name
                 )
             }.collect { _snapshot.value = it }
         }
