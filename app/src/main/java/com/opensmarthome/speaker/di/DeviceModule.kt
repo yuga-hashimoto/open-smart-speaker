@@ -66,6 +66,7 @@ import com.opensmarthome.speaker.tool.system.DeviceHealthToolExecutor
 import com.opensmarthome.speaker.tool.system.LocationToolExecutor
 import com.opensmarthome.speaker.tool.system.NotificationToolExecutor
 import com.opensmarthome.speaker.tool.system.OpenSettingsToolExecutor
+import com.opensmarthome.speaker.tool.system.OpenUrlToolExecutor
 import com.opensmarthome.speaker.tool.system.PhotosToolExecutor
 import com.opensmarthome.speaker.tool.system.ScreenRecorderHolder
 import com.opensmarthome.speaker.tool.system.ScreenRecorderToolExecutor
@@ -335,6 +336,7 @@ object DeviceModule {
                 AndroidDeviceHealthProvider(context)
             ),
             OpenSettingsToolExecutor(context),
+            OpenUrlToolExecutor(context),
             PhotosToolExecutor(
                 AndroidPhotosProvider(context)
             ),

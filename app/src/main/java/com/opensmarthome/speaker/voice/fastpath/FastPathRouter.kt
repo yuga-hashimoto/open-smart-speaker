@@ -82,6 +82,9 @@ class DefaultFastPathRouter(
             // SettingsMatcher must precede LaunchAppMatcher — "open wifi settings"
             // would otherwise be eaten as a launch_app("wifi settings") call.
             SettingsMatcher,
+            // OpenUrlMatcher must precede LaunchAppMatcher so "open example.com"
+            // and "open https://..." route to open_url instead of launch_app.
+            OpenUrlMatcher,
             LaunchAppMatcher,
             FindDeviceMatcher,
             // GoodnightMatcher must precede the GreetingMatcher's "good night"

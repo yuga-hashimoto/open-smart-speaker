@@ -642,6 +642,58 @@ object SettingsMatcher : FastPathMatcher {
     }
 }
 
+/**
+ * Opens an explicit http/https URL, or "open <domain>.<tld>" utterances, via
+ * the `open_url` tool. Must sit BEFORE [LaunchAppMatcher] so that utterances
+ * like "open example.com" resolve to a URL open instead of a launch_app
+ * search for an app called "example.com".
+ *
+ * Two forms:
+ * 1. Literal URL in the utterance — e.g. "open https://example.com/path".
+ * 2. Bare domain — e.g. "open example.com" / "open the site example.com" —
+ *    gets an `https://` prefix before dispatch.
+ *
+ * Only `http` / `https` are considered here; any other scheme (file://,
+ * intent://, content://, javascript:) is never emitted because the regex
+ * won't capture it. The executor defends the same allow-list regardless.
+ */
+object OpenUrlMatcher : FastPathMatcher {
+    private val explicitUrlRegex = Regex("""(https?://\S+)""")
+    private val openDomainRegex = Regex(
+        """(?:^|\s)open\s+(?:the\s+)?(?:website\s+|page\s+|site\s+)?([a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:/\S*)?)"""
+    )
+
+    override fun tryMatch(normalized: String): FastPathMatch? {
+        explicitUrlRegex.find(normalized)?.let { m ->
+            val url = m.groupValues[1].trimEnd('.', ',', '!', '?', ')', ']')
+            val host = hostOf(url)
+            return FastPathMatch(
+                toolName = "open_url",
+                arguments = mapOf("url" to url),
+                spokenConfirmation = host?.let { "Opening $it." }
+            )
+        }
+        openDomainRegex.find(normalized)?.let { m ->
+            val captured = m.groupValues[1].trimEnd('.', ',', '!', '?', ')', ']')
+            val host = captured.substringBefore('/')
+            val url = "https://$captured"
+            return FastPathMatch(
+                toolName = "open_url",
+                arguments = mapOf("url" to url),
+                spokenConfirmation = "Opening $host."
+            )
+        }
+        return null
+    }
+
+    private fun hostOf(url: String): String? {
+        val afterScheme = url.substringAfter("://", missingDelimiterValue = "")
+        if (afterScheme.isEmpty()) return null
+        val hostPort = afterScheme.substringBefore('/').substringBefore('?').substringBefore('#')
+        return hostPort.ifEmpty { null }
+    }
+}
+
 /** "open X" / "launch X" / "Xを開いて" — forwards to launch_app. */
 object LaunchAppMatcher : FastPathMatcher {
     private val englishRegex = Regex("""(?:open|launch|start|run)\s+(?:the\s+)?(.+?)(?:\s+app)?\s*[!?.]*\s*$""")

@@ -31,6 +31,7 @@ analytics per call.
 | `find_device` | FindDeviceTool | Rings + vibrates 10s — needs VIBRATE |
 | `get_device_health` | DeviceHealthToolExecutor | battery / storage / memory |
 | `open_settings_page` | OpenSettingsToolExecutor | `{ page }` — wifi/bluetooth/display/brightness/sound/volume/accessibility/notifications/apps/battery/home |
+| `open_url` | OpenUrlToolExecutor | `{ url }` — http/https only; intent://, content://, javascript:, file:// rejected |
 
 ## Information
 
