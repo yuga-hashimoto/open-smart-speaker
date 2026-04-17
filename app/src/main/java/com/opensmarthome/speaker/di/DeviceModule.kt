@@ -388,7 +388,8 @@ object DeviceModule {
         notificationProvider: com.opensmarthome.speaker.tool.system.NotificationProvider,
         a11yServiceHolder: com.opensmarthome.speaker.a11y.A11yServiceHolder,
         announcementBroadcaster: com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster,
-        multicastDiscovery: com.opensmarthome.speaker.util.MulticastDiscovery
+        multicastDiscovery: com.opensmarthome.speaker.util.MulticastDiscovery,
+        localeManager: com.opensmarthome.speaker.util.LocaleManager
     ): ToolExecutor {
         val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
@@ -442,6 +443,7 @@ object DeviceModule {
             ),
             OpenSettingsToolExecutor(context),
             OpenUrlToolExecutor(context),
+            com.opensmarthome.speaker.tool.system.LocaleToolExecutor(localeManager),
             com.opensmarthome.speaker.tool.system.LockScreenToolExecutor(context),
             com.opensmarthome.speaker.tool.system.BroadcastTtsToolExecutor(announcementBroadcaster),
             com.opensmarthome.speaker.tool.multiroom.BroadcastAnnouncementToolExecutor(announcementBroadcaster),
