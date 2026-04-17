@@ -29,15 +29,19 @@ OpenSmartSpeaker is all three at once, on a single Android tablet you already ow
 
 ### Smart-home device ("Alexa feel")
 - Custom wake word (Vosk) with always-on foreground service
-- Sub-200ms fast-path for ~30 common intents: lights, volume, timers, weather,
-  forecast, calendar, notifications, location, find-device, briefings, routines,
-  app launch, media control, presence (`"I'm home"` / `"I'm leaving"`), goodnight
-  — full catalog in [docs/fast-paths.md](docs/fast-paths.md)
+- Sub-200ms fast-path for 30+ common intents: lights, volume, timers, alarms,
+  weather, forecast, calendar, notifications, location, find-device, briefings,
+  routines, app launch (fuzzy), media control (play/pause/skip/volume/shuffle/
+  repeat/source), presence (`"I'm home"` / `"I'm leaving"`), goodnight, device
+  health, battery, lock screen, open URL, Settings deep-links, peer listing,
+  broadcast TTS / timer / announcement / cancel-timer, session handoff — full
+  catalog in [docs/fast-paths.md](docs/fast-paths.md)
 - Voice-first UI: breathing `VoiceOrb` shows pipeline state (listening / thinking /
   speaking) with audio-level reactive scaling
 - Error recovery copy: `"I didn't catch that. Try again?"` not `"list index out of range"`
 - Filler phrases ("Got it", "One moment") while the LLM is working
 - Audio focus handling, barge-in, continuous conversation mode
+- Battery-saver + thermal-throttle aware; model-download resume over flaky Wi-Fi
 
 ### Local AI agent ("OpenClaw feel")
 - On-device LLM via **LiteRT-LM** (Gemma 3n / 4 family) with GPU→CPU fallback and
@@ -66,6 +70,22 @@ OpenSmartSpeaker is all three at once, on a single Android tablet you already ow
 | **SwitchBot** | Bot, Curtain, Plug, Bulb, Strip/Ceiling Light, Lock, Meter |
 | **Matter** | Android Matter API commissioning |
 | **MQTT** | Shelly, Tasmota, and any MQTT-discoverable device |
+
+### Tablet control (no root)
+- Accessibility service drives: `read_active_screen`, `tap_by_text`, `scroll_screen`, `type_text`
+- Notification listener drives: `list_notifications`, `clear_notifications`, `reply_to_notification`
+- Fuzzy `launch_app` finds the right app even when the user's wording is loose ("open the weather app")
+- Deep-link into Settings, open URLs, pin routines to the home screen as dynamic shortcuts
+- Quick Settings **Talk** tile for one-tap voice without the wake word
+- Opt-in Device Admin unlocks `lock_screen`; no other policies requested
+- Full recipe book in [docs/tablet-control-cookbook.md](docs/tablet-control-cookbook.md)
+
+### Multi-room (`_opensmartspeaker._tcp.` on port 8421)
+- Auto-discover peers via mDNS; pair with a shared HMAC-SHA256 secret
+- 4-word **pairing fingerprint** so users verify secrets match without typing them again
+- Speaker groups (`kitchen`, `upstairs`, ...) so `broadcast_tts` can target subsets
+- Tools: `broadcast_tts`, `broadcast_timer`, `broadcast_cancel_timer`, `broadcast_announcement`, `handoff_session`, `list_peers`
+- Quickstart in [docs/multi-room-quickstart.md](docs/multi-room-quickstart.md), full recipe book in [docs/multi-room-cookbook.md](docs/multi-room-cookbook.md), wire format in [docs/multi-room-protocol.md](docs/multi-room-protocol.md)
 
 ### Privacy / data
 - **All AI runs locally.** The LLM lives on your tablet, not a server.
@@ -99,8 +119,9 @@ Optional permissions unlock more tools:
 - Calendar → `get_calendar_events`
 - Contacts → `search_contacts`
 - Location → `get_location`
-- Notification access → `list_notifications`
-- Accessibility service → `read_screen`
+- Notification access → `list_notifications`, `clear_notifications`, `reply_to_notification`
+- Accessibility service → `read_screen`, `read_active_screen`, `tap_by_text`, `scroll_screen`, `type_text`
+- Device Admin (opt-in) → `lock_screen` (only force-lock policy requested)
 - SMS → `send_sms` (with LLM confirmation prompt)
 - Photos → `list_recent_photos`
 - Camera → `take_photo`
@@ -112,7 +133,7 @@ Optional permissions unlock more tools:
 Kotlin 2.1 + Jetpack Compose + Material 3 + Hilt. Built against SDK 35.
 
 ```bash
-./gradlew testDebugUnitTest   # 500+ unit tests
+./gradlew testDebugUnitTest   # ~1000 unit tests
 ./gradlew assembleDebug       # build APK
 ./gradlew lint                # Android Lint (baseline at app/lint-baseline.xml)
 ./gradlew jacocoTestReport    # coverage report → app/build/reports/jacoco/
