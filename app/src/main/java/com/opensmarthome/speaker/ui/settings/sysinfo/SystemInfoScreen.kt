@@ -101,6 +101,15 @@ fun SystemInfoScreen(
                     add("  • ${row.type}" to "${row.outbound} out · ${row.inbound} in")
                 }
             }
+            if (state.rejections.isNotEmpty()) {
+                // Only render when there's actually something to explain —
+                // an empty section would just add visual noise when the
+                // mesh is healthy.
+                add("Multi-room rejections" to "")
+                state.rejections.forEach { row ->
+                    add("  • ${row.reason}" to "${row.count}× ${row.hint}")
+                }
+            }
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),

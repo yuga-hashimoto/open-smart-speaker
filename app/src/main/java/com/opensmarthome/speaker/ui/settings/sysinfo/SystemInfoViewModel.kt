@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.assistant.skills.SkillRegistry
 import com.opensmarthome.speaker.data.db.MemoryDao
+import com.opensmarthome.speaker.data.db.MultiroomRejectionDao
 import com.opensmarthome.speaker.data.db.MultiroomTrafficDao
 import com.opensmarthome.speaker.data.db.MultiroomTrafficEntity
 import com.opensmarthome.speaker.data.db.RoutineDao
@@ -45,7 +46,8 @@ class SystemInfoViewModel @Inject constructor(
     private val multicastDiscovery: MulticastDiscovery,
     private val thermalMonitor: ThermalMonitor,
     private val peerLivenessTracker: PeerLivenessTracker,
-    private val multiroomTrafficDao: MultiroomTrafficDao
+    private val multiroomTrafficDao: MultiroomTrafficDao,
+    private val multiroomRejectionDao: MultiroomRejectionDao
 ) : ViewModel() {
 
     val nearbySpeakers: StateFlow<List<DiscoveredSpeaker>> = multicastDiscovery.speakers
@@ -81,6 +83,19 @@ class SystemInfoViewModel @Inject constructor(
         val lastAtMs: Long
     )
 
+    /**
+     * One row per observed rejection reason from
+     * [com.opensmarthome.speaker.multiroom.AnnouncementParser.Reason].
+     * [hint] is a short human-friendly diagnostic the UI renders
+     * alongside the count.
+     */
+    data class RejectionRow(
+        val reason: String,
+        val count: Long,
+        val lastAtMs: Long,
+        val hint: String
+    )
+
     data class Snapshot(
         val activeProviderModel: String?,
         val providerCount: Int,
@@ -96,6 +111,7 @@ class SystemInfoViewModel @Inject constructor(
         val documentCount: Int = 0,
         val thermalLevel: String = "NORMAL",
         val multiroomTraffic: List<TrafficRow> = emptyList(),
+        val rejections: List<RejectionRow> = emptyList(),
         val loading: Boolean = false
     )
 
@@ -123,6 +139,17 @@ class SystemInfoViewModel @Inject constructor(
             val routines = runCatching { routineDao.listAll().size }.getOrDefault(0)
             val documents = runCatching { ragRepository.listDocuments().size }.getOrDefault(0)
             val traffic = runCatching { multiroomTrafficDao.listAll() }.getOrDefault(emptyList())
+            val rejections = runCatching { multiroomRejectionDao.listAll() }.getOrDefault(emptyList())
+            val rejectionRows = rejections
+                .map { row ->
+                    RejectionRow(
+                        reason = row.reason,
+                        count = row.count,
+                        lastAtMs = row.lastAtMs,
+                        hint = hintForReason(row.reason)
+                    )
+                }
+                .sortedByDescending { it.count }
             val trafficRows = traffic
                 .groupBy { it.type }
                 .map { (type, rows) ->
@@ -149,8 +176,25 @@ class SystemInfoViewModel @Inject constructor(
                 documentCount = documents,
                 thermalLevel = thermalMonitor.status.value.name,
                 multiroomTraffic = trafficRows,
+                rejections = rejectionRows,
                 loading = false
             )
         }
+    }
+
+    /**
+     * Human-friendly diagnostic for each
+     * [com.opensmarthome.speaker.multiroom.AnnouncementParser.Reason].
+     * Rendered alongside the count so the user has a pointer at what
+     * probably needs to be checked.
+     */
+    private fun hintForReason(reason: String): String = when (reason) {
+        "MALFORMED_JSON" -> "malformed JSON — peer is sending invalid frames"
+        "MISSING_FIELD" -> "missing required envelope field"
+        "VERSION_MISMATCH" -> "protocol version mismatch — peers on different builds"
+        "REPLAY_WINDOW" -> "outside replay window — check device clocks"
+        "NO_SECRET" -> "shared secret not configured on this device"
+        "HMAC_MISMATCH" -> "HMAC mismatch — check shared secret"
+        else -> reason.lowercase().replace('_', ' ')
     }
 }

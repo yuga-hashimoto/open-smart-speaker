@@ -54,6 +54,61 @@ class AnnouncementServerTest {
     }
 
     @Test
+    fun `HMAC_MISMATCH rejection is recorded once with reason name`() = runBlocking {
+        val parser = mockk<AnnouncementParser>()
+        val dispatcher = mockk<AnnouncementDispatcher>(relaxed = true)
+        val recorder = mockk<MultiroomRejectionRecorder>(relaxed = true)
+        val server = AnnouncementServer(parser, dispatcher, recorder)
+
+        every { parser.parse(any()) } returns AnnouncementParser.ParseResult.Rejected(
+            reason = AnnouncementParser.Reason.HMAC_MISMATCH,
+            detail = "bad signature"
+        )
+
+        val (clientSide, serverSide) = loopbackPair()
+        val handle = async(Dispatchers.IO) { server.handleClient(serverSide) }
+
+        clientSide.getOutputStream().apply {
+            write("""{"v":1,"type":"tts_broadcast"}""".toByteArray())
+            write("\n".toByteArray())
+            flush()
+        }
+        clientSide.shutdownOutput()
+        withTimeout(5_000) { handle.await() }
+
+        verify(exactly = 1) { recorder.record(reason = "HMAC_MISMATCH", nowMs = any()) }
+        verify(exactly = 0) { dispatcher.dispatch(any()) }
+        clientSide.close()
+    }
+
+    @Test
+    fun `null rejection recorder does not crash processLine`() = runBlocking {
+        // Existing production wiring defaults to null — a rejection must
+        // be a no-op rather than throwing when the recorder is absent.
+        val parser = mockk<AnnouncementParser>()
+        val dispatcher = mockk<AnnouncementDispatcher>(relaxed = true)
+        val server = AnnouncementServer(parser, dispatcher, rejectionRecorder = null)
+
+        every { parser.parse(any()) } returns AnnouncementParser.ParseResult.Rejected(
+            reason = AnnouncementParser.Reason.MALFORMED_JSON,
+            detail = "unit test"
+        )
+
+        val (clientSide, serverSide) = loopbackPair()
+        val handle = async(Dispatchers.IO) { server.handleClient(serverSide) }
+
+        clientSide.getOutputStream().apply {
+            write("garbage\n".toByteArray())
+            flush()
+        }
+        clientSide.shutdownOutput()
+        withTimeout(5_000) { handle.await() }
+
+        verify(exactly = 0) { dispatcher.dispatch(any()) }
+        clientSide.close()
+    }
+
+    @Test
     fun `raw NDJSON without HELLO routes to NDJSON parser`() = runBlocking {
         val (parser, _, server) = newServer()
         val captured = slot<String>()

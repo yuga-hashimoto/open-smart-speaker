@@ -38,7 +38,8 @@ import javax.inject.Singleton
 @Singleton
 class AnnouncementServer @Inject constructor(
     private val parser: AnnouncementParser,
-    private val dispatcher: AnnouncementDispatcher
+    private val dispatcher: AnnouncementDispatcher,
+    private val rejectionRecorder: MultiroomRejectionRecorder? = null
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var acceptJob: Job? = null
@@ -195,6 +196,7 @@ class AnnouncementServer @Inject constructor(
             is AnnouncementParser.ParseResult.Ok -> dispatcher.dispatch(r.envelope)
             is AnnouncementParser.ParseResult.Rejected -> {
                 Timber.d("Envelope rejected: ${r.reason} ${r.detail}")
+                rejectionRecorder?.record(reason = r.reason.name)
             }
         }
     }

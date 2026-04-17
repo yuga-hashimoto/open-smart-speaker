@@ -6,6 +6,7 @@ import com.opensmarthome.speaker.data.db.AppDatabase
 import com.opensmarthome.speaker.data.db.DocumentChunkDao
 import com.opensmarthome.speaker.data.db.MemoryDao
 import com.opensmarthome.speaker.data.db.MessageDao
+import com.opensmarthome.speaker.data.db.MultiroomRejectionDao
 import com.opensmarthome.speaker.data.db.MultiroomTrafficDao
 import com.opensmarthome.speaker.data.db.RoutineDao
 import com.opensmarthome.speaker.data.db.SessionDao
@@ -56,4 +57,7 @@ object DatabaseModule {
 
     @Provides
     fun provideMultiroomTrafficDao(db: AppDatabase): MultiroomTrafficDao = db.multiroomTrafficDao()
+
+    @Provides
+    fun provideMultiroomRejectionDao(db: AppDatabase): MultiroomRejectionDao = db.multiroomRejectionDao()
 }
