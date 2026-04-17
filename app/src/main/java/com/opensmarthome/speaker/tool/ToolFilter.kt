@@ -82,11 +82,13 @@ object ToolFilter {
                 "search", "google", "look up", "検索",
                 // Open-ended information queries — small LLMs often say
                 // "I can't search" instead of calling web_search, so surface
-                // the tool on these very common triggers too.
+                // the tool on these very common triggers.
                 "what is", "what's", "whats",
                 "who is", "who's", "whos",
+                "how to ", "how do ", "explain ", "define ",
                 "tell me about",
-                "について", "とは", "詳しく", "知りたい"
+                // Japanese question / curiosity markers.
+                "について", "とは", "詳しく", "知りたい", "調べて", "教えて"
             ),
             tools = setOf("web_search", "fetch_webpage", "get_news")
         ),
@@ -133,9 +135,31 @@ object ToolFilter {
     )
 
     /**
+     * Maximum tools to retain in the fallback path (no bucket matched). When
+     * the full list is larger than this we trim to a representative subset
+     * to keep the on-device prompt within budget while still giving the LLM
+     * a broad safety net.
+     */
+    const val MAX_FALLBACK_TOOLS = 15
+
+    /**
+     * Representative tool names used when no bucket matches. Covers the
+     * major categories so the LLM can still pick something sensible.
+     */
+    private val FALLBACK_REPRESENTATIVES = listOf(
+        "web_search", "get_weather", "get_news", "get_datetime",
+        "set_timer", "set_volume", "execute_command",
+        "get_devices_by_type", "get_rooms",
+        "remember", "recall",
+        "get_skill", "list_skills",
+        "get_location", "get_calendar_events"
+    )
+
+    /**
      * Returns a focused subset of [allTools] when [userInput] matches at
-     * least one bucket's keywords. Returns the full list otherwise so the
-     * agent always has a safety net.
+     * least one bucket's keywords. On no match, returns the full list when
+     * it's small (<= [MAX_FALLBACK_TOOLS]); otherwise trims to a curated
+     * representative subset (preserving order within [allTools]).
      */
     fun filterByIntent(allTools: List<ToolSchema>, userInput: String): List<ToolSchema> {
         val text = userInput.lowercase()
@@ -145,7 +169,7 @@ object ToolFilter {
                 matchingTools.addAll(bucket.tools)
             }
         }
-        if (matchingTools.isEmpty()) return allTools
+        if (matchingTools.isEmpty()) return fallbackSubset(allTools)
 
         // Always include the agent-control tools so it can introspect / hand off.
         val alwaysOn = setOf(
@@ -154,5 +178,15 @@ object ToolFilter {
         )
         val keep = matchingTools + alwaysOn
         return allTools.filter { it.name in keep }
+    }
+
+    private fun fallbackSubset(allTools: List<ToolSchema>): List<ToolSchema> {
+        if (allTools.size <= MAX_FALLBACK_TOOLS) return allTools
+        // Prefer the representatives in declared order, then backfill with
+        // the first remaining tools until we hit the budget.
+        val reps = FALLBACK_REPRESENTATIVES.toSet()
+        val preferred = allTools.filter { it.name in reps }
+        val rest = allTools.filter { it.name !in reps }
+        return (preferred + rest).take(MAX_FALLBACK_TOOLS)
     }
 }

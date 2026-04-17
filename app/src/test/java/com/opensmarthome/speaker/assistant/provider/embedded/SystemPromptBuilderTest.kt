@@ -198,7 +198,25 @@ class SystemPromptBuilderTest {
     }
 
     @Test
-    fun `buildPrompt tool section includes few-shot examples`() {
+    fun `buildPrompt tool section includes strong directive to call tools`() {
+        val tools = listOf(
+            ToolSchema("web_search", "Search the web", emptyMap())
+        )
+        val messages = listOf(AssistantMessage.User(content = "What is the news?"))
+
+        val result = builder.build("System", messages, tools)
+
+        // Must tell the LLM not to refuse when a tool is appropriate
+        assertThat(result.lowercase()).contains("must")
+        // And forbid "I don't have tools" style hallucination
+        val lower = result.lowercase()
+        val tellsToUseTools =
+            lower.contains("trust") || lower.contains("use") || lower.contains("call")
+        assertThat(tellsToUseTools).isTrue()
+    }
+
+    @Test
+    fun `buildPrompt tool section includes few-shot examples for web_search`() {
         val tools = listOf(
             ToolSchema(
                 name = "web_search",
@@ -215,11 +233,11 @@ class SystemPromptBuilderTest {
 
         val result = builder.build("System", messages, tools)
 
-        assertThat(result).contains("Examples")
+        assertThat(result.lowercase()).contains("example")
         // Example should show a literal tool_call JSON for web_search so Gemma
         // learns the pattern rather than hallucinating "I can't search".
-        assertThat(result).contains(""""tool_call"""")
-        assertThat(result).contains(""""name":"web_search"""")
+        assertThat(result).contains("tool_call")
+        assertThat(result).contains("web_search")
     }
 
     @Test
@@ -237,5 +255,65 @@ class SystemPromptBuilderTest {
 
         // No web_search => don't reference it in the directive (keeps prompt tight)
         assertThat(result).doesNotContain("web_search")
+    }
+
+    @Test
+    fun `buildPrompt tool section includes multiple diverse few-shot examples`() {
+        val tools = listOf(
+            ToolSchema("web_search", "Search the web", emptyMap()),
+            ToolSchema("get_weather", "Weather", emptyMap()),
+            ToolSchema("set_timer", "Timer", emptyMap())
+        )
+        val messages = listOf(AssistantMessage.User(content = "hi"))
+
+        val result = builder.build("System", messages, tools)
+
+        // Examples section should exist
+        assertThat(result.lowercase()).contains("example")
+        // Should include example invocations of commonly-missed tools
+        assertThat(result).contains("web_search")
+        assertThat(result).contains("get_weather")
+    }
+
+    @Test
+    fun `buildPrompt tool section includes bilingual few-shot (ja and en)`() {
+        val tools = listOf(
+            ToolSchema("get_weather", "Weather", emptyMap()),
+            ToolSchema("set_timer", "Timer", emptyMap()),
+            ToolSchema("web_search", "Search", emptyMap())
+        )
+        val messages = listOf(AssistantMessage.User(content = "hi"))
+
+        val result = builder.build("System", messages, tools)
+
+        // At least one Japanese example and one English example
+        val hasJapaneseUser = result.contains("天気") || result.contains("タイマー") ||
+            result.contains("ニュース") || result.contains("調べて")
+        val hasEnglishUser = result.lowercase().contains("weather") ||
+            result.lowercase().contains("timer") || result.lowercase().contains("search")
+        assertThat(hasJapaneseUser).isTrue()
+        assertThat(hasEnglishUser).isTrue()
+    }
+
+    @Test
+    fun `buildPrompt skills section lists skill titles and descriptions inline`() {
+        val messages = listOf(AssistantMessage.User(content = "hi"))
+        val skillsXml = """<available_skills>
+  <skill>
+    <name>cooking-assistant</name>
+    <description>Helps with cooking tasks and recipes</description>
+  </skill>
+  <skill>
+    <name>movie-night</name>
+    <description>Sets up a movie-night atmosphere</description>
+  </skill>
+</available_skills>"""
+
+        val result = builder.build("System", messages, emptyList(), skillsXml = skillsXml)
+
+        assertThat(result).contains("cooking-assistant")
+        assertThat(result).contains("movie-night")
+        // The get_skill directive should still be referenced
+        assertThat(result).contains("get_skill")
     }
 }

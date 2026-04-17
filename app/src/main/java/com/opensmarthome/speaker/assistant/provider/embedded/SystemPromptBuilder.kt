@@ -56,10 +56,18 @@ class SystemPromptBuilder(
     private fun buildToolSection(tools: List<ToolSchema>): String {
         val sb = StringBuilder()
         sb.appendLine("## Available Tools")
-        sb.appendLine("You can call tools by responding with a JSON object in this format:")
-        sb.appendLine("""{"tool_call": {"name": "<tool_name>", "arguments": {<args>}}}""")
+        sb.appendLine(
+            "You MUST trust this tool list. If the user's request can be answered " +
+                "by calling a tool, you MUST call it — never reply \"I don't have tools\" " +
+                "or \"I can't do that\"; that is forbidden. Call the tool first, then " +
+                "answer the user using the tool result."
+        )
         sb.appendLine()
-        sb.appendLine("After a tool result is returned, continue reasoning and respond to the user.")
+        sb.appendLine("Emit a tool call using any of these equivalent formats:")
+        sb.appendLine("""  (A) {"tool_call": {"name": "<tool>", "arguments": {<args>}}}""")
+        sb.appendLine("""  (B) {"name": "<tool>", "arguments": {<args>}}""")
+        sb.appendLine("""  (C) TOOL_CALL: <tool>(arg1="value", arg2=42)""")
+        sb.appendLine("After a tool result is returned, continue reasoning and respond to the user in plain text.")
         sb.appendLine()
 
         val toolNames = tools.map { it.name }.toSet()
@@ -89,43 +97,77 @@ class SystemPromptBuilder(
             }
         }
 
-        // Few-shot examples help tool-poor small LLMs recognize that the tool
-        // list is actually callable rather than documentation.
-        val examples = buildExamples(toolNames)
+        val examples = buildFewShotExamples(tools)
         if (examples.isNotEmpty()) {
             sb.appendLine()
-            sb.appendLine("## Examples")
-            for (example in examples) {
-                sb.appendLine()
-                sb.appendLine("User: ${example.user}")
-                sb.appendLine("Assistant: ${example.assistantJson}")
-            }
+            sb.appendLine("## Examples (study these, then follow the same pattern)")
+            examples.forEach { sb.appendLine(it) }
         }
         return sb.toString()
     }
 
-    private data class ToolExample(val user: String, val assistantJson: String)
-
-    private fun buildExamples(toolNames: Set<String>): List<ToolExample> {
-        val examples = mutableListOf<ToolExample>()
-        if ("get_weather" in toolNames) {
-            examples += ToolExample(
-                user = "What's the weather in Tokyo?",
-                assistantJson = """{"tool_call":{"name":"get_weather","arguments":{"location":"Tokyo"}}}"""
-            )
-        }
-        if ("web_search" in toolNames) {
-            examples += ToolExample(
-                user = "Search the web for Python tutorials",
-                assistantJson = """{"tool_call":{"name":"web_search","arguments":{"query":"Python tutorials"}}}"""
-            )
-            examples += ToolExample(
+    /**
+     * Diverse few-shot examples across common tool categories (ja + en).
+     * Only includes examples for tools that are actually exposed so the LLM
+     * doesn't learn to call tools that aren't in the current filtered list.
+     */
+    private fun buildFewShotExamples(tools: List<ToolSchema>): List<String> {
+        val available = tools.map { it.name }.toSet()
+        val candidates = listOf(
+            FewShot(
+                tool = "get_weather",
+                user = "What's the weather in Tokyo today?",
+                call = """{"tool_call": {"name": "get_weather", "arguments": {"location": "Tokyo"}}}"""
+            ),
+            FewShot(
+                tool = "get_weather",
+                user = "今日の東京の天気は？",
+                call = """{"tool_call": {"name": "get_weather", "arguments": {"location": "東京"}}}"""
+            ),
+            FewShot(
+                tool = "web_search",
+                user = "Tell me about the Webb telescope.",
+                call = """{"tool_call": {"name": "web_search", "arguments": {"query": "James Webb Space Telescope"}}}"""
+            ),
+            FewShot(
+                tool = "web_search",
+                user = "量子コンピューターについて詳しく",
+                call = """{"tool_call": {"name": "web_search", "arguments": {"query": "量子コンピューター 概要"}}}"""
+            ),
+            FewShot(
+                tool = "web_search",
                 user = "最新のニュースを検索して",
-                assistantJson = """{"tool_call":{"name":"web_search","arguments":{"query":"最新のニュース"}}}"""
+                call = """{"tool_call": {"name": "web_search", "arguments": {"query": "最新のニュース"}}}"""
+            ),
+            FewShot(
+                tool = "set_timer",
+                user = "5分タイマーかけて",
+                call = """TOOL_CALL: set_timer(seconds=300, label="タイマー")"""
+            ),
+            FewShot(
+                tool = "set_volume",
+                user = "音量を半分にして",
+                call = """{"name": "set_volume", "arguments": {"level": 50}}"""
+            ),
+            FewShot(
+                tool = "get_news",
+                user = "ニュースを教えて",
+                call = """{"tool_call": {"name": "get_news", "arguments": {"topic": "top"}}}"""
+            ),
+            FewShot(
+                tool = "execute_command",
+                user = "Turn on the living-room lights.",
+                call = """{"tool_call": {"name": "execute_command", "arguments": {"device_id": "light.living_room", "action": "turn_on"}}}"""
             )
+        )
+        val chosen = candidates.filter { it.tool in available }
+        if (chosen.isEmpty()) return emptyList()
+        return chosen.take(MAX_FEW_SHOT).map { shot ->
+            "User: ${shot.user}\nAssistant: ${shot.call}"
         }
-        return examples
     }
+
+    private data class FewShot(val tool: String, val user: String, val call: String)
 
     private fun buildHistorySection(messages: List<AssistantMessage>): List<String> {
         return messages.mapNotNull { msg ->
@@ -179,5 +221,6 @@ class SystemPromptBuilder(
 
     companion object {
         private const val DEFAULT_MAX_PROMPT_CHARS = 3000
+        private const val MAX_FEW_SHOT = 6
     }
 }

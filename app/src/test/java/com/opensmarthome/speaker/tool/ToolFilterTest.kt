@@ -27,9 +27,12 @@ class ToolFilterTest {
     )
 
     @Test
-    fun `no keyword match returns full list`() {
-        val filtered = ToolFilter.filterByIntent(all, "tell me a joke about elephants")
-        assertThat(filtered).hasSize(all.size)
+    fun `no keyword match returns at most fallback budget`() {
+        val filtered = ToolFilter.filterByIntent(all, "xyzzy unrelated utterance")
+        // Fallback path: at most MAX_FALLBACK_TOOLS tools. When the list is
+        // already small (<= MAX_FALLBACK_TOOLS) the full list is returned.
+        assertThat(filtered.size).isAtMost(maxOf(all.size, ToolFilter.MAX_FALLBACK_TOOLS))
+        assertThat(filtered.size).isAtLeast(minOf(all.size, ToolFilter.MAX_FALLBACK_TOOLS))
     }
 
     @Test
@@ -159,5 +162,39 @@ class ToolFilterTest {
         val names = filtered.map { it.name }
         assertThat(names).contains("get_weather")
         // Adding web_search is fine — LLM will pick the right one.
+    }
+
+    @Test
+    fun `how to keyword routes to search`() {
+        val tools = listOf(
+            ToolSchema("web_search", "", emptyMap()),
+            ToolSchema("get_news", "", emptyMap()),
+            ToolSchema("remember", "", emptyMap()),
+            ToolSchema("get_datetime", "", emptyMap()),
+            ToolSchema("take_photo", "", emptyMap())
+        )
+        val filtered = ToolFilter.filterByIntent(tools, "how to bake bread")
+        assertThat(filtered.map { it.name }).contains("web_search")
+    }
+
+    @Test
+    fun `fallback keeps representative subset when no bucket matches and list is large`() {
+        // Utterance must not match any bucket — "xyzzy quux" is deliberately
+        // gibberish to exercise the no-match fallback path.
+        val bigList = (1..30).map { i -> ToolSchema("tool_$i", "d$i", emptyMap()) } + all
+        val filtered = ToolFilter.filterByIntent(bigList, "xyzzy quux gibberish")
+        // Should not exceed MAX_FALLBACK representatives
+        assertThat(filtered.size).isAtMost(ToolFilter.MAX_FALLBACK_TOOLS)
+    }
+
+    @Test
+    fun `fallback keeps full list when list is already small`() {
+        val small = listOf(
+            ToolSchema("a", "", emptyMap()),
+            ToolSchema("b", "", emptyMap()),
+            ToolSchema("c", "", emptyMap())
+        )
+        val filtered = ToolFilter.filterByIntent(small, "xyzzy")
+        assertThat(filtered).hasSize(3)
     }
 }

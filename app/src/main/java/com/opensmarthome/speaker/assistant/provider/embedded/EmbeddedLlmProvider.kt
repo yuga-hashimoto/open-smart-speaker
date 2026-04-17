@@ -32,6 +32,9 @@ class EmbeddedLlmProvider(
 ) : AssistantProvider {
 
     private val deviceContextBuilder = DeviceContextBuilder()
+    private val toolCallParser = ToolCallParser()
+    private val retryPolicy = ToolCallRetryPolicy(toolCallParser)
+    private val systemPromptBuilder = SystemPromptBuilder()
 
     override val id: String = "embedded_llm"
     override val displayName: String = "On-Device LLM"
@@ -163,14 +166,27 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): AssistantMessage = withContext(Dispatchers.IO) {
-        val prompt = buildEnrichedPrompt(messages)
-        val response = StringBuilder()
+        val firstAttempt = sendOnce(messages, tools, retry = false)
+        retryPolicy.finalize(
+            firstAttempt = firstAttempt,
+            tools = tools
+        ) {
+            Timber.d("Refusal detected in LLM output; retrying with stricter directive")
+            sendOnce(messages, tools, retry = true)
+        }
+    }
 
+    private suspend fun sendOnce(
+        messages: List<AssistantMessage>,
+        tools: List<ToolSchema>,
+        retry: Boolean
+    ): String {
+        val prompt = buildEnrichedPrompt(messages, tools, retry)
+        val response = StringBuilder()
         conversation?.sendMessageAsync(prompt)?.collect { message ->
             response.append(message.contents.toString())
         }
-
-        AssistantMessage.Assistant(content = response.toString().trim())
+        return response.toString()
     }
 
     override fun sendStreaming(
@@ -178,7 +194,7 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): Flow<AssistantMessage.Delta> = flow {
-        val prompt = buildEnrichedPrompt(messages)
+        val prompt = buildEnrichedPrompt(messages, tools, retry = false)
         val response = StringBuilder()
 
         conversation?.sendMessageAsync(prompt)?.collect { message ->
@@ -213,22 +229,88 @@ class EmbeddedLlmProvider(
     }
 
     /**
-     * Prepends a compact device state snapshot to the user's message so the
-     * agent knows which devices exist and their current state without
-     * needing to call a tool first.
+     * Builds the per-turn user prompt. Structure:
+     *   1. (optional) tool annex — directive + tool list + few-shot examples
+     *      since LiteRT-LM conversations have a fixed system instruction.
+     *   2. (optional) device state snapshot.
+     *   3. The user's last message.
+     *
+     * When [retry] is true the tool annex is reinforced with a stricter
+     * directive that forbids "I don't have tools" and instructs the model
+     * to pick exactly one tool from the list.
      */
-    private fun buildEnrichedPrompt(messages: List<AssistantMessage>): String {
+    private fun buildEnrichedPrompt(
+        messages: List<AssistantMessage>,
+        tools: List<ToolSchema>,
+        retry: Boolean
+    ): String {
         val userMessage = extractLastUserMessage(messages)
-        val devices = deviceManager?.devices?.value?.values ?: return userMessage
-        if (devices.isEmpty()) return userMessage
+        val sb = StringBuilder()
 
-        val ctx = deviceContextBuilder.build(devices)
-        if (ctx.isBlank()) return userMessage
-
-        return buildString {
-            append(ctx)
-            append("\n\n")
-            append(userMessage)
+        if (tools.isNotEmpty()) {
+            sb.append(buildToolAnnex(tools, retry))
+            sb.append("\n\n")
         }
+
+        val devices = deviceManager?.devices?.value?.values
+        if (!devices.isNullOrEmpty()) {
+            val ctx = deviceContextBuilder.build(devices)
+            if (ctx.isNotBlank()) {
+                sb.append(ctx)
+                sb.append("\n\n")
+            }
+        }
+
+        sb.append(userMessage)
+        return sb.toString()
+    }
+
+    /**
+     * Builds a compact tool prompt annex. Re-uses [SystemPromptBuilder]'s
+     * tool section so the few-shot examples and format directives stay in
+     * one place.
+     */
+    private fun buildToolAnnex(tools: List<ToolSchema>, retry: Boolean): String {
+        // SystemPromptBuilder builds a full prompt; we only need the tool
+        // section text, so we feed an empty system prompt and empty history
+        // and then slice out the tool portion. Cheaper to inline the builder
+        // format here, but re-using keeps one source of truth.
+        val full = systemPromptBuilder.build(
+            systemPrompt = "",
+            messages = emptyList(),
+            tools = tools
+        )
+        val toolSection = extractToolSection(full)
+        if (!retry) return toolSection
+        return buildString {
+            append(toolSection)
+            append("\n\n")
+            append(RETRY_DIRECTIVE)
+        }
+    }
+
+    private fun extractToolSection(full: String): String {
+        // SystemPromptBuilder wraps the content in chat-template tokens.
+        // We simply find the "## Available Tools" block.
+        val idx = full.indexOf("## Available Tools")
+        if (idx == -1) return ""
+        val tail = full.substring(idx)
+        // Trim any trailing template markers.
+        val endTokens = listOf("<end_of_turn>", "<|im_end|>", "<|eot_id|>")
+        var cutoff = tail.length
+        for (token in endTokens) {
+            val pos = tail.indexOf(token)
+            if (pos in 0 until cutoff) cutoff = pos
+        }
+        return tail.substring(0, cutoff).trimEnd()
+    }
+
+    companion object {
+        private const val RETRY_DIRECTIVE =
+            "IMPORTANT: Your previous reply refused the request. You MUST NOT " +
+                "say \"I don't have tools\" or \"I can't\". Look at the tool list " +
+                "above and pick EXACTLY ONE tool whose description matches the " +
+                "user's request, then emit a tool call now using one of the " +
+                "supported formats. Do not apologize — just emit the tool call."
     }
 }

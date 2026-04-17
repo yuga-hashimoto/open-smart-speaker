@@ -6,13 +6,19 @@ import timber.log.Timber
 /**
  * Parses LLM output to extract tool calls and plain text.
  *
- * Supports multiple formats (stolen from off-grid-mobile-ai multi-format pattern):
- * - JSON new: {"tool_call": {"name": "...", "arguments": {...}}}
- * - JSON legacy: {"tool": "...", "arguments": {...}}
- * - XML wrapper: <tool_call>{"name": "...", "arguments": {...}}</tool_call>
- * - Gemma 4 style: <|tool_call>{"name": "...", "arguments": {...}}<tool_call|>
+ * Tolerant multi-format parsing — small on-device models often emit one of
+ * several tool-call shapes and we accept them all (stolen from
+ * off-grid-mobile-ai multi-format pattern):
  *
- * XML tokens are stripped out of the visible text output (Gemma 4 pattern).
+ * - JSON new:      {"tool_call": {"name": "...", "arguments": {...}}}
+ * - JSON legacy:   {"tool": "...", "arguments": {...}}
+ * - Single-level:  {"name": "...", "arguments": {...}}      (bare form)
+ * - XML wrapper:   <tool_call>{"name": "...", "arguments": {...}}</tool_call>
+ * - Gemma 4 style: <|tool_call>{"name": "...", "arguments": {...}}<tool_call|>
+ * - Natural form:  TOOL_CALL: name(key="value", key2=42)
+ * - Markdown fenced JSON (```json ... ```) is also tolerated.
+ *
+ * XML tokens and TOOL_CALL lines are stripped from the visible text output.
  */
 class ToolCallParser {
 
@@ -26,8 +32,10 @@ class ToolCallParser {
 
         val toolCalls = mutableListOf<ToolCallRequest>()
 
+        // Strip markdown code fences before parsing (```json, ``` etc.).
+        var cleaned = stripCodeFences(response)
+
         // First: extract XML/Gemma-style tool calls (may span multiple lines)
-        var cleaned = response
         for (xmlRegex in XML_REGEXES) {
             xmlRegex.findAll(cleaned).forEach { match ->
                 val inner = match.groupValues[1].trim()
@@ -36,13 +44,14 @@ class ToolCallParser {
             cleaned = cleaned.replace(xmlRegex, "")
         }
 
-        // Then: line-by-line JSON parsing on the remainder
+        // Line-by-line parsing on the remainder: JSON (various shapes) and
+        // natural-language TOOL_CALL: name(args) form.
         val textParts = mutableListOf<String>()
         for (line in cleaned.lines()) {
             val trimmed = line.trim()
             if (trimmed.isEmpty()) continue
 
-            val toolCall = tryParseToolCall(trimmed)
+            val toolCall = tryParseToolCall(trimmed) ?: tryParseNaturalCall(trimmed)
             if (toolCall != null) {
                 toolCalls.add(toolCall)
             } else {
@@ -56,11 +65,118 @@ class ToolCallParser {
         )
     }
 
+    private fun stripCodeFences(input: String): String {
+        // Remove ```<lang>\n and closing ``` markers without touching content.
+        return input
+            .replace(FENCE_OPEN_REGEX, "")
+            .replace(FENCE_CLOSE_REGEX, "")
+    }
+
     private fun tryParseToolCall(line: String): ToolCallRequest? {
         if (!line.startsWith("{")) return null
 
-        return tryParseNewFormat(line) ?: tryParseLegacyFormat(line)
+        // Accept new wrapper, legacy shape, or bare single-level form.
+        return tryParseNewFormat(line)
+            ?: tryParseLegacyFormat(line)
+            ?: tryParseBareFormat(line)
     }
+
+    /**
+     * Natural-language form: `TOOL_CALL: name(arg1="foo", arg2=42)`.
+     * Useful because tiny instruction-tuned models emit this shape by default.
+     */
+    private fun tryParseNaturalCall(line: String): ToolCallRequest? {
+        val match = NATURAL_CALL_REGEX.find(line) ?: return null
+        val name = match.groupValues[1]
+        if (name.isBlank()) return null
+        val rawArgs = match.groupValues[2].trim()
+        val arguments = if (rawArgs.isEmpty()) "{}" else naturalArgsToJson(rawArgs)
+        return ToolCallRequest(
+            id = "call_${System.currentTimeMillis()}",
+            name = name,
+            arguments = arguments
+        )
+    }
+
+    /**
+     * Convert `key="val", num=42, flag=true` → `{"key":"val","num":42,"flag":true}`.
+     * Leaves quoted strings untouched; numeric/boolean literals pass through.
+     * Unquoted bare identifiers are quoted as strings.
+     */
+    private fun naturalArgsToJson(raw: String): String {
+        val pairs = splitTopLevelCommas(raw)
+        if (pairs.isEmpty()) return "{}"
+        val sb = StringBuilder("{")
+        var first = true
+        for (pair in pairs) {
+            val eq = pair.indexOf('=')
+            if (eq == -1) continue
+            val key = pair.substring(0, eq).trim().trim('"', '\'')
+            val value = pair.substring(eq + 1).trim()
+            if (key.isEmpty()) continue
+            if (!first) sb.append(",")
+            first = false
+            sb.append('"').append(escapeJson(key)).append('"').append(':')
+            sb.append(normalizeValue(value))
+        }
+        sb.append('}')
+        return sb.toString()
+    }
+
+    private fun splitTopLevelCommas(raw: String): List<String> {
+        val out = mutableListOf<String>()
+        var depth = 0
+        var inString = false
+        var stringChar = '"'
+        val current = StringBuilder()
+        for (c in raw) {
+            when {
+                inString -> {
+                    current.append(c)
+                    if (c == stringChar) inString = false
+                }
+                c == '"' || c == '\'' -> {
+                    inString = true
+                    stringChar = c
+                    current.append(c)
+                }
+                c == '(' || c == '[' || c == '{' -> {
+                    depth++
+                    current.append(c)
+                }
+                c == ')' || c == ']' || c == '}' -> {
+                    depth--
+                    current.append(c)
+                }
+                c == ',' && depth == 0 -> {
+                    out.add(current.toString())
+                    current.clear()
+                }
+                else -> current.append(c)
+            }
+        }
+        if (current.isNotEmpty()) out.add(current.toString())
+        return out
+    }
+
+    private fun normalizeValue(raw: String): String {
+        val v = raw.trim()
+        if (v.isEmpty()) return "\"\""
+        // Already a JSON literal (quoted string, object, array, bool, null, number).
+        if (v.startsWith("\"") && v.endsWith("\"")) return v
+        if (v.startsWith("'") && v.endsWith("'")) {
+            // Convert single-quoted to double-quoted JSON string.
+            return "\"" + escapeJson(v.substring(1, v.length - 1)) + "\""
+        }
+        if (v == "true" || v == "false" || v == "null") return v
+        if (NUMBER_REGEX.matches(v)) return v
+        if (v.startsWith("{") || v.startsWith("[")) return v
+        // Bare identifier: quote it.
+        return "\"" + escapeJson(v) + "\""
+    }
+
+    private fun escapeJson(s: String): String =
+        s.replace("\\", "\\\\").replace("\"", "\\\"")
 
     /**
      * Parse a JSON blob that may be either new, legacy, or a bare {name, arguments} form.
@@ -182,6 +298,17 @@ class ToolCallParser {
         private val ARGUMENTS_KEY_REGEX =
             """"arguments"\s*:\s*""".toRegex()
 
+        // Natural-language form: TOOL_CALL: name(arg=value, ...)
+        // Case-insensitive TOOL_CALL marker; tool name must be snake_case-ish.
+        private val NATURAL_CALL_REGEX =
+            """(?i)\btool_call\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)""".toRegex()
+
+        private val NUMBER_REGEX = """-?\d+(\.\d+)?""".toRegex()
+
+        // Strip ```json, ```kotlin, ``` etc. fences that some models wrap output in.
+        private val FENCE_OPEN_REGEX = """(?m)^\s*```[a-zA-Z0-9_-]*\s*$""".toRegex()
+        private val FENCE_CLOSE_REGEX = """(?m)^\s*```\s*$""".toRegex()
+
         // XML-style wrappers (content is a JSON body).
         // Using DOT_MATCHES_ALL so the inner JSON can span multiple lines.
         private val XML_REGEXES = listOf(
@@ -190,5 +317,30 @@ class ToolCallParser {
             // Gemma 4 style: <|tool_call>...<tool_call|>
             """<\|tool_call>([\s\S]*?)<tool_call\|>""".toRegex()
         )
+
+        /**
+         * Phrases that signal the model is refusing or hallucinating "I have
+         * no tools" — a trigger to re-prompt with a stricter directive.
+         * Kept lowercase; caller should compare against a lowercased string.
+         */
+        private val REFUSAL_MARKERS = listOf(
+            // English
+            "i don't have tools", "i don't have access", "i can't", "i cannot",
+            "i'm unable", "i am unable", "i do not have", "i don't have the ability",
+            "as an ai", "i'm just", "not able to",
+            // Japanese
+            "できません", "できない", "持っていません", "持ってません", "持ちません",
+            "ツールがありません", "ツールを持って", "対応できません", "無理です"
+        )
+
+        /**
+         * Returns true if [response] contains a refusal marker. Used by the
+         * provider to decide whether to re-prompt with a stricter directive.
+         */
+        fun looksLikeRefusal(response: String): Boolean {
+            if (response.isBlank()) return false
+            val lower = response.lowercase()
+            return REFUSAL_MARKERS.any { it in lower }
+        }
     }
 }
