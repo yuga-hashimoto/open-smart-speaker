@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Чат</string>
+    <string name="tab_dashboard">Табло</string>
+    <string name="tab_ambient">Фонов режим</string>
+    <string name="tab_settings">Настройки</string>
+    <string name="accessibility_service_description">Позволява на агента на умната колонка да чете текста от текущия екран и да автоматизира действия в интерфейса вместо вас.</string>
+    <string name="accessibility_service_summary">Включете, за да може локалният агент да вижда и управлява екрана.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker използва тази услуга за достъпност, за да чете съдържанието на екрана и да натиска бутони вместо вас, когато го помолите. Никакви данни не напускат устройството. Можете да я изключите по всяко време от настройките.</string>
+    <string name="voice_tile_label">Говори</string>
+    <string name="voice_tile_content_description">Стартиране на гласова сесия с OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Език</string>
+    <string name="locale_picker_system_default">Език по подразбиране на системата</string>
+    <string name="locale_picker_requires_android_13">Изисква Android 13 или по-нова версия</string>
+    <string name="locale_picker_close">Затваряне</string>
+</resources>
