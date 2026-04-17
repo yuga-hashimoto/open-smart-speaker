@@ -2026,7 +2026,87 @@ object LocaleSwitchMatcher : FastPathMatcher {
         // Russian.
         "russian" to LocaleOption("ru", "Русский"),
         "русский" to LocaleOption("ru", "Русский"),
-        "ロシア語" to LocaleOption("ru", "Русский")
+        "ロシア語" to LocaleOption("ru", "Русский"),
+        // Arabic.
+        "arabic" to LocaleOption("ar", "العربية"),
+        "العربية" to LocaleOption("ar", "العربية"),
+        "アラビア語" to LocaleOption("ar", "العربية"),
+        // Czech.
+        "czech" to LocaleOption("cs", "Čeština"),
+        "čeština" to LocaleOption("cs", "Čeština"),
+        "cestina" to LocaleOption("cs", "Čeština"),
+        "チェコ語" to LocaleOption("cs", "Čeština"),
+        // Danish.
+        "danish" to LocaleOption("da", "Dansk"),
+        "dansk" to LocaleOption("da", "Dansk"),
+        "デンマーク語" to LocaleOption("da", "Dansk"),
+        // Dutch.
+        "dutch" to LocaleOption("nl", "Nederlands"),
+        "nederlands" to LocaleOption("nl", "Nederlands"),
+        "オランダ語" to LocaleOption("nl", "Nederlands"),
+        // Finnish.
+        "finnish" to LocaleOption("fi", "Suomi"),
+        "suomi" to LocaleOption("fi", "Suomi"),
+        "フィンランド語" to LocaleOption("fi", "Suomi"),
+        // Greek.
+        "greek" to LocaleOption("el", "Ελληνικά"),
+        "ελληνικά" to LocaleOption("el", "Ελληνικά"),
+        "ギリシャ語" to LocaleOption("el", "Ελληνικά"),
+        // Hebrew — Android uses the legacy "iw" code.
+        "hebrew" to LocaleOption("iw", "עברית"),
+        "עברית" to LocaleOption("iw", "עברית"),
+        "ヘブライ語" to LocaleOption("iw", "עברית"),
+        // Hindi.
+        "hindi" to LocaleOption("hi", "हिन्दी"),
+        "हिन्दी" to LocaleOption("hi", "हिन्दी"),
+        "ヒンディー語" to LocaleOption("hi", "हिन्दी"),
+        // Hungarian.
+        "hungarian" to LocaleOption("hu", "Magyar"),
+        "magyar" to LocaleOption("hu", "Magyar"),
+        "ハンガリー語" to LocaleOption("hu", "Magyar"),
+        // Indonesian — Android uses legacy "in".
+        "indonesian" to LocaleOption("in", "Bahasa Indonesia"),
+        "bahasa indonesia" to LocaleOption("in", "Bahasa Indonesia"),
+        "インドネシア語" to LocaleOption("in", "Bahasa Indonesia"),
+        // Norwegian Bokmål.
+        "norwegian" to LocaleOption("nb", "Norsk bokmål"),
+        "norsk" to LocaleOption("nb", "Norsk bokmål"),
+        "norsk bokmål" to LocaleOption("nb", "Norsk bokmål"),
+        "ノルウェー語" to LocaleOption("nb", "Norsk bokmål"),
+        // Polish.
+        "polish" to LocaleOption("pl", "Polski"),
+        "polski" to LocaleOption("pl", "Polski"),
+        "ポーランド語" to LocaleOption("pl", "Polski"),
+        // Romanian.
+        "romanian" to LocaleOption("ro", "Română"),
+        "română" to LocaleOption("ro", "Română"),
+        "romana" to LocaleOption("ro", "Română"),
+        "ルーマニア語" to LocaleOption("ro", "Română"),
+        // Swedish.
+        "swedish" to LocaleOption("sv", "Svenska"),
+        "svenska" to LocaleOption("sv", "Svenska"),
+        "スウェーデン語" to LocaleOption("sv", "Svenska"),
+        // Thai.
+        "thai" to LocaleOption("th", "ไทย"),
+        "ไทย" to LocaleOption("th", "ไทย"),
+        "タイ語" to LocaleOption("th", "ไทย"),
+        // Traditional Chinese.
+        "traditional chinese" to LocaleOption("zh-TW", "繁體中文"),
+        "繁體中文" to LocaleOption("zh-TW", "繁體中文"),
+        // Turkish.
+        "turkish" to LocaleOption("tr", "Türkçe"),
+        "türkçe" to LocaleOption("tr", "Türkçe"),
+        "turkce" to LocaleOption("tr", "Türkçe"),
+        "トルコ語" to LocaleOption("tr", "Türkçe"),
+        // Ukrainian.
+        "ukrainian" to LocaleOption("uk", "Українська"),
+        "українська" to LocaleOption("uk", "Українська"),
+        "ウクライナ語" to LocaleOption("uk", "Українська"),
+        // Vietnamese.
+        "vietnamese" to LocaleOption("vi", "Tiếng Việt"),
+        "tiếng việt" to LocaleOption("vi", "Tiếng Việt"),
+        "tieng viet" to LocaleOption("vi", "Tiếng Việt"),
+        "ベトナム語" to LocaleOption("vi", "Tiếng Việt")
     )
 
     // "switch/change/set the language|locale|ui to <name>"
