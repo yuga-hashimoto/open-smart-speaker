@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Xat</string>
+    <string name="tab_dashboard">Tauler</string>
+    <string name="tab_ambient">Ambient</string>
+    <string name="tab_settings">Configuració</string>
+    <string name="accessibility_service_description">Permet que l\'agent de l\'altaveu intel·ligent llegeixi el text visible a la pantalla i automatitzi accions d\'interfície en el vostre nom.</string>
+    <string name="accessibility_service_summary">Activeu-ho perquè l\'agent al dispositiu pugui veure i controlar la pantalla.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker utilitza aquest servei d\'accessibilitat per llegir el que hi ha a la pantalla i prémer botons en el vostre nom quan ho demaneu. Cap dada no surt del dispositiu. Podeu desactivar-lo en qualsevol moment a Configuració.</string>
+    <string name="voice_tile_label">Parla</string>
+    <string name="voice_tile_content_description">Inicia una sessió de veu amb OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Idioma</string>
+    <string name="locale_picker_system_default">Predeterminat del sistema</string>
+    <string name="locale_picker_requires_android_13">Requereix Android 13 o superior</string>
+    <string name="locale_picker_close">Tanca</string>
+</resources>

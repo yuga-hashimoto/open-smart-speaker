@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">চ্যাট</string>
+    <string name="tab_dashboard">ড্যাশবোর্ড</string>
+    <string name="tab_ambient">পরিবেশ</string>
+    <string name="tab_settings">সেটিংস</string>
+    <string name="accessibility_service_description">স্মার্ট স্পিকার এজেন্টকে বর্তমানে দৃশ্যমান স্ক্রিনের পাঠ্য পড়তে এবং আপনার পক্ষ থেকে UI ক্রিয়াগুলি স্বয়ংক্রিয় করতে অনুমতি দেয়।</string>
+    <string name="accessibility_service_summary">অন-ডিভাইস এজেন্টকে স্ক্রিন দেখতে ও নিয়ন্ত্রণ করতে সক্ষম করুন।</string>
+    <string name="a11y_service_description">OpenSmartSpeaker এই অ্যাক্সেসিবিলিটি পরিষেবা ব্যবহার করে স্ক্রিনে যা আছে তা পড়তে এবং আপনার অনুরোধে আপনার পক্ষ থেকে বোতাম ট্যাপ করতে। কোনো ডেটা ডিভাইস থেকে বাইরে যায় না। আপনি যেকোনো সময় সেটিংসে এটি বন্ধ করতে পারেন।</string>
+    <string name="voice_tile_label">কথা বলুন</string>
+    <string name="voice_tile_content_description">OpenSmartSpeaker-এর সাথে ভয়েস সেশন শুরু করুন</string>
+    <string name="locale_picker_title">ভাষা</string>
+    <string name="locale_picker_system_default">সিস্টেম ডিফল্ট</string>
+    <string name="locale_picker_requires_android_13">Android 13+ প্রয়োজন</string>
+    <string name="locale_picker_close">বন্ধ করুন</string>
+</resources>
