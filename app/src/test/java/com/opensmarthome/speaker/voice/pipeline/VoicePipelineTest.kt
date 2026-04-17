@@ -7,7 +7,11 @@ import com.opensmarthome.speaker.assistant.provider.AssistantProvider
 import com.opensmarthome.speaker.assistant.router.ConversationRouter
 import com.opensmarthome.speaker.assistant.router.RoutingPolicy
 import com.opensmarthome.speaker.data.preferences.AppPreferences
+import com.opensmarthome.speaker.tool.ToolCall
 import com.opensmarthome.speaker.tool.ToolExecutor
+import com.opensmarthome.speaker.tool.ToolResult
+import com.opensmarthome.speaker.voice.fastpath.FastPathMatch
+import com.opensmarthome.speaker.voice.fastpath.FastPathRouter
 import com.opensmarthome.speaker.voice.tts.TextToSpeech
 import com.opensmarthome.speaker.voice.stt.SpeechToText
 import com.squareup.moshi.Moshi
@@ -26,6 +30,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -147,5 +154,57 @@ class VoicePipelineTest {
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(VoicePipelineState.Idle, pipeline.state.value)
         io.mockk.verify { tts.stop() }
+    }
+
+    @Test
+    fun `fast-path tool failure routes multi-room error through ErrorClassifier`() = runTest {
+        // Pin the guarantee: when a fast-path tool fails with the broadcaster
+        // error string, the user hears the classifier's MULTIROOM_NO_SECRET
+        // copy (a helpful hint) — not the generic "Sorry, that didn't work."
+        // fallback, and not the raw `ToolResult.error` string.
+        val fastPathRouter = mockk<FastPathRouter>()
+        every { fastPathRouter.match("broadcast kitchen timer") } returns FastPathMatch(
+            toolName = "broadcast_tts",
+            arguments = emptyMap(),
+            spokenConfirmation = null // force the fallback branch that we just wired
+        )
+        coEvery { toolExecutor.execute(any<ToolCall>()) } returns ToolResult(
+            callId = "fast_1",
+            success = false,
+            data = "",
+            error = "Broadcast refused: no shared secret"
+        )
+
+        pipeline = VoicePipeline(
+            context = context,
+            stt = stt,
+            tts = tts,
+            router = router,
+            toolExecutor = toolExecutor,
+            moshi = moshi,
+            preferences = preferences,
+            fastPathRouter = fastPathRouter
+        )
+
+        pipeline.processUserInput("broadcast kitchen timer")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val spoken = pipeline.lastResponse.value
+        // Classifier's MULTIROOM_NO_SECRET message mentions "shared secret"
+        // (see ErrorClassifier). Pin that substring rather than the full copy
+        // so the classifier remains the single source of truth for phrasing.
+        assertTrue(
+            spoken.contains("shared secret"),
+            "expected classifier copy, got: $spoken"
+        )
+        assertFalse(
+            spoken.contains("didn't work"),
+            "expected multi-room hint, not the generic fallback"
+        )
+        assertNotEquals(
+            "Broadcast refused: no shared secret",
+            spoken,
+            "expected classifier copy, not the raw tool error string"
+        )
     }
 }

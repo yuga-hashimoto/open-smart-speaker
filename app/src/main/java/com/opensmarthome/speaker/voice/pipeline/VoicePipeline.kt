@@ -613,7 +613,19 @@ class VoicePipeline(
                 match.spokenConfirmation != null -> match.spokenConfirmation
                 result == null -> "Done."
                 result.success -> "Done."
-                else -> "Sorry, that didn't work."
+                else -> {
+                    // Route the tool's raw error through ErrorClassifier so
+                    // multi-room categories (no shared secret, HMAC mismatch,
+                    // replay-window reject, no peers) surface their targeted
+                    // user-friendly copy instead of the generic fallback.
+                    // `classify` is already keyword-matched on the broadcaster
+                    // error strings — see ErrorClassifier for the single source
+                    // of truth.
+                    errorClassifier.classify(
+                        result.error,
+                        kind = currentProviderKind()
+                    ).userSpokenMessage
+                }
             }
             _lastResponse.value = spoken
 
