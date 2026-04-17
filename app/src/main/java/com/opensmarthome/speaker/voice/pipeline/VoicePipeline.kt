@@ -562,11 +562,18 @@ class VoicePipeline(
     // --- Preference Application ---
 
     private suspend fun applySttPreferences() {
-        val stt = this.stt as? AndroidSttProvider ?: return
+        // Pipeline is injected with DelegatingSttProvider; reach through to the
+        // Android backend for prefs that only apply to it (language / silence).
+        val androidStt = when (val s = this.stt) {
+            is AndroidSttProvider -> s
+            is com.opensmarthome.speaker.voice.stt.DelegatingSttProvider ->
+                s.androidDelegate() as? AndroidSttProvider
+            else -> null
+        } ?: return
         val sttLang = preferences.observe(PreferenceKeys.STT_LANGUAGE).first()?.takeIf { it.isNotBlank() }
         val silence = preferences.observe(PreferenceKeys.SILENCE_TIMEOUT_MS).first() ?: 1500L
-        stt.language = sttLang
-        stt.silenceTimeoutMs = silence
+        androidStt.language = sttLang
+        androidStt.silenceTimeoutMs = silence
         Timber.d("STT prefs applied: lang=$sttLang, silence=${silence}ms")
     }
 

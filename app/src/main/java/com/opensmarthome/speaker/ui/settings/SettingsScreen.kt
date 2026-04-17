@@ -261,6 +261,25 @@ fun SettingsScreen(
 
         // === Speech Recognition ===
         SectionHeader("Speech Recognition")
+        val sttProvider by viewModel.sttProviderType.collectAsState()
+        listOf(
+            "android" to "Android System (online / GMS)",
+            "vosk" to "Vosk (offline) — coming soon",
+            "whisper" to "Whisper (offline) — coming soon"
+        ).forEach { (id, label) ->
+            val isSelected = sttProvider == id
+            OutlinedButton(
+                onClick = { viewModel.saveSttProviderType(id) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = if (isSelected) ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ) else ButtonDefaults.outlinedButtonColors()
+            ) {
+                Text(label, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+        SettingsHint("Offline backends are placeholder stubs today. Selecting one surfaces a spoken \"coming soon\" error — fall back to Android until the JNI wiring lands.")
+
         val sttLanguage by viewModel.sttLanguage.collectAsState()
         SettingsTextField("STT Language (e.g. ja-JP, en-US)", sttLanguage) { lang ->
             viewModel.saveSttLanguage(lang)

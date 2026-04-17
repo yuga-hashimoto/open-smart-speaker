@@ -10,6 +10,7 @@ import com.opensmarthome.speaker.voice.fastpath.FastPathRouter
 import com.opensmarthome.speaker.voice.metrics.LatencyRecorder
 import com.opensmarthome.speaker.voice.pipeline.VoicePipeline
 import com.opensmarthome.speaker.voice.stt.AndroidSttProvider
+import com.opensmarthome.speaker.voice.stt.DelegatingSttProvider
 import com.opensmarthome.speaker.voice.stt.SpeechToText
 import com.opensmarthome.speaker.data.preferences.SecurePreferences
 import com.opensmarthome.speaker.voice.tts.TextToSpeech
@@ -29,8 +30,13 @@ object VoiceModule {
 
     @Provides
     @Singleton
-    fun provideSpeechToText(@ApplicationContext context: Context): SpeechToText =
-        AndroidSttProvider(context)
+    fun provideSpeechToText(
+        @ApplicationContext context: Context,
+        preferences: AppPreferences
+    ): SpeechToText = DelegatingSttProvider(
+        preferences = preferences,
+        android = AndroidSttProvider(context)
+    )
 
     @Provides
     @Singleton

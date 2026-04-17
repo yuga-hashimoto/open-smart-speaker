@@ -35,6 +35,8 @@ object PreferenceKeys {
 
     // STT
     val STT_LANGUAGE = stringPreferencesKey("stt_language")
+    /** Which STT backend to use: "android" (default) | "vosk" | "whisper". */
+    val STT_PROVIDER_TYPE = stringPreferencesKey("stt_provider_type")
 
     // Home Assistant (secrets live in SecurePreferences; only URL is plaintext)
     val HA_BASE_URL = stringPreferencesKey("ha_base_url")
