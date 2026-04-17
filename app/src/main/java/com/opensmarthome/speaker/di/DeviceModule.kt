@@ -17,6 +17,7 @@ import com.opensmarthome.speaker.tool.CompositeToolExecutor
 import com.opensmarthome.speaker.tool.ToolExecutor
 import com.opensmarthome.speaker.tool.info.CalculatorToolExecutor
 import com.opensmarthome.speaker.tool.info.DateToolExecutor
+import com.opensmarthome.speaker.tool.info.PercentageToolExecutor
 import com.opensmarthome.speaker.tool.info.RandomToolExecutor
 import com.opensmarthome.speaker.tool.info.CurrencyToolExecutor
 import com.opensmarthome.speaker.voice.fastpath.DefaultFastPathRouter
@@ -418,6 +419,7 @@ object DeviceModule {
             UnitConverterToolExecutor(),
             CalculatorToolExecutor(),
             DateToolExecutor(),
+            PercentageToolExecutor(),
             RandomToolExecutor(),
             CurrencyToolExecutor(),
             NewsToolExecutor(
