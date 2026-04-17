@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Chatt</string>
+    <string name="tab_dashboard">Översikt</string>
+    <string name="tab_ambient">Omgivning</string>
+    <string name="tab_settings">Inställningar</string>
+    <string name="accessibility_service_description">Tillåter den smarta högtalaragenten att läsa texten på den synliga skärmen och automatisera gränssnittsåtgärder åt dig.</string>
+    <string name="accessibility_service_summary">Aktivera för att låta agenten på enheten se och styra skärmen.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker använder den här tillgänglighetstjänsten för att läsa vad som visas på skärmen och trycka på knappar åt dig när du ber om det. Ingen data lämnar enheten. Du kan stänga av den när som helst i Inställningar.</string>
+    <string name="voice_tile_label">Prata</string>
+    <string name="voice_tile_content_description">Starta en röstsession med OpenSmartSpeaker</string>
+</resources>
