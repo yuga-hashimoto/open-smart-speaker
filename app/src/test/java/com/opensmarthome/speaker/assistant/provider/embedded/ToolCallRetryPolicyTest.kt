@@ -134,4 +134,48 @@ class ToolCallRetryPolicyTest {
 
         assertThat(result.content).isEqualTo("The weather is sunny.")
     }
+
+    // --- Expanded refusal / "I don't know" detection ---
+
+    @Test
+    fun `english I don't know triggers retry`() = runTest {
+        var retries = 0
+        val first = "I don't know about that topic."
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            """{"tool_call": {"name": "web_search", "arguments": {"query": "topic"}}}"""
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.toolCalls).hasSize(1)
+    }
+
+    @Test
+    fun `japanese wakarimasen triggers retry`() = runTest {
+        var retries = 0
+        val first = "わかりません。"
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            """{"tool_call": {"name": "web_search", "arguments": {"query": "x"}}}"""
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.toolCalls).hasSize(1)
+    }
+
+    @Test
+    fun `japanese moushiwake triggers retry`() = runTest {
+        var retries = 0
+        val first = "申し訳ございませんが、お答えできません。"
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            """{"tool_call": {"name": "web_search", "arguments": {"query": "x"}}}"""
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.toolCalls).hasSize(1)
+    }
 }

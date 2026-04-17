@@ -296,6 +296,37 @@ class SystemPromptBuilderTest {
     }
 
     @Test
+    fun `buildPrompt tool section includes autonomous agent directive`() {
+        val tools = listOf(
+            ToolSchema("web_search", "Search the web", emptyMap()),
+            ToolSchema("get_weather", "Weather", emptyMap())
+        )
+        val messages = listOf(AssistantMessage.User(content = "hi"))
+
+        val result = builder.build("System", messages, tools)
+
+        // The directive must mention multi-tool chaining explicitly so small
+        // models (Gemma 2B) learn to call a second tool when the first result
+        // is incomplete.
+        val lower = result.lowercase()
+        val mentionsChaining = lower.contains("multiple tools") ||
+            lower.contains("chain tools") || lower.contains("additional tools")
+        assertThat(mentionsChaining).isTrue()
+        // Must still forbid refusal.
+        assertThat(lower).contains("do not stop")
+    }
+
+    @Test
+    fun `buildPrompt omits autonomous directive when no tools provided`() {
+        val messages = listOf(AssistantMessage.User(content = "hi"))
+
+        val result = builder.build("System", messages, emptyList())
+
+        // No tool section → no autonomous directive noise.
+        assertThat(result).doesNotContain("autonomous assistant")
+    }
+
+    @Test
     fun `buildPrompt skills section lists skill titles and descriptions inline`() {
         val messages = listOf(AssistantMessage.User(content = "hi"))
         val skillsXml = """<available_skills>

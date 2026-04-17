@@ -360,6 +360,10 @@ class VoicePipeline(
                                     LatencyRecorder.Span.TOOL_EXECUTION,
                                     key = "tool_${toolCallReq.id}"
                                 )
+                                Timber.d(
+                                    "Agent round $toolRounds: called=${toolCallReq.name}, " +
+                                        "result=${toolResult.success}"
+                                )
                                 val resultMessage = AssistantMessage.ToolCallResult(
                                     callId = toolCallReq.id,
                                     result = if (toolResult.success) toolResult.data else (toolResult.error ?: "Error"),
@@ -412,6 +416,26 @@ class VoicePipeline(
                 }
             }
 
+            // Agent round cap hit: the LLM kept asking for tools past the
+            // safety limit. Speak a graceful fallback so the user isn't left
+            // in silence. See MAX_TOOL_ROUNDS.
+            Timber.w("Agent hit MAX_TOOL_ROUNDS ($MAX_TOOL_ROUNDS); emitting fallback reply")
+            fillerJob.cancel()
+            tts.stop()
+            val ttsLangForFallback = preferences.observe(PreferenceKeys.TTS_LANGUAGE).first()
+            val fallback = AgentFallback.roundCapMessage(ttsLangForFallback)
+            _lastResponse.value = fallback
+            persistAssistantMessage(fallback)
+            val ttsEnabled = preferences.observe(PreferenceKeys.TTS_ENABLED).first() ?: true
+            if (ttsEnabled) {
+                _state.value = VoicePipelineState.Speaking
+                resumeWakeWordForBargeInIfEnabled()
+                try {
+                    tts.speak(fallback)
+                } catch (e: Exception) {
+                    Timber.e(e, "TTS failed for round-cap fallback")
+                }
+            }
             abandonAudioFocus()
             resumeWakeWord()
             _state.value = VoicePipelineState.Idle

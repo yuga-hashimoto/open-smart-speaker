@@ -39,6 +39,12 @@ interface FastPathMatcher {
  * The shipped router: lowercases + trims input, then walks [matchers] in
  * order and returns the first hit. Order in [DEFAULT_MATCHERS] matters —
  * see comments inline for matchers that overlap.
+ *
+ * Ambiguous information-seeking utterances ("トマトって何？", "explain
+ * quantum computing", "tell me about kotlin") are pre-filtered out via
+ * [AgentIntentHint] so the LLM can orchestrate multi-tool reasoning
+ * instead of being pre-empted by a fast-path matcher. Explicit tool-verb
+ * utterances (timer, weather, 検索, 予報…) still hit the fast path.
  */
 class DefaultFastPathRouter(
     private val matchers: List<FastPathMatcher> = DEFAULT_MATCHERS
@@ -47,6 +53,8 @@ class DefaultFastPathRouter(
     override fun match(utterance: String): FastPathMatch? {
         val normalized = utterance.trim().lowercase()
         if (normalized.isEmpty()) return null
+        // Hand ambiguous info queries to the LLM so it can chain tools.
+        if (AgentIntentHint.isAmbiguousInformationQuery(utterance)) return null
         for (m in matchers) {
             val match = m.tryMatch(normalized)
             if (match != null) return match

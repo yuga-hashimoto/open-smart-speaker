@@ -63,6 +63,8 @@ class SystemPromptBuilder(
                 "answer the user using the tool result."
         )
         sb.appendLine()
+        sb.appendLine(AUTONOMOUS_AGENT_DIRECTIVE)
+        sb.appendLine()
         sb.appendLine("Emit a tool call using any of these equivalent formats:")
         sb.appendLine("""  (A) {"tool_call": {"name": "<tool>", "arguments": {<args>}}}""")
         sb.appendLine("""  (B) {"name": "<tool>", "arguments": {<args>}}""")
@@ -222,5 +224,21 @@ class SystemPromptBuilder(
     companion object {
         private const val DEFAULT_MAX_PROMPT_CHARS = 3000
         private const val MAX_FEW_SHOT = 6
+
+        /**
+         * Reinforces autonomous multi-tool agent behavior. Small on-device
+         * models (Gemma 4 E2B / 2B class) tend to stop after a single tool
+         * call and declare the task done even when another tool is needed.
+         * This directive tells them to keep chaining tools until they can
+         * answer, and to never refuse on ability.
+         */
+        internal const val AUTONOMOUS_AGENT_DIRECTIVE =
+            "You are an autonomous assistant capable of using multiple tools in " +
+                "sequence to help the user. If a single tool is not enough, call " +
+                "additional tools until you can answer. Do not stop after one tool " +
+                "call if the result is incomplete — chain tools when needed. Do not " +
+                "say \"I cannot\" or refuse; try tools first. When a tool result is " +
+                "in the conversation, use it to answer the user in natural language, " +
+                "in the user's language."
     }
 }

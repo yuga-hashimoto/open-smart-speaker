@@ -475,13 +475,19 @@ class ToolCallParser {
          * Kept lowercase; caller should compare against a lowercased string.
          */
         private val REFUSAL_MARKERS = listOf(
-            // English
+            // English — refusals and "I don't know" hallucinations
             "i don't have tools", "i don't have access", "i can't", "i cannot",
             "i'm unable", "i am unable", "i do not have", "i don't have the ability",
             "as an ai", "i'm just", "not able to",
-            // Japanese
+            "i don't know", "i do not know", "i'm not sure", "i am not sure",
+            "i apologize", "i'm sorry, but", "sorry, but i",
+            "unfortunately, i", "unfortunately i",
+            // Japanese — refusals and "分からない" hallucinations
             "できません", "できない", "持っていません", "持ってません", "持ちません",
-            "ツールがありません", "ツールを持って", "対応できません", "無理です"
+            "ツールがありません", "ツールを持って", "対応できません", "無理です",
+            "わかりません", "分かりません", "わからない", "分からない",
+            "知りません", "存じません",
+            "申し訳"
         )
 
         /**

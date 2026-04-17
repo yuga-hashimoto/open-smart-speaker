@@ -1236,4 +1236,32 @@ class FastPathRouterTest {
         assertThat(m?.toolName).isEqualTo("get_weather")
         assertThat(m?.arguments?.get("location")).isEqualTo("sydney")
     }
+
+    // --- Agent autonomy: ambiguous info queries skip fast-path ---
+
+    @Test
+    fun `ambiguous japanese info query is routed to LLM`() {
+        // "トマトって何？" has no explicit tool verb — should hand off to LLM.
+        assertThat(router.match("トマトって何？")).isNull()
+    }
+
+    @Test
+    fun `ambiguous english info query is routed to LLM`() {
+        assertThat(router.match("what is a black hole")).isNull()
+        assertThat(router.match("tell me about kotlin")).isNull()
+    }
+
+    @Test
+    fun `explicit weather japanese still fast-paths even with kyōte`() {
+        // Contains "教えて" (ambiguous marker) but "天気" is explicit — fast-path wins.
+        val m = router.match("宗像市の天気教えて")
+        assertThat(m?.toolName).isEqualTo("get_weather")
+    }
+
+    @Test
+    fun `explicit search japanese still fast-paths`() {
+        // Ambiguous marker "について" + explicit verb "検索" → fast-path.
+        val m = router.match("Pythonについて検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+    }
 }
