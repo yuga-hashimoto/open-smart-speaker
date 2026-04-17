@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Чат</string>
+    <string name="tab_dashboard">Панель</string>
+    <string name="tab_ambient">Фоновий режим</string>
+    <string name="tab_settings">Налаштування</string>
+    <string name="accessibility_service_description">Дозволяє агенту розумної колонки зчитувати текст з поточного екрана та автоматизувати дії в інтерфейсі від вашого імені.</string>
+    <string name="accessibility_service_summary">Увімкніть, щоб агент на пристрої міг бачити екран і керувати ним.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker використовує цю службу спеціальних можливостей, щоб зчитувати вміст екрана та натискати кнопки за вашим запитом. Жодні дані не залишають пристрій. Ви можете вимкнути цю функцію будь-коли в налаштуваннях.</string>
+    <string name="voice_tile_label">Говорити</string>
+    <string name="voice_tile_content_description">Розпочати голосовий сеанс з OpenSmartSpeaker</string>
+</resources>
