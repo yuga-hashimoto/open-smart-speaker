@@ -80,6 +80,10 @@ User-installed skills can override or supplement these.
 | `voice-assistant` | Conversational guardrails — keep replies under 30s of speech | (always-on) | (none — guardrail only) |
 | `wake-up-gently` | Progressive sunrise-style wake — lights ramp up over 10 minutes while volume stays quiet, then gentle music + briefing | "wake me up at 7 gently", "sunrise alarm", "ゆっくり起こして", "朝7時にゆっくり起こして" | execute_command, set_timer, set_volume, morning_briefing, cancel_all_timers |
 | `workout` | Workout mode: lights→100, volume→70, interval timers, cooldown recovery | "workout", "exercise time" | execute_command, set_volume, set_timer |
+| `arrival-home` | Short welcome when the user gets back — entry light + "Welcome home" + one-line recap (next event + urgent notifications only) | "I'm home", "ただいま", "just got home", "着いた" | execute_command, get_calendar_events, list_notifications, set_volume |
+| `leaving-home` | Calm send-off when the user walks out — common-area lights off, one-word weather cue, optional reminder (low battery or imminent off-home event), short "have a good one" closer | "I'm leaving", "going out", "行ってきます", "出かける" | execute_command, get_weather, get_calendar_events |
+| `where-did-i-put-it` | Find misplaced items via memory search — semantic search first, literal fallback, offer to remember if unseen | "where did I put", "where's my", "どこに置いた", "どこだっけ" | semantic_memory_search, search_memory, remember, forget |
+| `sick-day` | Quiet rest mode — dim lights 25%, volume 15, quiet-hours 8h, 2-hour hydration timer; reversible on "stop" | "I'm sick", "got the flu", "体調悪い", "風邪ひいた", "熱ある" | execute_command, set_volume, set_timer |
 
 ## Install flow
 
