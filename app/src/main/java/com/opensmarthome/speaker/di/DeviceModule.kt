@@ -352,7 +352,8 @@ object DeviceModule {
         timerManager: com.opensmarthome.speaker.tool.system.TimerManager,
         notificationProvider: com.opensmarthome.speaker.tool.system.NotificationProvider,
         a11yServiceHolder: com.opensmarthome.speaker.a11y.A11yServiceHolder,
-        announcementBroadcaster: com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster
+        announcementBroadcaster: com.opensmarthome.speaker.multiroom.AnnouncementBroadcaster,
+        multicastDiscovery: com.opensmarthome.speaker.util.MulticastDiscovery
     ): ToolExecutor {
         val routineStore = RoomRoutineStore(routineDao, moshi)
         val compositeHolder = arrayOfNulls<CompositeToolExecutor>(1)
@@ -405,6 +406,7 @@ object DeviceModule {
             OpenUrlToolExecutor(context),
             com.opensmarthome.speaker.tool.system.LockScreenToolExecutor(context),
             com.opensmarthome.speaker.tool.system.BroadcastTtsToolExecutor(announcementBroadcaster),
+            com.opensmarthome.speaker.tool.multiroom.ListPeersToolExecutor(multicastDiscovery),
             PhotosToolExecutor(
                 AndroidPhotosProvider(context)
             ),
