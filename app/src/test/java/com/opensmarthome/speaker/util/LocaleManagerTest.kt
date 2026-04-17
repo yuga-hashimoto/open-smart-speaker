@@ -27,10 +27,10 @@ class LocaleManagerTest {
      */
     private val expectedTags = listOf(
         "", "en", "ar", "bg", "bn", "ca", "cs", "da", "de", "el", "es",
-        "fa", "fi", "fil", "fr", "hi", "hr", "hu", "in", "it", "iw",
-        "ja", "ko", "lt", "lv", "ms", "nb", "nl", "pl", "pt-BR", "ro",
-        "ru", "sk", "sl", "sr", "sv", "th", "tr", "uk", "vi", "zh-CN",
-        "zh-TW"
+        "et", "fa", "fi", "fil", "fr", "hi", "hr", "hu", "in", "it",
+        "iw", "ja", "kk", "ko", "lt", "lv", "ms", "nb", "nl", "pl",
+        "pt-BR", "ro", "ru", "sk", "sl", "sr", "sv", "th", "tr", "uk",
+        "vi", "zh-CN", "zh-TW"
     )
 
     @Test
@@ -42,10 +42,10 @@ class LocaleManagerTest {
         // picker never points at a resource that doesn't exist.
         assertThat(expectedTags).containsExactly(
             "", "en", "ar", "bg", "bn", "ca", "cs", "da", "de", "el", "es",
-            "fa", "fi", "fil", "fr", "hi", "hr", "hu", "in", "it", "iw",
-            "ja", "ko", "lt", "lv", "ms", "nb", "nl", "pl", "pt-BR", "ro",
-            "ru", "sk", "sl", "sr", "sv", "th", "tr", "uk", "vi", "zh-CN",
-            "zh-TW"
+            "et", "fa", "fi", "fil", "fr", "hi", "hr", "hu", "in", "it",
+            "iw", "ja", "kk", "ko", "lt", "lv", "ms", "nb", "nl", "pl",
+            "pt-BR", "ro", "ru", "sk", "sl", "sr", "sv", "th", "tr", "uk",
+            "vi", "zh-CN", "zh-TW"
         ).inOrder()
     }
 
