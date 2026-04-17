@@ -173,6 +173,21 @@ object DeviceModule {
 
     @Provides
     @Singleton
+    fun provideAnnouncementParser(
+        moshi: Moshi,
+        securePreferences: com.opensmarthome.speaker.data.preferences.SecurePreferences
+    ): com.opensmarthome.speaker.multiroom.AnnouncementParser =
+        com.opensmarthome.speaker.multiroom.AnnouncementParser(
+            moshi = moshi,
+            sharedSecretProvider = {
+                securePreferences.getString(
+                    com.opensmarthome.speaker.data.preferences.SecurePreferences.KEY_MULTIROOM_SECRET
+                ).takeIf { it.isNotBlank() }
+            }
+        )
+
+    @Provides
+    @Singleton
     fun provideSuggestionEngine(): com.opensmarthome.speaker.assistant.proactive.SuggestionEngine =
         com.opensmarthome.speaker.assistant.proactive.SuggestionEngine(
             rules = listOf(

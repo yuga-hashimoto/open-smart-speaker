@@ -39,6 +39,7 @@ class VoiceService : Service() {
     @Inject lateinit var batteryMonitor: com.opensmarthome.speaker.util.BatteryMonitor
     @Inject lateinit var thermalMonitor: com.opensmarthome.speaker.util.ThermalMonitor
     @Inject lateinit var multicastDiscovery: com.opensmarthome.speaker.util.MulticastDiscovery
+    @Inject lateinit var announcementServer: com.opensmarthome.speaker.multiroom.AnnouncementServer
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var wakeWordDetector: VoskWakeWordDetector? = null
@@ -114,12 +115,18 @@ class VoiceService : Service() {
             registerReceiver(controlReceiver, filter)
         }
 
-        // Opt-in multi-room broadcast — advertises this device over mDNS so
-        // peers' discovery flow surfaces it. No server is actually listening
-        // on the advertised port yet (see MulticastDiscovery class doc).
+        // Opt-in multi-room: advertise via mDNS AND start listening on the
+        // advertised port for NDJSON envelopes. The server only dispatches
+        // a message after HMAC verification (P17.2), so a missing secret
+        // means the port accepts connections but drops every envelope —
+        // safe default for users who enabled broadcast before setting the
+        // shared secret.
         scope.launch {
             val enabled = preferences.observe(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED).first() ?: false
-            if (enabled) multicastDiscovery.register()
+            if (enabled) {
+                multicastDiscovery.register()
+                announcementServer.start()
+            }
         }
     }
 
@@ -260,6 +267,7 @@ class VoiceService : Service() {
         voicePipeline.destroy()
         // Safe to call even if we never registered — unregister() is a no-op in that case.
         runCatching { multicastDiscovery.unregister() }
+        runCatching { announcementServer.stop() }
         super.onDestroy()
         Timber.d("VoiceService destroyed")
     }

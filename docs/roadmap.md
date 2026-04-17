@@ -175,12 +175,15 @@ smoke testing).
 ## Phase 17 — Priority 4: Multi-room RPC protocol
 複数スピーカーの連携。P14.5 で相互発見 + 配信登録まで済み、その上のプロトコル層。
 
-- [ ] P17.1: Wire format decision — JSON over WebSocket (bidirectional, low ceremony) on
-  TCP/8421 (already advertised). Define `envelope { type, id, from, payload }` schema.
-  Ref: OVOS message bus
-- [ ] P17.2: `AnnouncementServer` + `AnnouncementClient` — listens on DEFAULT_PORT; when
-  a peer sends `{"type":"tts_broadcast", "text":"..."}` it speaks on this device.
-  Opt-in via new Settings toggle
+- [x] P17.1: Wire format decision — ADR shipped at `docs/multi-room-protocol.md` (PR #239);
+  JSON envelopes on TCP/8421, WebSocket primary with NDJSON fallback, HMAC-SHA256 auth,
+  30-second replay window. Ref: OVOS message bus
+- [x] P17.2: `AnnouncementServer` — **receiver done** (NDJSON fallback only; WebSocket
+  upgrade still TODO). `HmacSigner` + `AnnouncementParser` + `AnnouncementDispatcher` +
+  `AnnouncementServer` all shipped with unit tests. `MULTIROOM_SECRET` stored in
+  SecurePreferences. VoiceService lifecycle starts/stops the server behind the existing
+  `MULTIROOM_BROADCAST_ENABLED` toggle. `tts_broadcast` and `heartbeat` are wired; other
+  message types parse cleanly but dispatch as `Unhandled`. **Client / sender** side is P17.3+
 - [ ] P17.3: Timer sync — when user says "set a timer on all speakers 5 minutes",
   fan out to discovered peers with `{"type":"start_timer", "seconds":300}`
 - [ ] P17.4: Speaker groups — user-named subsets of discovered peers for room-level routing

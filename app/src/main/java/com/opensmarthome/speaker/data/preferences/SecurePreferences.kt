@@ -61,5 +61,7 @@ class SecurePreferences @Inject constructor(
         const val KEY_SWITCHBOT_TOKEN = "switchbot_token"
         const val KEY_SWITCHBOT_SECRET = "switchbot_secret"
         const val KEY_MQTT_PASSWORD = "mqtt_password"
+        /** Multi-room shared secret (HMAC-SHA256). Set manually until QR-pair lands (P17.6). */
+        const val KEY_MULTIROOM_SECRET = "multiroom_secret"
     }
 }
