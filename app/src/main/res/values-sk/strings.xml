@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="tab_chat">Chat</string>
+    <string name="tab_dashboard">Nástenka</string>
+    <string name="tab_ambient">Okolitý režim</string>
+    <string name="tab_settings">Nastavenia</string>
+    <string name="accessibility_service_description">Umožňuje agentovi inteligentného reproduktora čítať text aktuálne zobrazený na obrazovke a vykonávať za vás akcie v používateľskom rozhraní.</string>
+    <string name="accessibility_service_summary">Povoľte, aby agent v zariadení mohol vidieť a ovládať obrazovku.</string>
+    <string name="a11y_service_description">OpenSmartSpeaker používa túto službu zjednodušenia ovládania na čítanie obsahu obrazovky a klepanie na tlačidlá za vás, keď o to požiadate. Žiadne údaje neopúšťajú zariadenie. Kedykoľvek ju môžete vypnúť v Nastaveniach.</string>
+    <string name="voice_tile_label">Hovoriť</string>
+    <string name="voice_tile_content_description">Spustiť hlasovú reláciu s OpenSmartSpeaker</string>
+    <string name="locale_picker_title">Jazyk</string>
+    <string name="locale_picker_system_default">Predvolené systémové nastavenie</string>
+    <string name="locale_picker_requires_android_13">Vyžaduje Android 13 alebo novší</string>
+    <string name="locale_picker_close">Zavrieť</string>
+</resources>
