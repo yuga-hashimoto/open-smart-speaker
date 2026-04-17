@@ -94,6 +94,22 @@ analytics per call.
 | `get_skill` / `list_skills` | SkillToolExecutor | |
 | `install_skill_from_url` | SkillInstaller | Downloads + validates SKILL.md |
 
+## Multi-room
+
+Bus-routed tools that fan out across every mDNS-discovered OpenSmartSpeaker
+peer (or a named subset). All require **Multi-room broadcast** enabled in
+Settings and a matching HMAC shared secret on every paired device. See
+[multi-room-quickstart](multi-room-quickstart.md) for onboarding and
+[multi-room-protocol](multi-room-protocol.md) for the wire format.
+
+| Tool | Source | Notes |
+|---|---|---|
+| `broadcast_tts` | BroadcastTtsToolExecutor | `{ text, language?, group? }` — speaks on every peer (or just members of the named group). Returns `sent` + `failed` counts |
+| `broadcast_timer` | BroadcastTimerToolExecutor | `{ seconds, label? }` — starts a timer on every peer. Clamped 1..86400 |
+| `broadcast_announcement` | BroadcastAnnouncementToolExecutor | `{ text, ttl_seconds? }` — speaks once AND pins a banner on the Ambient screen for ttl_seconds (default 60, clamped 5..3600). New in P17 follow-up |
+| `handoff_session` | HandoffToolExecutor | `{ target }` — transfers the current conversation to the named peer (replace semantics). Media handoff stubbed |
+| `list_peers` | ListPeersToolExecutor | No args — snapshot of `MulticastDiscovery.speakers` as JSON |
+
 ## Composite tools
 
 These tools chain several other tools in one call. The agent (and the
