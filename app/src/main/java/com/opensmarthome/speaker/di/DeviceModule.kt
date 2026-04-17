@@ -22,8 +22,10 @@ import com.opensmarthome.speaker.tool.info.RandomToolExecutor
 import com.opensmarthome.speaker.tool.info.CurrencyToolExecutor
 import com.opensmarthome.speaker.voice.fastpath.DefaultFastPathRouter
 import com.opensmarthome.speaker.voice.fastpath.FastPathRouter
+import com.opensmarthome.speaker.tool.info.ChainedSearchProvider
 import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
 import com.opensmarthome.speaker.tool.info.HtmlWebFetcher
+import com.opensmarthome.speaker.tool.info.WikipediaSearchProvider
 import com.opensmarthome.speaker.tool.info.InMemoryKnowledgeStore
 import com.opensmarthome.speaker.tool.info.KnowledgeToolExecutor
 import com.opensmarthome.speaker.tool.info.NewsToolExecutor
@@ -445,7 +447,10 @@ object DeviceModule {
                 appPreferences
             ),
             SearchToolExecutor(
-                DuckDuckGoSearchProvider(client, moshi)
+                ChainedSearchProvider(
+                    primary = DuckDuckGoSearchProvider(client, moshi),
+                    fallback = WikipediaSearchProvider(client, moshi)
+                )
             ),
             WebFetchToolExecutor(HtmlWebFetcher(client)),
             UnitConverterToolExecutor(),
