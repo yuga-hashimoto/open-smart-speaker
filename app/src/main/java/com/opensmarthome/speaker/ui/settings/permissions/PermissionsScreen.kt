@@ -24,9 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.permission.PermissionIntents
 import com.opensmarthome.speaker.permission.PermissionRepository
 
@@ -47,14 +49,14 @@ fun PermissionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Permissions") },
+                title = { Text(stringResource(R.string.permissions_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.common_back)) }
                 },
                 actions = {
                     TextButton(onClick = {
                         context.startActivity(PermissionIntents.appDetails(context))
-                    }) { Text("App info") }
+                    }) { Text(stringResource(R.string.permissions_app_info)) }
                 }
             )
         }
@@ -66,8 +68,8 @@ fun PermissionsScreen(
         ) {
             item {
                 Text(
-                    text = if (state.ungrantedCount == 0) "All capabilities unlocked."
-                    else "${state.ungrantedCount} capabilit${if (state.ungrantedCount == 1) "y" else "ies"} locked.",
+                    text = if (state.ungrantedCount == 0) stringResource(R.string.permissions_all_unlocked)
+                    else stringResource(R.string.permissions_locked_count, state.ungrantedCount),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -106,7 +108,8 @@ private fun PermissionRow(
             ) {
                 Text(row.title, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = if (row.granted) "Granted" else "Denied",
+                    text = if (row.granted) stringResource(R.string.permissions_status_granted)
+                    else stringResource(R.string.permissions_status_denied),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (row.granted)
                         MaterialTheme.colorScheme.primary
@@ -118,7 +121,7 @@ private fun PermissionRow(
             if (row.unlocks.isNotEmpty()) {
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    text = "Unlocks: " + row.unlocks.joinToString(", "),
+                    text = stringResource(R.string.permissions_unlocks_prefix, row.unlocks.joinToString(", ")),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -129,7 +132,7 @@ private fun PermissionRow(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onOpenSettings) {
-                        Text("Open settings")
+                        Text(stringResource(R.string.permissions_open_settings))
                     }
                 }
             }

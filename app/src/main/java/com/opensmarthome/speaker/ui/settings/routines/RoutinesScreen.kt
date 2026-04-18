@@ -24,9 +24,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.assistant.routine.Routine
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,9 +42,9 @@ fun RoutinesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Routines") },
+                title = { Text(stringResource(R.string.routines_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.common_back)) }
                 }
             )
         }
@@ -78,8 +80,8 @@ private fun LoadedContent(
     ) {
         item {
             Text(
-                text = if (routines.isEmpty()) "No routines saved. Say 'remember this routine…' while talking to create one."
-                else "${routines.size} routines",
+                text = if (routines.isEmpty()) stringResource(R.string.routines_empty)
+                else stringResource(R.string.routines_count, routines.size),
                 style = MaterialTheme.typography.labelMedium
             )
         }
@@ -103,7 +105,7 @@ private fun RoutineRow(
             }
             Spacer(Modifier.size(8.dp))
             Text(
-                text = "${routine.actions.size} action${if (routine.actions.size == 1) "" else "s"}",
+                text = stringResource(R.string.routines_action_count, routine.actions.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -116,7 +118,7 @@ private fun RoutineRow(
             }
             if (routine.actions.size > 3) {
                 Text(
-                    text = "  … and ${routine.actions.size - 3} more",
+                    text = stringResource(R.string.routines_more, routine.actions.size - 3),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp)
@@ -127,7 +129,7 @@ private fun RoutineRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onDelete) { Text("Delete") }
+                TextButton(onClick = onDelete) { Text(stringResource(R.string.common_delete)) }
             }
         }
     }

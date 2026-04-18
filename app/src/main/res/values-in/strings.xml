@@ -29,4 +29,26 @@
     <string name="settings_wake_word_interrupts_tts">Wake Word Interrupts TTS</string>
     <string name="settings_media_button_trigger">Media Button Trigger</string>
     <string name="settings_media_button_trigger_hint">Use Bluetooth headset button to start voice input</string>
+
+    <!-- Common buttons -->
+    <string name="common_back">Back</string>
+    <string name="common_delete">Delete</string>
+
+    <!-- Permissions screen -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_app_info">App info</string>
+    <string name="permissions_all_unlocked">All capabilities unlocked.</string>
+    <string name="permissions_status_granted">Granted</string>
+    <string name="permissions_status_denied">Denied</string>
+    <string name="permissions_unlocks_prefix">Unlocks: %1$s</string>
+    <string name="permissions_open_settings">Open settings</string>
+
+    <!-- Routines screen -->
+    <string name="routines_title">Routines</string>
+    <string name="routines_empty">No routines saved. Say \'remember this routine\u2026\' while talking to create one.</string>
+    <string name="routines_more">  \u2026 and %1$d more</string>
+
+    <string name="routines_count">%1$d routines</string>
+    <string name="routines_action_count">%1$d actions</string>
+    <string name="permissions_locked_count">%1$d capabilities locked.</string>
 </resources>
