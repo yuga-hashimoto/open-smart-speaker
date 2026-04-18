@@ -134,4 +134,52 @@ class WikipediaSearchProviderTest {
         val first = server.takeRequest()
         assertThat(first.path).contains("/en/")
     }
+
+    @Test
+    fun `open-search request includes Wikimedia-policy User-Agent header`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """["Android",["Android"],[""],["https://ja.wikipedia.org/wiki/Android"]]"""
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"title":"Android","extract":"Android is an OS."}"""
+            )
+        )
+
+        provider.search("Android", "ja")
+
+        val openSearchRequest = server.takeRequest()
+        val userAgent = openSearchRequest.getHeader("User-Agent")
+        assertThat(userAgent).isNotNull()
+        // Wikimedia User-Agent policy: identify app + include a contact URL/email.
+        // https://meta.wikimedia.org/wiki/User-Agent_policy
+        assertThat(userAgent).contains("OpenSmartSpeaker")
+        assertThat(userAgent).contains("https://github.com/")
+    }
+
+    @Test
+    fun `summary request includes Wikimedia-policy User-Agent header`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """["Android",["Android"],[""],["https://ja.wikipedia.org/wiki/Android"]]"""
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"title":"Android","extract":"Android is an OS."}"""
+            )
+        )
+
+        provider.search("Android", "ja")
+
+        // Skip the open-search request; inspect the summary request that follows.
+        server.takeRequest()
+        val summaryRequest = server.takeRequest()
+        val userAgent = summaryRequest.getHeader("User-Agent")
+        assertThat(userAgent).isNotNull()
+        assertThat(userAgent).contains("OpenSmartSpeaker")
+        assertThat(userAgent).contains("https://github.com/")
+    }
 }

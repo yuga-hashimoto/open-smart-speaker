@@ -3,6 +3,7 @@ package com.opensmarthome.speaker.tool.info
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -51,7 +52,7 @@ class WikipediaSearchProvider(
             addQueryParameter("format", "json")
         }.build()
 
-        val request = Request.Builder().url(url).get().build()
+        val request = newRequest(url)
         return runCatching {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@use null
@@ -74,7 +75,7 @@ class WikipediaSearchProvider(
             .addPathSegment(title)
             .build()
 
-        val request = Request.Builder().url(url).get().build()
+        val request = newRequest(url)
         return runCatching {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@use null
@@ -90,5 +91,28 @@ class WikipediaSearchProvider(
         }.getOrNull()
     }
 
+    /**
+     * Build a GET request that complies with the Wikimedia User-Agent policy.
+     *
+     * Wikimedia rejects requests with generic library defaults (e.g. `okhttp/x.y.z`)
+     * with HTTP 403. The policy requires identifying the application and including
+     * a contact URL or email so operators can reach maintainers if the traffic
+     * misbehaves.
+     *
+     * See: https://meta.wikimedia.org/wiki/User-Agent_policy
+     */
+    private fun newRequest(url: HttpUrl): Request =
+        Request.Builder()
+            .url(url)
+            .header("User-Agent", USER_AGENT)
+            .get()
+            .build()
+
     private data class Summary(val text: String, val url: String?)
+
+    companion object {
+        // Identifier + contact URL required by the Wikimedia User-Agent policy.
+        private const val USER_AGENT =
+            "OpenSmartSpeaker/0.1.0 (https://github.com/yuga-hashimoto/open-smart-speaker)"
+    }
 }
