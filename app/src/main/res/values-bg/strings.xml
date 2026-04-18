@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Език по подразбиране на системата</string>
     <string name="locale_picker_requires_android_13">Изисква Android 13 или по-нова версия</string>
     <string name="locale_picker_close">Затваряне</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">Зарежда се времето…</string>
+    <string name="briefing_weather_error">Времето не можа да се зареди</string>
+    <string name="briefing_headlines_title">Заглавия</string>
+    <string name="briefing_headlines_loading">Извличане на днешните заглавия…</string>
+    <string name="briefing_headlines_error">Заглавията не можаха да се заредят</string>
+    <string name="briefing_error_network">Проверете връзката си и опитайте отново.</string>
+    <string name="briefing_error_parse">Източникът върна неочакван отговор.</string>
+    <string name="briefing_error_unknown">Нещо се обърка. Моля, опитайте отново.</string>
+    <string name="briefing_retry">Опитай отново</string>
 </resources>

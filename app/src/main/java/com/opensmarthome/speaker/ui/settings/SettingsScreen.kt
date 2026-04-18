@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.ui.settings.locale.LocalePickerRow
+import com.opensmarthome.speaker.ui.settings.weather.WeatherLocationPickerRow
 
 @Composable
 fun SettingsScreen(
@@ -305,14 +306,12 @@ fun SettingsScreen(
         SettingsDivider()
 
         // === Weather ===
+        // Searchable city picker (Phase B of docs/roadmap.md UX polish).
+        // Keep `viewModel.saveDefaultLocation` around on the SettingsViewModel
+        // for compatibility with any other callers; the picker row bypasses
+        // it and writes via its own dedicated ViewModel instead.
         SectionHeader("Weather")
-        val defaultLocation by viewModel.defaultLocation.collectAsState()
-        SettingsTextField(
-            "Default weather location / 既定の天気の場所",
-            defaultLocation
-        ) { value ->
-            viewModel.saveDefaultLocation(value)
-        }
+        WeatherLocationPickerRow()
         SettingsHint(
             "Used when you ask for the weather without naming a place " +
                 "(\"what's the weather?\" / \"天気教えて\"). Leave empty " +

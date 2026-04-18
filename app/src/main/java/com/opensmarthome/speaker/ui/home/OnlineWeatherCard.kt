@@ -13,7 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Filter
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Thunderstorm
 import androidx.compose.material.icons.filled.Umbrella
 import androidx.compose.material.icons.filled.WaterDrop
@@ -21,12 +24,15 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.tool.info.WeatherInfo
 import com.opensmarthome.speaker.ui.theme.DeviceClimate
 import com.opensmarthome.speaker.ui.theme.SpeakerSurfaceVariant
@@ -110,6 +116,90 @@ fun OnlineWeatherCard(
     }
 }
 
+/**
+ * Loading skeleton for the weather tile. Same card chrome as
+ * [OnlineWeatherCard] so the transition from loading → success
+ * doesn't reshape the layout.
+ */
+@Composable
+fun OnlineWeatherCardLoading(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .background(SpeakerSurfaceVariant, RoundedCornerShape(20.dp))
+            .padding(horizontal = 24.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Cloud,
+                contentDescription = null,
+                tint = SpeakerTextSecondary,
+                modifier = Modifier.size(44.dp),
+            )
+            Spacer(modifier = Modifier.size(14.dp))
+            Text(
+                text = stringResource(R.string.briefing_weather_loading),
+                style = MaterialTheme.typography.titleMedium,
+                color = SpeakerTextSecondary,
+            )
+        }
+    }
+}
+
+/**
+ * Error variant for the weather tile. Distinguishes network / parse /
+ * unknown so a user on airplane mode sees "Check your connection" and
+ * a user on a broken endpoint sees the generic failure copy. `onRetry`
+ * is nullable so simpler embeddings can drop the retry button.
+ */
+@Composable
+fun OnlineWeatherCardError(
+    kind: BriefingState.Error.Kind,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(SpeakerSurfaceVariant, RoundedCornerShape(20.dp))
+            .padding(horizontal = 24.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = errorIcon(kind),
+                contentDescription = null,
+                tint = SpeakerTextSecondary,
+                modifier = Modifier.size(28.dp),
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                text = stringResource(R.string.briefing_weather_error),
+                style = MaterialTheme.typography.titleMedium,
+                color = SpeakerTextPrimary,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(errorDetailStringRes(kind)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = SpeakerTextSecondary,
+        )
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            TextButton(onClick = onRetry) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.size(6.dp))
+                Text(text = stringResource(R.string.briefing_retry))
+            }
+        }
+    }
+}
+
 private fun formatTemp(value: Double): String = "%.0f".format(value)
 
 /**
@@ -127,4 +217,16 @@ private fun conditionIcon(condition: String): ImageVector {
         "clear" in c -> Icons.Filled.WbSunny
         else -> Icons.Filled.Cloud
     }
+}
+
+private fun errorIcon(kind: BriefingState.Error.Kind): ImageVector = when (kind) {
+    BriefingState.Error.Kind.Network -> Icons.Filled.CloudOff
+    BriefingState.Error.Kind.Parse,
+    BriefingState.Error.Kind.Unknown -> Icons.Filled.ErrorOutline
+}
+
+private fun errorDetailStringRes(kind: BriefingState.Error.Kind): Int = when (kind) {
+    BriefingState.Error.Kind.Network -> R.string.briefing_error_network
+    BriefingState.Error.Kind.Parse -> R.string.briefing_error_parse
+    BriefingState.Error.Kind.Unknown -> R.string.briefing_error_unknown
 }

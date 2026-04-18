@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">システムデフォルト</string>
     <string name="locale_picker_requires_android_13">Android 13 以降が必要</string>
     <string name="locale_picker_close">閉じる</string>
+    <string name="weather_location_picker_title">既定の天気の場所</string>
+    <string name="weather_location_picker_search_hint">都市を検索</string>
+    <string name="weather_location_picker_use_default">組み込みの既定 (東京) を使用</string>
+    <string name="weather_location_picker_close">閉じる</string>
+    <string name="weather_location_picker_no_results">一致する都市がありません</string>
+    <string name="weather_location_picker_current_label_default">東京 (組み込みの既定)</string>
 
     <string name="settings_title">設定</string>
     <string name="settings_back">戻る</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">診断を実行中\u2026</string>
     <string name="voice_health_refresh">診断を更新</string>
     <string name="voice_health_test_mic">マイク + STT を今すぐテスト</string>
+    <string name="briefing_weather_loading">天気を読み込み中…</string>
+    <string name="briefing_weather_error">天気を取得できませんでした</string>
+    <string name="briefing_headlines_title">ニュース</string>
+    <string name="briefing_headlines_loading">今日のニュースを取得中…</string>
+    <string name="briefing_headlines_error">ニュースを取得できませんでした</string>
+    <string name="briefing_error_network">接続を確認して、もう一度お試しください。</string>
+    <string name="briefing_error_parse">ソースから予期しない応答が返されました。</string>
+    <string name="briefing_error_unknown">問題が発生しました。もう一度お試しください。</string>
+    <string name="briefing_retry">再試行</string>
 </resources>

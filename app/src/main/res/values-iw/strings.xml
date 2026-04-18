@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">ברירת מחדל של המערכת</string>
     <string name="locale_picker_requires_android_13">דורש Android 13 ומעלה</string>
     <string name="locale_picker_close">סגור</string>
+    <string name="weather_location_picker_title">מיקום מזג אוויר ברירת מחדל</string>
+    <string name="weather_location_picker_search_hint">חיפוש עיר</string>
+    <string name="weather_location_picker_use_default">השתמש בברירת המחדל המובנית (טוקיו)</string>
+    <string name="weather_location_picker_close">סגור</string>
+    <string name="weather_location_picker_no_results">אין ערים תואמות</string>
+    <string name="weather_location_picker_current_label_default">טוקיו (ברירת מחדל מובנית)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">טוען מזג אוויר…</string>
+    <string name="briefing_weather_error">לא ניתן לטעון מזג אוויר</string>
+    <string name="briefing_headlines_title">כותרות</string>
+    <string name="briefing_headlines_loading">מביא את הכותרות של היום…</string>
+    <string name="briefing_headlines_error">לא ניתן לטעון כותרות</string>
+    <string name="briefing_error_network">בדוק את החיבור שלך ונסה שוב.</string>
+    <string name="briefing_error_parse">המקור החזיר תגובה לא צפויה.</string>
+    <string name="briefing_error_unknown">משהו השתבש. אנא נסה שוב.</string>
+    <string name="briefing_retry">נסה שוב</string>
 </resources>

@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Systeemstandaard</string>
     <string name="locale_picker_requires_android_13">Vereist Android 13 of hoger</string>
     <string name="locale_picker_close">Sluiten</string>
+    <string name="weather_location_picker_title">Standaard weerlocatie</string>
+    <string name="weather_location_picker_search_hint">Zoek een stad</string>
+    <string name="weather_location_picker_use_default">Gebruik ingebouwde standaard (Tokio)</string>
+    <string name="weather_location_picker_close">Sluiten</string>
+    <string name="weather_location_picker_no_results">Geen overeenkomende steden</string>
+    <string name="weather_location_picker_current_label_default">Tokio (ingebouwde standaard)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">Weer laden…</string>
+    <string name="briefing_weather_error">Kan het weer niet laden</string>
+    <string name="briefing_headlines_title">Krantenkoppen</string>
+    <string name="briefing_headlines_loading">Krantenkoppen van vandaag ophalen…</string>
+    <string name="briefing_headlines_error">Kan krantenkoppen niet laden</string>
+    <string name="briefing_error_network">Controleer je verbinding en probeer het opnieuw.</string>
+    <string name="briefing_error_parse">De bron gaf een onverwacht antwoord.</string>
+    <string name="briefing_error_unknown">Er is iets misgegaan. Probeer het opnieuw.</string>
+    <string name="briefing_retry">Opnieuw proberen</string>
 </resources>

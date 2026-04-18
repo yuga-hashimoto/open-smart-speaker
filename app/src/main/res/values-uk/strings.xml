@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Стандартно у системі</string>
     <string name="locale_picker_requires_android_13">Потрібен Android 13 або новіший</string>
     <string name="locale_picker_close">Закрити</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">Завантаження погоди…</string>
+    <string name="briefing_weather_error">Не вдалося завантажити погоду</string>
+    <string name="briefing_headlines_title">Заголовки</string>
+    <string name="briefing_headlines_loading">Отримання заголовків на сьогодні…</string>
+    <string name="briefing_headlines_error">Не вдалося завантажити заголовки</string>
+    <string name="briefing_error_network">Перевірте з\'єднання та спробуйте знову.</string>
+    <string name="briefing_error_parse">Джерело повернуло неочікувану відповідь.</string>
+    <string name="briefing_error_unknown">Щось пішло не так. Спробуйте знову.</string>
+    <string name="briefing_retry">Повторити</string>
 </resources>

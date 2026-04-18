@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">ค่าเริ่มต้นของระบบ</string>
     <string name="locale_picker_requires_android_13">ต้องใช้ Android 13 ขึ้นไป</string>
     <string name="locale_picker_close">ปิด</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">กำลังโหลดสภาพอากาศ…</string>
+    <string name="briefing_weather_error">ไม่สามารถโหลดสภาพอากาศได้</string>
+    <string name="briefing_headlines_title">พาดหัวข่าว</string>
+    <string name="briefing_headlines_loading">กำลังดึงพาดหัวข่าวของวันนี้…</string>
+    <string name="briefing_headlines_error">ไม่สามารถโหลดพาดหัวข่าวได้</string>
+    <string name="briefing_error_network">ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง</string>
+    <string name="briefing_error_parse">แหล่งข้อมูลส่งคืนการตอบสนองที่ไม่คาดคิด</string>
+    <string name="briefing_error_unknown">มีบางอย่างผิดพลาด โปรดลองอีกครั้ง</string>
+    <string name="briefing_retry">ลองอีกครั้ง</string>
 </resources>

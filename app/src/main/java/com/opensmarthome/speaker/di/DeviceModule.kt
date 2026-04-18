@@ -391,6 +391,20 @@ object DeviceModule {
     ): com.opensmarthome.speaker.tool.info.WeatherProvider =
         com.opensmarthome.speaker.tool.info.OpenMeteoWeatherProvider(client, moshi)
 
+    /**
+     * City search repository for the Settings weather-location picker. Uses
+     * the same Open-Meteo endpoint family as [OpenMeteoWeatherProvider] so
+     * both the forecast tool and the picker share one provider (and one
+     * External Service Review).
+     */
+    @Provides
+    @Singleton
+    fun provideCitySearchRepository(
+        client: OkHttpClient,
+        moshi: Moshi
+    ): com.opensmarthome.speaker.data.location.CitySearchRepository =
+        com.opensmarthome.speaker.data.location.OpenMeteoCitySearchRepository(client, moshi)
+
     @Provides
     @Singleton
     fun provideNewsProvider(

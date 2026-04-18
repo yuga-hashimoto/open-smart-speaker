@@ -10,6 +10,7 @@ import com.opensmarthome.speaker.tool.info.WeatherInfo
 import com.opensmarthome.speaker.tool.info.WeatherProvider
 import io.mockk.every
 import io.mockk.mockk
+import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -71,8 +72,10 @@ class DefaultOnlineBriefingSourceTest {
 
         val result = source.currentWeather()
 
-        assertThat(result).isNotNull()
-        assertThat(result!!.location).isEqualTo("Osaka")
+        assertThat(result.isSuccess).isTrue()
+        val info = result.getOrNull()
+        assertThat(info).isNotNull()
+        assertThat(info!!.location).isEqualTo("Osaka")
         assertThat(weather.lastLocation).isEqualTo("Osaka")
     }
 
@@ -97,17 +100,31 @@ class DefaultOnlineBriefingSourceTest {
     }
 
     @Test
-    fun `currentWeather returns null when provider throws`() = runTest {
+    fun `currentWeather returns Result failure when provider throws generic exception`() = runTest {
         val weather = FakeWeatherProvider(error = RuntimeException("geocode down"))
         val source = DefaultOnlineBriefingSource(weather, FakeNewsProvider(), prefsReturning("Osaka"))
 
         val result = source.currentWeather()
 
-        assertThat(result).isNull()
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(RuntimeException::class.java)
     }
 
     @Test
-    fun `latestHeadlines returns items from news provider with default feed`() = runTest {
+    fun `currentWeather returns Result failure preserving IOException for network errors`() = runTest {
+        // IOException must propagate unwrapped so HomeViewModel's classify()
+        // can bucket it as BriefingState.Error.Kind.Network.
+        val weather = FakeWeatherProvider(error = IOException("offline"))
+        val source = DefaultOnlineBriefingSource(weather, FakeNewsProvider(), prefsReturning("Osaka"))
+
+        val result = source.currentWeather()
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
+    }
+
+    @Test
+    fun `latestHeadlines returns Result success with items from news provider`() = runTest {
         val news = FakeNewsProvider(
             result = listOf(
                 NewsItem("headline 1", "summary 1", "https://example/1", "2026-04-17T08:00"),
@@ -118,7 +135,8 @@ class DefaultOnlineBriefingSourceTest {
 
         val result = source.latestHeadlines(limit = 2)
 
-        assertThat(result).hasSize(2)
+        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrNull()).hasSize(2)
         assertThat(news.lastFeedUrl).isEqualTo(DefaultOnlineBriefingSource.DEFAULT_FEED)
         assertThat(news.lastLimit).isEqualTo(2)
     }
@@ -136,19 +154,36 @@ class DefaultOnlineBriefingSourceTest {
     }
 
     @Test
-    fun `latestHeadlines returns empty list when provider throws`() = runTest {
+    fun `latestHeadlines returns Result failure when provider throws`() = runTest {
         val news = FakeNewsProvider(error = RuntimeException("feed down"))
         val source = DefaultOnlineBriefingSource(FakeWeatherProvider(), news, prefsReturning(null))
 
         val result = source.latestHeadlines()
 
-        assertThat(result).isEmpty()
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(RuntimeException::class.java)
     }
 
     @Test
-    fun `Empty source returns null weather and empty headlines`() = runTest {
+    fun `latestHeadlines preserves IOException for network classification`() = runTest {
+        val news = FakeNewsProvider(error = IOException("feed unreachable"))
+        val source = DefaultOnlineBriefingSource(FakeWeatherProvider(), news, prefsReturning(null))
+
+        val result = source.latestHeadlines()
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(IOException::class.java)
+    }
+
+    @Test
+    fun `Empty source returns Result success with null weather and empty headlines`() = runTest {
         val source = OnlineBriefingSource.Empty
-        assertThat(source.currentWeather()).isNull()
-        assertThat(source.latestHeadlines()).isEmpty()
+        val weather = source.currentWeather()
+        val headlines = source.latestHeadlines()
+
+        assertThat(weather.isSuccess).isTrue()
+        assertThat(weather.getOrNull()).isNull()
+        assertThat(headlines.isSuccess).isTrue()
+        assertThat(headlines.getOrNull()).isEmpty()
     }
 }

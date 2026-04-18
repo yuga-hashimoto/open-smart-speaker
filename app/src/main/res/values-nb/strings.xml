@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Systemstandard</string>
     <string name="locale_picker_requires_android_13">Krever Android 13 eller nyere</string>
     <string name="locale_picker_close">Lukk</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">Laster været…</string>
+    <string name="briefing_weather_error">Kunne ikke laste været</string>
+    <string name="briefing_headlines_title">Overskrifter</string>
+    <string name="briefing_headlines_loading">Henter dagens overskrifter…</string>
+    <string name="briefing_headlines_error">Kunne ikke laste overskrifter</string>
+    <string name="briefing_error_network">Sjekk tilkoblingen og prøv igjen.</string>
+    <string name="briefing_error_parse">Kilden returnerte et uventet svar.</string>
+    <string name="briefing_error_unknown">Noe gikk galt. Prøv igjen.</string>
+    <string name="briefing_retry">Prøv igjen</string>
 </resources>

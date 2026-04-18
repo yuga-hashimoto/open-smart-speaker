@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">По умолчанию в системе</string>
     <string name="locale_picker_requires_android_13">Требуется Android 13 или новее</string>
     <string name="locale_picker_close">Закрыть</string>
+    <string name="weather_location_picker_title">Местоположение погоды по умолчанию</string>
+    <string name="weather_location_picker_search_hint">Поиск города</string>
+    <string name="weather_location_picker_use_default">Использовать встроенное по умолчанию (Токио)</string>
+    <string name="weather_location_picker_close">Закрыть</string>
+    <string name="weather_location_picker_no_results">Нет подходящих городов</string>
+    <string name="weather_location_picker_current_label_default">Токио (встроенное по умолчанию)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -40,4 +46,13 @@
     <string name="voice_health_running">Running diagnostics\u2026</string>
     <string name="voice_health_refresh">Refresh Diagnostics</string>
     <string name="voice_health_test_mic">Test Mic + STT Now</string>
+    <string name="briefing_weather_loading">Загрузка погоды…</string>
+    <string name="briefing_weather_error">Не удалось загрузить погоду</string>
+    <string name="briefing_headlines_title">Заголовки</string>
+    <string name="briefing_headlines_loading">Получение заголовков на сегодня…</string>
+    <string name="briefing_headlines_error">Не удалось загрузить заголовки</string>
+    <string name="briefing_error_network">Проверьте подключение и попробуйте ещё раз.</string>
+    <string name="briefing_error_parse">Источник вернул неожиданный ответ.</string>
+    <string name="briefing_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
+    <string name="briefing_retry">Повторить</string>
 </resources>

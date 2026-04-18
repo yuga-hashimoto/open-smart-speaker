@@ -87,12 +87,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         ClockWidget(time = time)
                         Spacer(modifier = Modifier.height(20.dp))
-                        val online = onlineWeather
-                        if (online != null) {
-                            OnlineWeatherCard(weather = online)
-                        } else {
-                            WeatherWidget(weather = weather)
-                        }
+                        WeatherBlock(state = onlineWeather, sensorWeather = weather)
                     }
                     Spacer(Modifier.width(24.dp))
                     Column(
@@ -115,10 +110,10 @@ fun HomeScreen(
                         }
                     }
                 }
-                if (headlines.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HeadlinesCard(headlines = headlines)
-                }
+                HeadlinesBlock(
+                    state = headlines,
+                    modifier = Modifier.padding(top = 20.dp),
+                )
             }
         } else {
             Column(
@@ -130,12 +125,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(6.dp))
                 ClockWidget(time = time)
                 Spacer(modifier = Modifier.height(28.dp))
-                val online = onlineWeather
-                if (online != null) {
-                    OnlineWeatherCard(weather = online)
-                } else {
-                    WeatherWidget(weather = weather)
-                }
+                WeatherBlock(state = onlineWeather, sensorWeather = weather)
                 nextEvent?.let {
                     Spacer(modifier = Modifier.height(20.dp))
                     NextEventCard(event = it)
@@ -151,10 +141,10 @@ fun HomeScreen(
                 if (chips.isNotEmpty()) {
                     DeviceStatusChips(chips = chips)
                 }
-                if (headlines.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    HeadlinesCard(headlines = headlines)
-                }
+                HeadlinesBlock(
+                    state = headlines,
+                    modifier = Modifier.padding(top = 24.dp),
+                )
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
@@ -202,5 +192,61 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.TopCenter)
             )
         }
+    }
+}
+
+/**
+ * Routes an online-weather [BriefingState] to the right variant of the
+ * weather tile. On success with data we show the full Alexa-style card;
+ * on success with null we fall back to the sensor-based [WeatherWidget]
+ * (HA / SwitchBot-provided temps) so the tile doesn't disappear when
+ * online data is merely unavailable but local data is present. On
+ * Loading / Error we show the matching skeleton / explainer card.
+ */
+@Composable
+private fun WeatherBlock(
+    state: BriefingState<com.opensmarthome.speaker.tool.info.WeatherInfo?>,
+    sensorWeather: WeatherData?,
+    modifier: Modifier = Modifier,
+) {
+    when (state) {
+        BriefingState.Loading -> OnlineWeatherCardLoading(modifier = modifier)
+        is BriefingState.Success -> {
+            val info = state.data
+            if (info != null) {
+                OnlineWeatherCard(weather = info, modifier = modifier)
+            } else {
+                WeatherWidget(weather = sensorWeather, modifier = modifier)
+            }
+        }
+        is BriefingState.Error -> OnlineWeatherCardError(
+            kind = state.kind,
+            modifier = modifier,
+        )
+    }
+}
+
+/**
+ * Routes a headlines [BriefingState] to the right variant of the tile
+ * strip. Success-with-empty collapses to nothing (legitimate "no news
+ * today"); Loading and Error are explicit so users can tell the fetch
+ * itself failed.
+ */
+@Composable
+private fun HeadlinesBlock(
+    state: BriefingState<List<com.opensmarthome.speaker.tool.info.NewsItem>>,
+    modifier: Modifier = Modifier,
+) {
+    when (state) {
+        BriefingState.Loading -> HeadlinesCardLoading(modifier = modifier)
+        is BriefingState.Success -> {
+            if (state.data.isNotEmpty()) {
+                HeadlinesCard(headlines = state.data, modifier = modifier)
+            }
+        }
+        is BriefingState.Error -> HeadlinesCardError(
+            kind = state.kind,
+            modifier = modifier,
+        )
     }
 }
