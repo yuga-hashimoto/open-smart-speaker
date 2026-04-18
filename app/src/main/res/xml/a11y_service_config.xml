@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Config for OpenSmartSpeakerA11yService (Phase 15 skeleton).
+  Config for OpenDashA11yService (Phase 15 skeleton).
   A separate file from accessibility_service_config.xml, which is used by the
   legacy OpenSmartAccessibilityService that backs the `read_screen` tool.
   P15.2+ tools (read_active_screen, tap_by_text, scroll_screen, type_text)

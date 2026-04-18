@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.opensmarthome.speaker"
+    namespace = "com.opendash.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.opensmarthome.speaker"
+        applicationId = "com.opendash.app"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

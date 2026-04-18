@@ -6,7 +6,7 @@ picture shifts meaningfully — not on every PR.
 
 ## What the app is
 
-OpenSmartSpeaker is an Android tablet app that behaves as a smart speaker and
+OpenDash is an Android tablet app that behaves as a smart speaker and
 an on-device LLM agent with OpenClaw-class tool use. The voice pipeline — wake
 word, STT, routing, TTS — runs on-device wherever possible, and the default
 assistant provider is a local LiteRT-LM model. Cloud providers exist behind the
@@ -112,17 +112,17 @@ hardware.
 
 ## Where to start reading code
 
-- `app/src/main/java/com/opensmarthome/speaker/voice/pipeline/VoicePipeline.kt`
+- `app/src/main/java/com/opendash/app/voice/pipeline/VoicePipeline.kt`
   — the main loop (wake → STT → route → TTS).
-- `app/src/main/java/com/opensmarthome/speaker/assistant/router/ConversationRouter.kt`
+- `app/src/main/java/com/opendash/app/assistant/router/ConversationRouter.kt`
   — provider selection (Embedded / OpenAI-compat / OpenClaw / Auto).
-- `app/src/main/java/com/opensmarthome/speaker/tool/CompositeToolExecutor.kt`
+- `app/src/main/java/com/opendash/app/tool/CompositeToolExecutor.kt`
   — tool dispatch and usage stats wiring.
-- `app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathRouter.kt`
+- `app/src/main/java/com/opendash/app/voice/fastpath/FastPathRouter.kt`
   — sub-200ms deterministic matchers (24+).
-- `app/src/main/java/com/opensmarthome/speaker/multiroom/` — Phase 17 mDNS
+- `app/src/main/java/com/opendash/app/multiroom/` — Phase 17 mDNS
   discovery + HMAC NDJSON message bus.
-- `app/src/main/java/com/opensmarthome/speaker/a11y/OpenSmartSpeakerA11yService.kt`
+- `app/src/main/java/com/opendash/app/a11y/OpenDashA11yService.kt`
   — tablet-control verbs (read / tap / scroll / type).
 
 Start at `VoicePipeline`, follow the route into `ConversationRouter`, and let

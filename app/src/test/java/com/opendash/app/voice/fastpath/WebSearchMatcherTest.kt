@@ -1,0 +1,152 @@
+package com.opendash.app.voice.fastpath
+
+import com.google.common.truth.Truth.assertThat
+import org.junit.jupiter.api.Test
+
+class WebSearchMatcherTest {
+
+    @Test
+    fun `english search for extracts query`() {
+        val m = WebSearchMatcher.tryMatch("search for kotlin coroutines")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments).containsEntry("query", "kotlin coroutines")
+    }
+
+    @Test
+    fun `english look up extracts query`() {
+        val m = WebSearchMatcher.tryMatch("look up the weather on mars")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("the weather on mars")
+    }
+
+    @Test
+    fun `english google extracts query and strips trailing punctuation`() {
+        val m = WebSearchMatcher.tryMatch("google jetpack compose tutorial.")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("jetpack compose tutorial")
+    }
+
+    @Test
+    fun `japanese wo kensaku shite extracts query`() {
+        val m = WebSearchMatcher.tryMatch("kotlinを検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("kotlin")
+    }
+
+    @Test
+    fun `japanese wo guguru extracts query`() {
+        val m = WebSearchMatcher.tryMatch("東京の天気をググって")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("東京の天気")
+    }
+
+    @Test
+    fun `japanese ni tsuite shirabete extracts query`() {
+        val m = WebSearchMatcher.tryMatch("量子コンピュータについて調べて")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("量子コンピュータ")
+    }
+
+    @Test
+    fun `english empty query prompts user instead of firing tool`() {
+        val m = WebSearchMatcher.tryMatch("search")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).isNotNull()
+        assertThat(m?.spokenConfirmation).contains("search")
+    }
+
+    @Test
+    fun `english bare web search prompts user`() {
+        val m = WebSearchMatcher.tryMatch("web search")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).isNotNull()
+    }
+
+    @Test
+    fun `japanese bare web検索 prompts user`() {
+        val m = WebSearchMatcher.tryMatch("web検索して")
+        assertThat(m?.toolName).isNull()
+        assertThat(m?.spokenConfirmation).contains("検索")
+    }
+
+    @Test
+    fun `unrelated utterance returns null`() {
+        assertThat(WebSearchMatcher.tryMatch("turn on the kitchen lights")).isNull()
+        assertThat(WebSearchMatcher.tryMatch("set a timer for 5 minutes")).isNull()
+    }
+
+    // --- Bug C: strip "について Web で検索して" style suffixes from the query ---
+
+    @Test
+    fun `japanese について web で検索して strips trailing noise`() {
+        val m = WebSearchMatcher.tryMatch("Google pixel 14について Web で検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Google pixel 14")
+    }
+
+    @Test
+    fun `japanese 最新情報を検索して retains modifier but drops verb`() {
+        val m = WebSearchMatcher.tryMatch("Python 最新情報を検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Python 最新情報")
+    }
+
+    @Test
+    fun `japanese bare をググって yields clean query`() {
+        val m = WebSearchMatcher.tryMatch("Pythonをググって")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Python")
+    }
+
+    @Test
+    fun `cleanQuery helper removes all trailing noise idempotently`() {
+        assertThat(WebSearchMatcher.cleanQuery("Google pixel 14について Web で検索して"))
+            .isEqualTo("Google pixel 14")
+        assertThat(WebSearchMatcher.cleanQuery("Python 最新情報を検索して"))
+            .isEqualTo("Python 最新情報")
+        assertThat(WebSearchMatcher.cleanQuery("kotlin coroutines"))
+            .isEqualTo("kotlin coroutines")
+    }
+
+    @Test
+    fun `cleanQuery tolerates trailing punctuation`() {
+        assertThat(WebSearchMatcher.cleanQuery("kotlin coroutines?"))
+            .isEqualTo("kotlin coroutines")
+        assertThat(WebSearchMatcher.cleanQuery("天気について。"))
+            .isEqualTo("天気")
+    }
+
+    // --- Bug A: particle-less / space-separated Japanese web-search phrasings ---
+
+    @Test
+    fun `japanese particle-less space separated ウェブで検索して extracts query`() {
+        val m = WebSearchMatcher.tryMatch("LINE レンジャー ウェブで検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("LINE レンジャー")
+    }
+
+    @Test
+    fun `japanese particle-less web で検索して extracts query`() {
+        val m = WebSearchMatcher.tryMatch("Google pixel 14 Web で検索して")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("Google pixel 14")
+    }
+
+    @Test
+    fun `japanese particle-less ネットで調べて extracts query`() {
+        val m = WebSearchMatcher.tryMatch("トマト ネットで調べて")
+        assertThat(m?.toolName).isEqualTo("web_search")
+        assertThat(m?.arguments?.get("query")).isEqualTo("トマト")
+    }
+
+    @Test
+    fun `japanese existing particle form still works with optional particle`() {
+        // Re-assert coverage on existing phrasings to guard against regression.
+        assertThat(
+            WebSearchMatcher.tryMatch("Androidを検索して")?.arguments?.get("query")
+        ).isEqualTo("Android")
+        assertThat(
+            WebSearchMatcher.tryMatch("Pythonについて調べて")?.arguments?.get("query")
+        ).isEqualTo("Python")
+    }
+}

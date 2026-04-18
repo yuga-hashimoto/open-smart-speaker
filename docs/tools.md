@@ -99,7 +99,7 @@ analytics per call.
 
 ## Multi-room
 
-Bus-routed tools that fan out across every mDNS-discovered OpenSmartSpeaker
+Bus-routed tools that fan out across every mDNS-discovered OpenDash
 peer (or a named subset). All require **Multi-room broadcast** enabled in
 Settings and a matching HMAC shared secret on every paired device. See
 [multi-room-quickstart](multi-room-quickstart.md) for onboarding and

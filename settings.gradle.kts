@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OpenSmartSpeaker"
+rootProject.name = "OpenDash"
 include(":app")

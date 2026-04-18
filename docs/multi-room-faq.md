@@ -5,7 +5,7 @@ title: Multi-room FAQ
 # Multi-room FAQ
 
 Answers to the questions new users ask about pairing two or more
-OpenSmartSpeaker tablets for broadcasts, announcements, and session
+OpenDash tablets for broadcasts, announcements, and session
 handoff. If you haven't paired devices yet, start with the
 [Multi-room quickstart](multi-room-quickstart.md). For tool-by-tool
 recipes see the [Multi-room cookbook](multi-room-cookbook.md). For the
@@ -17,7 +17,7 @@ wire format and security rationale see the
 ### Q: Does my router need any special configuration?
 
 No. Multi-room runs over a plain IPv4 LAN using Android's standard mDNS
-(`_opensmartspeaker._tcp.` on port 8421) and a WebSocket/NDJSON bus on
+(`_opendash._tcp.` on port 8421) and a WebSocket/NDJSON bus on
 the same port. You don't need port forwarding, static DHCP reservations,
 or custom firewall rules. The only thing that reliably breaks discovery
 is "AP isolation" / "guest network isolation" on the router, which stops

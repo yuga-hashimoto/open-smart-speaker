@@ -1,6 +1,6 @@
 # Privacy & data flow
 
-OpenSmartSpeaker is built as a **smart speaker that happens to be
+OpenDash is built as a **smart speaker that happens to be
 local-first**, not a client for someone else's cloud. This page
 enumerates exactly which data crosses the device boundary, where it
 goes, and how to turn each channel off.

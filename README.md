@@ -2,8 +2,6 @@
 
 **Turn any Android tablet into a voice-first smart-home device with a local AI brain.**
 
-> Formerly known as **OpenSmartSpeaker**. The repo moved to `yuga-hashimoto/open-dash`; GitHub redirects old URLs automatically. The Android package (`com.opensmarthome.speaker`) has not moved yet — see [docs/roadmap.md](docs/roadmap.md).
-
 Think "Alexa without the cloud, OpenClaw-level autonomy, all on-device."
 
 Say a wake word, ask anything, and the agent responds with voice, controls smart-home
@@ -23,7 +21,7 @@ Existing smart speakers force you to choose between:
 - **Agent frameworks** (OpenClaw, Hermes) — powerful on a laptop, unusable on a
   kitchen countertop tablet.
 
-OpenSmartSpeaker is all three at once, on a single Android tablet you already own.
+OpenDash is all three at once, on a single Android tablet you already own.
 
 ---
 
@@ -82,7 +80,7 @@ OpenSmartSpeaker is all three at once, on a single Android tablet you already ow
 - Opt-in Device Admin unlocks `lock_screen`; no other policies requested
 - Full recipe book in [docs/tablet-control-cookbook.md](docs/tablet-control-cookbook.md)
 
-### Multi-room (`_opensmartspeaker._tcp.` on port 8421)
+### Multi-room (`_opendash._tcp.` on port 8421)
 - Auto-discover peers via mDNS; pair with a shared HMAC-SHA256 secret
 - 4-word **pairing fingerprint** so users verify secrets match without typing them again
 - Speaker groups (`kitchen`, `upstairs`, ...) so `broadcast_tts` can target subsets
@@ -154,7 +152,7 @@ non-UI code. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ### Architecture
 
 ```
-app/src/main/java/com/opensmarthome/speaker/
+app/src/main/java/com/opendash/app/
 ├── assistant/
 │   ├── provider/embedded/   # LiteRT-LM on-device provider
 │   ├── provider/openai/     # OpenAI-compatible REST+SSE

@@ -80,7 +80,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel())
 
 ### Adding a Fast-path matcher
 1. Append the `object : FastPathMatcher` to
-   [`FastPathMatchers.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathMatchers.kt)
+   [`FastPathMatchers.kt`](../app/src/main/java/com/opendash/app/voice/fastpath/FastPathMatchers.kt)
 2. Slot it into `DefaultFastPathRouter.DEFAULT_MATCHERS` respecting
    precedence — earlier entries win when regexes overlap
 3. Add test cases to `FastPathRouterTest`, including a precedence

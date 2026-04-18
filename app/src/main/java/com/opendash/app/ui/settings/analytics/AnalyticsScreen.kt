@@ -1,0 +1,242 @@
+package com.opendash.app.ui.settings.analytics
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.opendash.app.R
+import com.opendash.app.data.db.ToolUsageEntity
+import com.opendash.app.tool.analytics.AnalyticsRepository
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnalyticsScreen(
+    onBack: () -> Unit,
+    viewModel: AnalyticsViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var showReset by remember { mutableStateOf(false) }
+
+    if (showReset) {
+        AlertDialog(
+            onDismissRequest = { showReset = false },
+            title = { Text(stringResource(R.string.analytics_reset_dialog_title)) },
+            text = { Text(stringResource(R.string.analytics_reset_dialog_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.reset()
+                    showReset = false
+                }) { Text(stringResource(R.string.analytics_reset_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReset = false }) { Text(stringResource(R.string.common_cancel)) }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.analytics_title)) },
+                navigationIcon = {
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.common_back)) }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { showReset = true },
+                        enabled = (state.summary?.totalInvocations ?: 0) > 0
+                    ) { Text(stringResource(R.string.analytics_reset_button)) }
+                }
+            )
+        }
+    ) { padding ->
+        if (state.loading) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) { CircularProgressIndicator() }
+        } else {
+            LoadedContent(
+                summary = state.summary,
+                allTime = state.allTime,
+                latency = state.latency,
+                fastPathRate = state.fastPathRate,
+                padding = padding,
+                onClearToolUsageStats = viewModel::clearToolUsageStats
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadedContent(
+    summary: AnalyticsRepository.Summary?,
+    allTime: List<ToolUsageEntity>,
+    latency: List<AnalyticsViewModel.LatencyRow>,
+    fastPathRate: Double?,
+    padding: PaddingValues,
+    onClearToolUsageStats: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(padding),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        summary?.let { item { SummaryCard(it) } }
+        fastPathRate?.let { rate ->
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.analytics_fast_path_rate, (rate * 100).toInt()),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = stringResource(R.string.analytics_fast_path_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        if (latency.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.analytics_voice_latency_title),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            items(latency, key = { it.event }) { row ->
+                LatencyRowCard(row = row)
+            }
+        }
+
+        item {
+            Text(
+                text = if (allTime.isEmpty()) stringResource(R.string.analytics_no_tools_used)
+                else stringResource(R.string.analytics_all_time_usage, allTime.size),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+        items(allTime, key = { it.toolName }) { entry ->
+            ToolUsageRow(entry = entry)
+        }
+
+        if (allTime.isNotEmpty()) {
+            item(key = "clear-tool-usage-stats") {
+                TextButton(
+                    onClick = onClearToolUsageStats,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(stringResource(R.string.analytics_clear_tool_usage)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LatencyRowCard(row: AnalyticsViewModel.LatencyRow) {
+    val overBudget = row.violations > 0
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(row.event, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = if (overBudget) stringResource(R.string.analytics_latency_over, row.violations)
+                    else stringResource(R.string.analytics_latency_within),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (overBudget) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.size(4.dp))
+            Text(
+                text = if (row.budgetMs > 0)
+                    stringResource(R.string.analytics_latency_stats_with_budget, row.averageMs, row.p95Ms, row.budgetMs)
+                else
+                    stringResource(R.string.analytics_latency_stats, row.averageMs, row.p95Ms),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryCard(summary: AnalyticsRepository.Summary) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.analytics_tool_calls, summary.totalInvocations),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(Modifier.size(4.dp))
+            Text(
+                text = stringResource(
+                    R.string.analytics_summary_stats,
+                    (summary.globalSuccessRate * 100).toInt(),
+                    summary.uniqueTools
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun ToolUsageRow(entry: ToolUsageEntity) {
+    val successRate = if (entry.totalCalls == 0L) 0 else (entry.successCalls * 100 / entry.totalCalls)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(entry.toolName, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.analytics_success_rate, successRate.toInt()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = "${entry.totalCalls}",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+    }
+}

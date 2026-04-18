@@ -42,14 +42,14 @@
     </queries>
 
     <application
-        android:name=".OpenSmartSpeakerApp"
+        android:name=".OpenDashApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         android:supportsRtl="true"
-        android:theme="@style/Theme.OpenSmartSpeaker">
+        android:theme="@style/Theme.OpenDash">
 
         <activity
             android:name=".MainActivity"
@@ -137,7 +137,7 @@
         <!-- NotificationListener: reads device notifications for the LLM agent.
              User must grant permission in Settings > Apps > Notification Access. -->
         <service
-            android:name=".tool.system.OpenSmartSpeakerNotificationListener"
+            android:name=".tool.system.OpenDashNotificationListener"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -176,7 +176,7 @@
              wire read_active_screen / tap_by_text / scroll_screen / type_text
              tools on top of this. User must enable in Settings > Accessibility. -->
         <service
-            android:name=".a11y.OpenSmartSpeakerA11yService"
+            android:name=".a11y.OpenDashA11yService"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

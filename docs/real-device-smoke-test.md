@@ -62,7 +62,7 @@ Run the following scripted flow. Stop on first failure; file as a bug with the l
 - **Pass**: Two-column layout renders; touch targets ≥ 48 dp; night mode + NightClockOverlay toggles work.
 
 ### 8. Permissions walkthrough
-- Fresh install (or `pm clear com.opensmarthome.speaker`).
+- Fresh install (or `pm clear com.opendash.app`).
 - After model download finishes, OnboardingScreen must appear before the mode scaffold.
 - **Pass**: Each permission row's "Grant" deep-link opens the correct system screen.
 
@@ -79,13 +79,13 @@ Verifies the mDNS/NSD plumbing added in PR #209 (discovery) and PR #220 (registr
 1. **Discovery from the app**
    - Launch the app on both devices.
    - On device A, open Settings → System Info and watch the **"Nearby speakers (mDNS)"** row.
-   - **Pass**: device B (instance name `OpenSmartSpeaker-<Build.MODEL>`) appears in the list within ~3 s of launch. Swap roles and re-verify from device B.
+   - **Pass**: device B (instance name `OpenDash-<Build.MODEL>`) appears in the list within ~3 s of launch. Swap roles and re-verify from device B.
    - **Fail trigger**: row stays on "0 peers" after 10 s — check that both devices are on the same subnet and that `MulticastDiscovery.start()` ran (look for the log tag in `adb logcat | grep MulticastDiscovery`).
 
 2. **Registration from a desktop**
    - From a machine on the same LAN:
-     - macOS: `dns-sd -B _opensmartspeaker._tcp`
-     - Linux: `avahi-browse -rt _opensmartspeaker._tcp`
+     - macOS: `dns-sd -B _opendash._tcp`
+     - Linux: `avahi-browse -rt _opendash._tcp`
    - **Pass**: each running instance is listed with its instance name and port `8421` (the `DEFAULT_PORT` from `MulticastDiscovery`).
    - Kill the app on one device; the entry should disappear from the browse output within a few seconds.
 

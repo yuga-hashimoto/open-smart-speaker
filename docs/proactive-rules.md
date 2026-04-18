@@ -133,7 +133,7 @@ monitor and read `monitor.status.value` from the supplier.
 
 ## Related
 
-- [`SuggestionRule.kt`](../app/src/main/java/com/opensmarthome/speaker/assistant/proactive/SuggestionRule.kt)
-- [`SuggestionEngine.kt`](../app/src/main/java/com/opensmarthome/speaker/assistant/proactive/SuggestionEngine.kt)
+- [`SuggestionRule.kt`](../app/src/main/java/com/opendash/app/assistant/proactive/SuggestionRule.kt)
+- [`SuggestionEngine.kt`](../app/src/main/java/com/opendash/app/assistant/proactive/SuggestionEngine.kt)
 - [testing-conventions.md](testing-conventions.md) — MockK / runTest patterns.
 - [home-dashboard.md](home-dashboard.md) — the UI surface for Suggestions.

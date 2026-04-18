@@ -120,8 +120,8 @@ doesn't show orphaned controls.
 | `Envelope rejected: REPLAY_WINDOW` | Clock skew > 30 s; enable automatic network time |
 | `Envelope rejected: NO_SECRET` | Receiver's secret is blank; paste one in Settings |
 | `Envelope rejected: VERSION_MISMATCH` | Protocol bumps; upgrade both apps |
-| `mDNS discovery started for _opensmartspeaker._tcp.` | Discovery is live |
-| `mDNS registered as OpenSmartSpeaker-…` | This device is advertising |
+| `mDNS discovery started for _opendash._tcp.` | Discovery is live |
+| `mDNS registered as OpenDash-…` | This device is advertising |
 
 ## Tools summary
 

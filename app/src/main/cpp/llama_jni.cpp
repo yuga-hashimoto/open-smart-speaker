@@ -18,7 +18,7 @@ struct LlamaContext {
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_nativeLoadModel(
+Java_com_opendash_app_assistant_provider_embedded_LlamaCppBridge_nativeLoadModel(
     JNIEnv *env, jobject thiz,
     jstring path, jint contextSize, jint threads, jint gpuLayers) {
 
@@ -68,7 +68,7 @@ Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_native
 }
 
 JNIEXPORT void JNICALL
-Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_nativeUnloadModel(
+Java_com_opendash_app_assistant_provider_embedded_LlamaCppBridge_nativeUnloadModel(
     JNIEnv *env, jobject thiz, jlong handle) {
 
     auto *lctx = reinterpret_cast<LlamaContext*>(handle);
@@ -143,7 +143,7 @@ static std::string generate_impl(LlamaContext *lctx, const char *prompt_str, int
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_nativeGenerate(
+Java_com_opendash_app_assistant_provider_embedded_LlamaCppBridge_nativeGenerate(
     JNIEnv *env, jobject thiz,
     jlong handle, jstring prompt, jint maxTokens, jfloat temperature) {
 
@@ -160,7 +160,7 @@ Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_native
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_opensmarthome_speaker_assistant_provider_embedded_LlamaCppBridge_nativeGenerateStreaming(
+Java_com_opendash_app_assistant_provider_embedded_LlamaCppBridge_nativeGenerateStreaming(
     JNIEnv *env, jobject thiz,
     jlong handle, jstring prompt, jint maxTokens, jfloat temperature,
     jobject callback) {

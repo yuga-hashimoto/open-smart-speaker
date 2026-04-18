@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="app_name">OpenDash</string>
     <string name="tab_chat">チャット</string>
     <string name="tab_dashboard">ダッシュボード</string>
     <string name="tab_ambient">アンビエント</string>
     <string name="tab_settings">設定</string>
     <string name="accessibility_service_description">スマートスピーカーエージェントが現在表示されている画面のテキストを読み取り、UI操作を代行できるようにします。</string>
     <string name="accessibility_service_summary">オンデバイスエージェントが画面を認識・操作できるようにします。</string>
-    <string name="a11y_service_description">OpenSmartSpeakerは、このアクセシビリティサービスを使用して、画面に表示されている内容を読み取り、指示に応じてボタンをタップします。端末外へデータを送信することはありません。設定からいつでも無効にできます。</string>
+    <string name="a11y_service_description">OpenDashは、このアクセシビリティサービスを使用して、画面に表示されている内容を読み取り、指示に応じてボタンをタップします。端末外へデータを送信することはありません。設定からいつでも無効にできます。</string>
     <string name="voice_tile_label">話す</string>
-    <string name="voice_tile_content_description">OpenSmartSpeakerで音声セッションを開始</string>    <string name="locale_picker_title">言語</string>
+    <string name="voice_tile_content_description">OpenDashで音声セッションを開始</string>    <string name="locale_picker_title">言語</string>
     <string name="locale_picker_system_default">システムデフォルト</string>
     <string name="locale_picker_requires_android_13">Android 13 以降が必要</string>
     <string name="locale_picker_close">閉じる</string>
@@ -287,9 +287,9 @@
     <string name="settings_mqtt_broker_url">ブローカー URL</string>
 
     <string name="settings_about_litert">オンデバイス LLM: Gemma 4 E2B の GPU 推論に LiteRT-LM を使用しています。</string>
-    <string name="settings_about_default_assistant">既定のアシスタントに設定するには: 設定 &gt; アプリ &gt; 既定のアプリ &gt; デジタルアシスタント &gt; OpenSmartSpeaker</string>
+    <string name="settings_about_default_assistant">既定のアシスタントに設定するには: 設定 &gt; アプリ &gt; 既定のアプリ &gt; デジタルアシスタント &gt; OpenDash</string>
     <string name="settings_about_section">アプリについて</string>
-    <string name="settings_about_tagline">OpenSmartSpeaker — タブレット向けオンデバイス AI スマートスピーカー。</string>
+    <string name="settings_about_tagline">OpenDash — タブレット向けオンデバイス AI スマートスピーカー。</string>
     <string name="settings_about_github">GitHub のドキュメントとソースコード</string>
     <!-- Common buttons (additional) -->
     <string name="common_done">完了</string>

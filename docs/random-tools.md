@@ -1,7 +1,7 @@
 # Random tools reference
 
 Three tiny randomness primitives live in `RandomToolExecutor`
-(`app/src/main/java/com/opensmarthome/speaker/tool/info/RandomToolExecutor.kt`):
+(`app/src/main/java/com/opendash/app/tool/info/RandomToolExecutor.kt`):
 `flip_coin`, `roll_dice`, and `pick_random`. They look trivial, but giving
 the LLM real, seedable randomness matters: on-device models routinely
 hallucinate biased or repetitive "random" answers ("always heads",
@@ -79,7 +79,7 @@ Only `flip_coin` has a fast-path matcher today:
 
 | Matcher | Patterns | Tool | Source |
 |---------|----------|------|--------|
-| `FlipCoinMatcher` | "flip a coin", "toss a coin", "コインを投げて", "コインを振って" | `flip_coin` | `app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathMatchers.kt` |
+| `FlipCoinMatcher` | "flip a coin", "toss a coin", "コインを投げて", "コインを振って" | `flip_coin` | `app/src/main/java/com/opendash/app/voice/fastpath/FastPathMatchers.kt` |
 
 The `FlipCoinMatcher` uses narrow regexes so compound requests
 ("flip a coin and order pizza") fall through to the LLM, which can

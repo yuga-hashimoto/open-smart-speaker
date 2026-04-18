@@ -1,6 +1,6 @@
 # Fast paths
 
-Utterances handled directly by [`FastPathRouter`](../app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathRouter.kt)
+Utterances handled directly by [`FastPathRouter`](../app/src/main/java/com/opendash/app/voice/fastpath/FastPathRouter.kt)
 without round-tripping through the LLM. Target latency: <200ms from final
 STT result to tool execution.
 
@@ -61,8 +61,8 @@ to the list.
 
 ## Adding a new matcher
 
-1. Append the `object` to [`FastPathMatchers.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/fastpath/FastPathMatchers.kt)
+1. Append the `object` to [`FastPathMatchers.kt`](../app/src/main/java/com/opendash/app/voice/fastpath/FastPathMatchers.kt)
 2. Add it to `DEFAULT_MATCHERS` in `FastPathRouter.kt` respecting precedence
 3. Add tests in `FastPathRouterTest.kt`
-4. Run `./gradlew testDebugUnitTest --tests "com.opensmarthome.speaker.voice.fastpath.*"`
+4. Run `./gradlew testDebugUnitTest --tests "com.opendash.app.voice.fastpath.*"`
 5. Update this catalog

@@ -17,7 +17,7 @@ speaker is expected to clear.
 | `LLM_ROUND_TRIP`         | 8 s    | Prompt sent → final reply token.                        |
 
 Budgets live on the `Span` enum in
-[`LatencyRecorder.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/metrics/LatencyRecorder.kt).
+[`LatencyRecorder.kt`](../app/src/main/java/com/opendash/app/voice/metrics/LatencyRecorder.kt).
 Raising a budget is a Priority-1 regression and requires a PR to
 justify it.
 
@@ -64,7 +64,7 @@ Rules:
   violations via `LatencyRecorder.budgetViolations()`.
 - **Runtime**: Every endSpan that blows its budget emits a Timber
   warning (`Latency budget exceeded: WAKE_TO_LISTENING took 680ms`).
-  `adb logcat -s OpenSmartSpeaker` surfaces these.
+  `adb logcat -s OpenDash` surfaces these.
 - **CI**: No CI assertion yet; instrumented-test enforcement is on
   the Phase 16 backlog.
 
@@ -76,7 +76,7 @@ start, 10 wakes, report worst-case.
 
 ## Related
 
-- [`LatencyRecorder.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/metrics/LatencyRecorder.kt)
-- [`VoicePipeline.kt`](../app/src/main/java/com/opensmarthome/speaker/voice/pipeline/VoicePipeline.kt) — primary caller.
+- [`LatencyRecorder.kt`](../app/src/main/java/com/opendash/app/voice/metrics/LatencyRecorder.kt)
+- [`VoicePipeline.kt`](../app/src/main/java/com/opendash/app/voice/pipeline/VoicePipeline.kt) — primary caller.
 - [real-device-smoke-test.md](real-device-smoke-test.md) — measurement playbook.
 - [home-dashboard.md](home-dashboard.md) — a different kind of budget (refresh cadences, not latency).

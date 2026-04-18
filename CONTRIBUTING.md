@@ -1,6 +1,6 @@
-# Contributing to OpenSmartSpeaker
+# Contributing to OpenDash
 
-Thank you for your interest! OpenSmartSpeaker aims to be the best open-source
+Thank you for your interest! OpenDash aims to be the best open-source
 Android tablet smart speaker — on par with Alexa for everyday use, and with
 OpenClaw-level agent autonomy for power users.
 

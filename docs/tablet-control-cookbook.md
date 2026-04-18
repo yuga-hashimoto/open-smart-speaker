@@ -12,7 +12,7 @@ Grant these once in system Settings, driven by the first-run onboarding:
 
 | Grant | Where | Why |
 |---|---|---|
-| Accessibility → OpenSmartSpeaker | Settings → Accessibility → Installed services | Read what's on screen, tap buttons, type into fields |
+| Accessibility → OpenDash | Settings → Accessibility → Installed services | Read what's on screen, tap buttons, type into fields |
 | Notification access | Settings → Apps → Special app access → Notification access | List and reply to notifications |
 | Device Admin (optional) | Settings → Security → Device admin apps | `lock_screen` tool only; no other privileges are requested |
 | Microphone, Location, Calendar, etc. | Onboarding flow | Tool-specific runtime permissions |

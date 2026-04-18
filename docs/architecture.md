@@ -2,12 +2,12 @@
 
 ## Overview
 
-OpenSmartSpeaker is a tablet-first Android smart display and voice terminal.
+OpenDash is a tablet-first Android smart display and voice terminal.
 Three UI modes: Chat (conversation), Dashboard (device grid), Ambient (clock + sensors).
 
 ## Module Structure
 
-Single `app` module. Package structure under `com.opensmarthome.speaker`:
+Single `app` module. Package structure under `com.opendash.app`:
 
 ```
 assistant/

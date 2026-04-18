@@ -4,7 +4,7 @@ title: Multi-room quickstart
 
 # Multi-room quickstart
 
-How to set up two or more OpenSmartSpeaker tablets so one can talk to all of them at once.
+How to set up two or more OpenDash tablets so one can talk to all of them at once.
 
 ## What this gets you
 
@@ -26,7 +26,7 @@ On **each** tablet:
 1. Open **Settings → Multi-room broadcast**.
 2. Flip the toggle **on**.
 
-This advertises the device on the LAN via mDNS (`_opensmartspeaker._tcp` on port 8421) and starts the NDJSON listener.
+This advertises the device on the LAN via mDNS (`_opendash._tcp` on port 8421) and starts the NDJSON listener.
 
 Verify: open **Settings → System Info** on one tablet. The "Nearby speakers (mDNS)" row should list the other tablet within ~3 seconds.
 

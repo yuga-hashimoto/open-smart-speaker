@@ -1,4 +1,4 @@
-# OpenSmartSpeaker Docs
+# OpenDash Docs
 
 Tablet-first Android smart speaker with on-device LLM agent, inspired by Alexa and OpenClaw.
 

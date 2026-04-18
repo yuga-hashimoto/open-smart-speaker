@@ -18,7 +18,7 @@ If you believe you've found a security issue — particularly in the areas of:
 Please do NOT open a public GitHub issue.
 
 Instead, report privately via GitHub's
-[Security Advisory flow](https://github.com/yuga-hashimoto/open-smart-speaker/security/advisories/new)
+[Security Advisory flow](https://github.com/yuga-hashimoto/open-dash/security/advisories/new)
 or contact the maintainer directly.
 
 We'll acknowledge within 72 hours and aim to ship a fix within 14 days for
@@ -27,7 +27,7 @@ escalation).
 
 ## Threat Model
 
-OpenSmartSpeaker is designed to be **on-device first**. The threat model assumes:
+OpenDash is designed to be **on-device first**. The threat model assumes:
 
 - **Untrusted input** via voice / STT — must not produce unsafe tool calls
 - **Tool boundaries** — each tool validates its own arguments; the LLM is

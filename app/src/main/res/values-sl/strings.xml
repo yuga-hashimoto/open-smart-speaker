@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenSmartSpeaker</string>
+    <string name="app_name">OpenDash</string>
     <string name="tab_chat">Klepet</string>
     <string name="tab_dashboard">Nadzorna plošča</string>
     <string name="tab_ambient">Ambient</string>
     <string name="tab_settings">Nastavitve</string>
     <string name="accessibility_service_description">Agentu pametnega zvočnika omogoča branje trenutno vidnega besedila na zaslonu in samodejno izvajanje dejanj uporabniškega vmesnika v vašem imenu.</string>
     <string name="accessibility_service_summary">Omogočite, da lahko agent v napravi vidi zaslon in ga upravlja.</string>
-    <string name="a11y_service_description">OpenSmartSpeaker uporablja to storitev za ljudi s posebnimi potrebami za branje vsebine zaslona in pritiskanje gumbov v vašem imenu, ko to zahtevate. Nobeni podatki ne zapustijo naprave. Storitev lahko kadar koli izklopite v Nastavitvah.</string>
+    <string name="a11y_service_description">OpenDash uporablja to storitev za ljudi s posebnimi potrebami za branje vsebine zaslona in pritiskanje gumbov v vašem imenu, ko to zahtevate. Nobeni podatki ne zapustijo naprave. Storitev lahko kadar koli izklopite v Nastavitvah.</string>
     <string name="voice_tile_label">Pogovor</string>
-    <string name="voice_tile_content_description">Zaženi glasovno sejo z aplikacijo OpenSmartSpeaker</string>
+    <string name="voice_tile_content_description">Zaženi glasovno sejo z aplikacijo OpenDash</string>
     <string name="locale_picker_title">Jezik</string>
     <string name="locale_picker_system_default">Privzeto za sistem</string>
     <string name="locale_picker_requires_android_13">Zahteva Android 13 ali novejši</string>
@@ -287,9 +287,9 @@
     <string name="settings_mqtt_broker_url">Broker URL</string>
 
     <string name="settings_about_litert">On-Device LLM: The app uses LiteRT-LM for GPU-accelerated inference with Gemma 4 E2B.</string>
-    <string name="settings_about_default_assistant">To set as default assistant: Settings &gt; Apps &gt; Default Apps &gt; Digital Assistant &gt; OpenSmartSpeaker</string>
+    <string name="settings_about_default_assistant">To set as default assistant: Settings &gt; Apps &gt; Default Apps &gt; Digital Assistant &gt; OpenDash</string>
     <string name="settings_about_section">About</string>
-    <string name="settings_about_tagline">OpenSmartSpeaker \u2014 tablet-first on-device AI smart speaker.</string>
+    <string name="settings_about_tagline">OpenDash \u2014 tablet-first on-device AI smart speaker.</string>
     <string name="settings_about_github">Docs &amp; source on GitHub</string>
     <!-- Common buttons (additional) -->
     <string name="common_done">Done</string>

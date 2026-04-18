@@ -5,8 +5,8 @@ Status: **Partially implemented** (P17.1 ADR, P17.2 NDJSON server + HMAC auth, P
 Captures the wire format, security model, and message catalogue we build on
 top of the mDNS discovery layer shipped in P14.5.
 
-Context: [`MulticastDiscovery.kt`](../app/src/main/java/com/opensmarthome/speaker/multiroom/MulticastDiscovery.kt)
-already advertises the service type `_opensmartspeaker._tcp.` on
+Context: [`MulticastDiscovery.kt`](../app/src/main/java/com/opendash/app/multiroom/MulticastDiscovery.kt)
+already advertises the service type `_opendash._tcp.` on
 `DEFAULT_PORT = 8421`. Discovery works; no server actually listens on
 that port yet. This document defines what the server, the client, and
 the wire look like before we write any of them.
