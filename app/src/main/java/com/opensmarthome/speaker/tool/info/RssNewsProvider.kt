@@ -1,11 +1,19 @@
 package com.opensmarthome.speaker.tool.info
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
  * Parses RSS 2.0 and Atom feeds with regex-based extraction.
  * No dependency on Android XmlPullParser so unit-testable on JVM.
+ *
+ * Network I/O is dispatched on [Dispatchers.IO] because callers
+ * (e.g. `DefaultOnlineBriefingSource` invoked from `HomeViewModel` on
+ * `viewModelScope`, which defaults to `Dispatchers.Main`) would
+ * otherwise block the main thread and trigger
+ * `NetworkOnMainThreadException` under StrictMode.
  */
 class RssNewsProvider(
     private val client: OkHttpClient
@@ -16,13 +24,13 @@ class RssNewsProvider(
         return parseFeed(body, limit)
     }
 
-    private fun fetch(url: String): String {
+    private suspend fun fetch(url: String): String = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(url).get().build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 throw RuntimeException("Feed fetch failed: ${response.code}")
             }
-            return response.body?.string() ?: throw RuntimeException("Empty feed")
+            response.body?.string() ?: throw RuntimeException("Empty feed")
         }
     }
 
