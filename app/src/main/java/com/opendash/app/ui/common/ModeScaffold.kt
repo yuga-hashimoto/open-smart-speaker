@@ -162,13 +162,18 @@ fun ModeScaffold(
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
-        // Mic FAB (bottom center)
+        // Mic FAB — pinned to the bottom-end corner so it stays out of the
+        // way of the clock, weather, and ticker. Alignment.BottomEnd keeps
+        // it on the trailing side in RTL layouts automatically, mirroring
+        // the locale. Idle alpha is slightly dimmed so the FAB reads as a
+        // secondary affordance; the breathing animation + glow ring bring
+        // it back to full presence once listening starts.
         MicFab(
             isListening = voiceState is VoicePipelineState.Listening,
             onClick = { viewModel.startVoiceInput() },
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 24.dp)
         )
 
         // Voice Overlay
@@ -205,6 +210,10 @@ private fun MicFab(
 ) {
     val fabSize by animateDpAsState(if (isListening) 72.dp else 56.dp, label = "fabSize")
     val glowAlpha by animateFloatAsState(if (isListening) 0.3f else 0f, label = "glow")
+    // Dim the FAB while idle so the clock / weather / ticker own the
+    // dashboard visually. Full opacity returns the instant the user taps
+    // to listen so the feedback loop stays Alexa-crisp.
+    val fabAlpha by animateFloatAsState(if (isListening) 1f else 0.75f, label = "fabAlpha")
     val transition = rememberInfiniteTransition(label = "breathe")
     val breatheScale by transition.animateFloat(
         initialValue = 1f,
@@ -226,7 +235,7 @@ private fun MicFab(
         }
         FloatingActionButton(
             onClick = onClick,
-            modifier = Modifier.size(fabSize).scale(breatheScale),
+            modifier = Modifier.size(fabSize).scale(breatheScale).alpha(fabAlpha),
             containerColor = SpeakerPrimary,
             shape = CircleShape
         ) {

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Article
@@ -23,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,11 +37,22 @@ import com.opendash.app.tool.info.NewsItem
 import com.opendash.app.ui.theme.SpeakerSurfaceVariant
 import com.opendash.app.ui.theme.SpeakerTextPrimary
 import com.opendash.app.ui.theme.SpeakerTextSecondary
+import kotlinx.coroutines.delay
+
+/** Cadence for the auto-advance headlines ticker: one headline every 8 s. */
+internal const val HEADLINES_TICKER_INTERVAL_MS = 8_000L
 
 /**
- * Horizontal news tile strip shown under the clock on a tablet dashboard.
- * Each tile is a fixed-width card so the row keeps a consistent rhythm
- * independent of title length. Summaries are truncated to two lines.
+ * Horizontal news tile strip shown under the clock on the tablet
+ * dashboard. The row auto-advances one tile at a time so the headlines
+ * "flow" past the user without them having to touch the device —
+ * matching the Echo Show / Nest Hub news-at-a-glance rhythm the user
+ * asked for.
+ *
+ * Manual flick still works; the auto-advance simply resumes from
+ * whichever tile is currently first visible. When the list is short
+ * enough to fit on screen the effect is a subtle left-to-right nudge,
+ * which is still a helpful "this is live data" signal.
  *
  * Empty success list (feed fetched fine but returned 0 items) still
  * renders nothing — this is the legitimate "no news" state. Loading
@@ -54,6 +67,20 @@ fun HeadlinesCard(
     title: String = stringResource(R.string.briefing_headlines_title),
 ) {
     if (headlines.isEmpty()) return
+
+    val listState = rememberLazyListState()
+
+    // Auto-advance the ticker. The key is the item count so that a
+    // fresh fetch delivering a different number of headlines resets
+    // the loop cleanly instead of skipping past the new tail.
+    LaunchedEffect(headlines.size) {
+        if (headlines.size <= 1) return@LaunchedEffect
+        while (true) {
+            delay(HEADLINES_TICKER_INTERVAL_MS)
+            val next = (listState.firstVisibleItemIndex + 1) % headlines.size
+            listState.animateScrollToItem(next)
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -72,6 +99,7 @@ fun HeadlinesCard(
         }
         Spacer(modifier = Modifier.height(10.dp))
         LazyRow(
+            state = listState,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(headlines, key = { it.link.ifBlank { it.title } }) { item ->
@@ -186,13 +214,13 @@ fun HeadlinesCardError(
 private fun HeadlineTile(item: NewsItem) {
     Column(
         modifier = Modifier
-            .width(280.dp)
+            .width(320.dp)
             .background(SpeakerSurfaceVariant, RoundedCornerShape(14.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
         Text(
             text = item.title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             color = SpeakerTextPrimary,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
@@ -204,7 +232,7 @@ private fun HeadlineTile(item: NewsItem) {
                 text = item.summary,
                 style = MaterialTheme.typography.bodySmall,
                 color = SpeakerTextSecondary,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
         }

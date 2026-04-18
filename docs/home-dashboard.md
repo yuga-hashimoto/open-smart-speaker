@@ -9,29 +9,24 @@ front tile: time-first, briefing second, glanceable status third.
 ### Tablet landscape (≥ 600 dp wide)
 
 ```
-┌────────────────────────────────────┐  ┌──────────────────┐
-│                                    │  │ thermal chip     │ ← TabletStatusChips
-│  Greeting (time-of-day)            │  │ (only when WARM/ │    (top-right, only
-│  ┌──────────────────────┐          │  │  HOT)            │     when throttling)
-│  │       18:42          │          │  ├──────────────────┤
-│  │  Friday, April 17    │          │  │ NextEventCard    │
-│  └──────────────────────┘          │  │ 19:00 Dinner     │
-│                                    │  ├──────────────────┤
-│  ┌──────────────────────┐          │  │ ActiveTimersCard │
-│  │ ☀ 22° · Clear · Osaka│          │  │                  │
-│  │ 💧 45%   🌬 8 km/h   │          │  ├──────────────────┤
-│  └──────────────────────┘          │  │ DeviceStatusChips│
-│                                    │  │                  │
-└────────────────────────────────────┘  └──────────────────┘
-┌──────────────────────────────────────────────────────────┐
-│  📰  Headlines                                            │
-│  [ Alpha headline ] [ Beta headline ] [ Gamma headline ]  │
-└──────────────────────────────────────────────────────────┘
+┌────────────────┐  ┌────────────────┐  ┌─────────────────┐  ┌─────────┐
+│                │  │                │  │ NextEventCard   │  │ thermal │
+│    18:42       │  │ ☀ 22°          │  │ 19:00 Dinner    │  │ chip    │
+│   Fri Apr 17   │  │  Clear · Osaka │  ├─────────────────┤  │ (only   │
+│                │  │  💧 45% 🌬 8   │  │ ActiveTimersCard│  │ WARM/   │
+│                │  │                │  ├─────────────────┤  │  HOT)   │
+│                │  │                │  │ DeviceStatusCh. │  │         │
+└────────────────┘  └────────────────┘  └─────────────────┘  └─────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  📰  Headlines — auto-advances every 8s                              │
+│  [ Alpha headline ] [ Beta headline ] [ Gamma headline ] →            │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-Portrait keeps the same widgets but stacks vertically; the right
-column becomes a continuation of the main column under the weather
-card.
+Portrait keeps the same widgets but stacks vertically: oversized
+clock, weather card, next event / timers / chips, then the headlines
+ticker under them. No "Good morning" greeting — the dashboard is
+glanceable rather than conversational.
 
 ## State sources
 
@@ -55,12 +50,12 @@ similar intervals.
 
 ## Composables
 
-- **`GreetingLine`** — locale-aware "Good morning" / "おはようございます"
-  above the clock. Four buckets: MORNING (05-10), AFTERNOON (11-16),
-  EVENING (17-21), NIGHT (22-04).
 - **`ClockWidget`** — respects `DateFormat.is24HourFormat(context)`.
   12-hour mode shows a muted "AM"/"PM" suffix styled with the colon
-  blink alpha.
+  blink alpha. `largeMode = true` on the Home dashboard promotes the
+  HH:mm block to ambient-clock size (roughly doubled) so the time is
+  the single most prominent element on screen, matching Echo Show /
+  Nest Hub.
 - **`WeatherWidget`** — legacy sensor-based card (temperature +
   humidity). Rendered when there is no online weather (e.g. offline
   install, geocoding failure).
@@ -70,8 +65,11 @@ similar intervals.
 - **`NextEventCard`** — next upcoming calendar event, locale-aware
   12h/24h time format. Shows "Now" / "いま" for events already running.
   Renders nothing when there is no event (no permanent empty tile).
-- **`HeadlinesCard`** — horizontal news tile strip, two-line title +
-  two-line summary with ellipsis.
+- **`HeadlinesCard`** — horizontal news tile strip that auto-advances
+  one tile every 8 s so the headlines "flow" past the user without
+  requiring interaction. Manual flick still works; auto-advance resumes
+  from whichever tile is currently first visible. Two-line title +
+  three-line summary with ellipsis per tile.
 - **`ActiveTimersCard`** — live mm:ss countdown for every running timer.
 - **`DeviceStatusChips`** — HA-device chips: lights on, climate,
   playing media.

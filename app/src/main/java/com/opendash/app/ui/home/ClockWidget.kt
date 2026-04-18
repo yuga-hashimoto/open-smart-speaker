@@ -20,18 +20,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.opendash.app.ui.theme.SpeakerTextPrimary
 import com.opendash.app.ui.theme.SpeakerTextSecondary
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+/**
+ * Big digital clock rendered on the Home dashboard.
+ *
+ * [largeMode] promotes the HH:mm block to a roughly-doubled size —
+ * matches the Echo Show / Nest Hub ambient clock where the time is the
+ * single most prominent widget on the screen. Off by default so older
+ * callers (night clock overlay, skeleton previews) keep their existing
+ * `displayLarge` sizing.
+ */
 @Composable
 fun ClockWidget(
     time: LocalDateTime,
     modifier: Modifier = Modifier,
     use24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
+    largeMode: Boolean = false,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "colon")
     val colonAlpha by infiniteTransition.animateFloat(
@@ -44,6 +56,20 @@ fun ClockWidget(
         label = "colonAlpha"
     )
 
+    // Base styles. `largeMode` overrides the font size while keeping the
+    // theme's typography lineage intact so Material 3 tonal / colour
+    // roles still apply.
+    val timeStyle: TextStyle = if (largeMode) {
+        MaterialTheme.typography.displayLarge.copy(fontSize = 180.sp)
+    } else {
+        MaterialTheme.typography.displayLarge
+    }
+    val dateStyle: TextStyle = if (largeMode) {
+        MaterialTheme.typography.headlineMedium
+    } else {
+        MaterialTheme.typography.titleLarge
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -51,27 +77,32 @@ fun ClockWidget(
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = formatHourMinute(time, use24Hour),
-                style = MaterialTheme.typography.displayLarge,
+                style = timeStyle,
                 color = SpeakerTextPrimary,
                 fontWeight = FontWeight.Thin,
                 modifier = Modifier.alpha(1f) // Keep alpha separation — future ":"-blink tweak
             )
             if (!use24Hour) {
+                val ampmStyle = if (largeMode) {
+                    MaterialTheme.typography.titleLarge
+                } else {
+                    MaterialTheme.typography.titleMedium
+                }
                 Text(
                     text = time.format(DateTimeFormatter.ofPattern("a")),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = ampmStyle,
                     color = SpeakerTextSecondary,
                     fontWeight = FontWeight.Light,
                     modifier = Modifier
-                        .padding(start = 10.dp, bottom = 14.dp)
+                        .padding(start = 10.dp, bottom = if (largeMode) 28.dp else 14.dp)
                         .alpha(colonAlpha.coerceAtLeast(0.8f))
                 )
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(if (largeMode) 12.dp else 8.dp))
         Text(
             text = time.format(DateTimeFormatter.ofPattern("EEEE, MMMM d")),
-            style = MaterialTheme.typography.titleLarge,
+            style = dateStyle,
             color = SpeakerTextSecondary,
             fontWeight = FontWeight.Light
         )

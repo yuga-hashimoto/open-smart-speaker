@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -66,11 +67,15 @@ fun HomeScreen(
             .systemBarsPadding()
     ) {
         if (wide) {
-            // Tablet landscape: two-column top block with clock+online
-            // weather on the left and status cards on the right, plus a
-            // full-width headlines strip across the bottom. Mirrors the
-            // Alexa / Echo Show front-tile rhythm: time-first, briefing
-            // second, glanceable status third.
+            // Tablet landscape — the primary use mode. Three-column top
+            // block in the Echo Show / Nest Hub rhythm:
+            //   left   — oversized clock + date (time-first)
+            //   center — online weather card (briefing second)
+            //   right  — next event / timers / device chips (status third)
+            // A full-width auto-advancing headlines ticker fills the
+            // bottom band. Greeting copy ("Hello / Good morning /
+            // こんにちは") is intentionally absent — at-a-glance dashboards
+            // don't need a salutation every time the user looks up.
             Column(
                 modifier = Modifier.fillMaxSize().padding(32.dp)
             ) {
@@ -79,19 +84,22 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(
-                        modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                        modifier = Modifier.weight(1.3f).fillMaxHeight(),
                         verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.Start
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        GreetingLine(time = time)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        ClockWidget(time = time)
-                        Spacer(modifier = Modifier.height(20.dp))
-                        WeatherBlock(state = onlineWeather, sensorWeather = weather)
+                        ClockWidget(time = time, largeMode = true)
                     }
                     Spacer(Modifier.width(24.dp))
                     Column(
                         modifier = Modifier.weight(1f).fillMaxHeight(),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        WeatherBlock(state = onlineWeather, sensorWeather = weather)
+                    }
+                    Spacer(Modifier.width(24.dp))
+                    Column(
+                        modifier = Modifier.weight(0.9f).fillMaxHeight(),
                         verticalArrangement = Arrangement.Center
                     ) {
                         nextEvent?.let {
@@ -112,18 +120,20 @@ fun HomeScreen(
                 }
                 HeadlinesBlock(
                     state = headlines,
-                    modifier = Modifier.padding(top = 20.dp),
+                    modifier = Modifier.padding(top = 20.dp).fillMaxWidth(),
                 )
             }
         } else {
+            // Portrait / compact: same widget set, single stacked column.
+            // Clock + weather still dominate the top half; the ticker
+            // remains at the bottom so the eye rests on time and
+            // temperature first.
             Column(
                 modifier = Modifier.fillMaxSize().padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.weight(0.2f))
-                GreetingLine(time = time)
-                Spacer(modifier = Modifier.height(6.dp))
-                ClockWidget(time = time)
+                ClockWidget(time = time, largeMode = true)
                 Spacer(modifier = Modifier.height(28.dp))
                 WeatherBlock(state = onlineWeather, sensorWeather = weather)
                 nextEvent?.let {
@@ -143,7 +153,7 @@ fun HomeScreen(
                 }
                 HeadlinesBlock(
                     state = headlines,
-                    modifier = Modifier.padding(top = 24.dp),
+                    modifier = Modifier.padding(top = 24.dp).fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.weight(1f))
             }
