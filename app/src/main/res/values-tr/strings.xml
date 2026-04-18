@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Sistem varsayılanı</string>
     <string name="locale_picker_requires_android_13">Android 13 veya üzeri gerekli</string>
     <string name="locale_picker_close">Kapat</string>
+    <string name="weather_location_picker_title">Varsayılan hava durumu konumu</string>
+    <string name="weather_location_picker_search_hint">Şehir ara</string>
+    <string name="weather_location_picker_use_default">Yerleşik varsayılanı kullan (Tokyo)</string>
+    <string name="weather_location_picker_close">Kapat</string>
+    <string name="weather_location_picker_no_results">Eşleşen şehir yok</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (yerleşik varsayılan)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Hava durumu yükleniyor…</string>
+    <string name="briefing_weather_error">Hava durumu yüklenemedi</string>
+    <string name="briefing_headlines_title">Başlıklar</string>
+    <string name="briefing_headlines_loading">Bugünün başlıkları getiriliyor…</string>
+    <string name="briefing_headlines_error">Başlıklar yüklenemedi</string>
+    <string name="briefing_error_network">Bağlantınızı kontrol edip tekrar deneyin.</string>
+    <string name="briefing_error_parse">Kaynak beklenmeyen bir yanıt döndürdü.</string>
+    <string name="briefing_error_unknown">Bir şeyler ters gitti. Lütfen tekrar deneyin.</string>
+    <string name="briefing_retry">Yeniden dene</string>
 </resources>

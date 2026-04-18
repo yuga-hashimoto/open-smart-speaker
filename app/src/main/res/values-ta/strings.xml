@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">கணினி இயல்புநிலை</string>
     <string name="locale_picker_requires_android_13">Android 13+ தேவை</string>
     <string name="locale_picker_close">மூடு</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Loading weather…</string>
+    <string name="briefing_weather_error">Couldn\'t load weather</string>
+    <string name="briefing_headlines_title">Headlines</string>
+    <string name="briefing_headlines_loading">Fetching today\'s headlines…</string>
+    <string name="briefing_headlines_error">Couldn\'t load headlines</string>
+    <string name="briefing_error_network">Check your connection and try again.</string>
+    <string name="briefing_error_parse">The source returned an unexpected response.</string>
+    <string name="briefing_error_unknown">Something went wrong. Please try again.</string>
+    <string name="briefing_retry">Retry</string>
 </resources>

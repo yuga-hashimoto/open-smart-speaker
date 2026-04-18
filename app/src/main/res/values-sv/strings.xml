@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Systemstandard</string>
     <string name="locale_picker_requires_android_13">Kräver Android 13 eller senare</string>
     <string name="locale_picker_close">Stäng</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Laddar väder…</string>
+    <string name="briefing_weather_error">Det gick inte att ladda vädret</string>
+    <string name="briefing_headlines_title">Rubriker</string>
+    <string name="briefing_headlines_loading">Hämtar dagens rubriker…</string>
+    <string name="briefing_headlines_error">Det gick inte att ladda rubrikerna</string>
+    <string name="briefing_error_network">Kontrollera anslutningen och försök igen.</string>
+    <string name="briefing_error_parse">Källan returnerade ett oväntat svar.</string>
+    <string name="briefing_error_unknown">Något gick fel. Försök igen.</string>
+    <string name="briefing_retry">Försök igen</string>
 </resources>

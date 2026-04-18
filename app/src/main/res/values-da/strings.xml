@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Systemstandard</string>
     <string name="locale_picker_requires_android_13">Kræver Android 13 eller nyere</string>
     <string name="locale_picker_close">Luk</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Indlæser vejret…</string>
+    <string name="briefing_weather_error">Kunne ikke indlæse vejret</string>
+    <string name="briefing_headlines_title">Overskrifter</string>
+    <string name="briefing_headlines_loading">Henter dagens overskrifter…</string>
+    <string name="briefing_headlines_error">Kunne ikke indlæse overskrifter</string>
+    <string name="briefing_error_network">Tjek din forbindelse og prøv igen.</string>
+    <string name="briefing_error_parse">Kilden returnerede et uventet svar.</string>
+    <string name="briefing_error_unknown">Noget gik galt. Prøv igen.</string>
+    <string name="briefing_retry">Prøv igen</string>
 </resources>

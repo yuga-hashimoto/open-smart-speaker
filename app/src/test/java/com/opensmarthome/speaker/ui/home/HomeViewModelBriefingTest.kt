@@ -9,6 +9,7 @@ import com.opensmarthome.speaker.tool.system.TimerManager
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,20 +42,20 @@ class HomeViewModelBriefingTest {
     fun teardown() { Dispatchers.resetMain() }
 
     private class FakeBriefingSource(
-        private val weather: WeatherInfo? = null,
-        private val headlines: List<NewsItem> = emptyList(),
+        private val weather: Result<WeatherInfo?> = Result.success(null),
+        private val headlines: Result<List<NewsItem>> = Result.success(emptyList()),
     ) : OnlineBriefingSource {
         var weatherCalls = 0
             private set
         var headlineCalls = 0
             private set
 
-        override suspend fun currentWeather(): WeatherInfo? {
+        override suspend fun currentWeather(): Result<WeatherInfo?> {
             weatherCalls++
             return weather
         }
 
-        override suspend fun latestHeadlines(limit: Int): List<NewsItem> {
+        override suspend fun latestHeadlines(limit: Int): Result<List<NewsItem>> {
             headlineCalls++
             return headlines
         }
@@ -83,11 +84,24 @@ class HomeViewModelBriefingTest {
     }
 
     @Test
-    fun `onlineWeather emits value from briefing source once subscribed`() = runTest {
-        val briefing = FakeBriefingSource(weather = WeatherInfo("Osaka", 22.0, "Clear", 55, 9.0))
+    fun `onlineWeather exposes Loading before first emission`() = runTest {
+        val vm = newVm(FakeBriefingSource())
+        assertThat(vm.onlineWeather.value).isEqualTo(BriefingState.Loading)
+    }
+
+    @Test
+    fun `headlines exposes Loading before first emission`() = runTest {
+        val vm = newVm(FakeBriefingSource())
+        assertThat(vm.headlines.value).isEqualTo(BriefingState.Loading)
+    }
+
+    @Test
+    fun `onlineWeather emits Success with value from briefing source once subscribed`() = runTest {
+        val briefing = FakeBriefingSource(
+            weather = Result.success(WeatherInfo("Osaka", 22.0, "Clear", 55, 9.0))
+        )
         val vm = newVm(briefing)
 
-        assertThat(vm.onlineWeather.value).isNull()
         val job = vm.onlineWeather.onEach { /* drain */ }.launchIn(backgroundScope)
         // One iteration is enough to observe the first emission; avoid
         // advanceUntilIdle() because the while(true)+delay(15min) loop
@@ -95,70 +109,117 @@ class HomeViewModelBriefingTest {
         advanceTimeBy(50L)
 
         val observed = vm.onlineWeather.value
-        assertThat(observed).isNotNull()
-        assertThat(observed!!.location).isEqualTo("Osaka")
+        assertThat(observed).isInstanceOf(BriefingState.Success::class.java)
+        val success = observed as BriefingState.Success
+        assertThat(success.data).isNotNull()
+        assertThat(success.data!!.location).isEqualTo("Osaka")
         assertThat(briefing.weatherCalls).isAtLeast(1)
         job.cancel()
     }
 
     @Test
-    fun `headlines emits value from briefing source once subscribed`() = runTest {
+    fun `headlines emits Success with items from briefing source once subscribed`() = runTest {
         val items = listOf(
             NewsItem("Alpha", "", "", ""),
             NewsItem("Beta", "", "", ""),
             NewsItem("Gamma", "", "", ""),
         )
-        val briefing = FakeBriefingSource(headlines = items)
+        val briefing = FakeBriefingSource(headlines = Result.success(items))
         val vm = newVm(briefing)
 
-        assertThat(vm.headlines.value).isEmpty()
         val job = vm.headlines.onEach { /* drain */ }.launchIn(backgroundScope)
         advanceTimeBy(50L)
 
-        assertThat(vm.headlines.value).containsExactlyElementsIn(items).inOrder()
+        val observed = vm.headlines.value
+        assertThat(observed).isInstanceOf(BriefingState.Success::class.java)
+        val success = observed as BriefingState.Success
+        assertThat(success.data).containsExactlyElementsIn(items).inOrder()
         assertThat(briefing.headlineCalls).isAtLeast(1)
         job.cancel()
     }
 
     @Test
-    fun `onlineWeather does not clobber last value on null emission`() = runTest {
-        val steps = mutableListOf<WeatherInfo?>(
-            WeatherInfo("Osaka", 22.0, "Clear", 55, 9.0),
-            null,
-            null,
+    fun `onlineWeather emits Network error when source returns IOException failure`() = runTest {
+        val briefing = FakeBriefingSource(
+            weather = Result.failure(IOException("offline"))
         )
-        val briefing = object : OnlineBriefingSource {
-            override suspend fun currentWeather(): WeatherInfo? = steps.removeAt(0)
-            override suspend fun latestHeadlines(limit: Int) = emptyList<NewsItem>()
-        }
         val vm = newVm(briefing)
+
         val job = vm.onlineWeather.onEach { /* drain */ }.launchIn(backgroundScope)
-        // First tick: populated. We only need to get past the initial loop body.
         advanceTimeBy(50L)
-        val firstValue = vm.onlineWeather.value
-        // Advance past the refresh interval so the loop re-enters. Subsequent
-        // currentWeather() returns null — we expect value() to stay on Osaka.
-        advanceTimeBy(HomeViewModel.WEATHER_REFRESH_MS + 50L)
-        assertThat(vm.onlineWeather.value).isEqualTo(firstValue)
-        assertThat(firstValue).isNotNull()
+
+        val observed = vm.onlineWeather.value
+        assertThat(observed).isInstanceOf(BriefingState.Error::class.java)
+        val error = observed as BriefingState.Error
+        assertThat(error.kind).isEqualTo(BriefingState.Error.Kind.Network)
         job.cancel()
     }
 
     @Test
-    fun `headlines does not clobber last value on empty emission`() = runTest {
-        val first = listOf(NewsItem("Alpha", "", "", ""))
-        val steps: MutableList<List<NewsItem>> = mutableListOf(first, emptyList(), emptyList())
-        val briefing = object : OnlineBriefingSource {
-            override suspend fun currentWeather(): WeatherInfo? = null
-            override suspend fun latestHeadlines(limit: Int): List<NewsItem> = steps.removeAt(0)
-        }
+    fun `headlines emits Network error when source returns IOException failure`() = runTest {
+        val briefing = FakeBriefingSource(
+            headlines = Result.failure(IOException("feed unreachable"))
+        )
         val vm = newVm(briefing)
+
         val job = vm.headlines.onEach { /* drain */ }.launchIn(backgroundScope)
         advanceTimeBy(50L)
-        val afterFirst = vm.headlines.value
-        advanceTimeBy(HomeViewModel.HEADLINES_REFRESH_MS + 50L)
-        assertThat(vm.headlines.value).isEqualTo(afterFirst)
-        assertThat(afterFirst).containsExactlyElementsIn(first)
+
+        val observed = vm.headlines.value
+        assertThat(observed).isInstanceOf(BriefingState.Error::class.java)
+        val error = observed as BriefingState.Error
+        assertThat(error.kind).isEqualTo(BriefingState.Error.Kind.Network)
+        job.cancel()
+    }
+
+    @Test
+    fun `onlineWeather emits Parse error for IllegalStateException`() = runTest {
+        val briefing = FakeBriefingSource(
+            weather = Result.failure(IllegalStateException("bad body"))
+        )
+        val vm = newVm(briefing)
+
+        val job = vm.onlineWeather.onEach { /* drain */ }.launchIn(backgroundScope)
+        advanceTimeBy(50L)
+
+        val observed = vm.onlineWeather.value
+        assertThat(observed).isInstanceOf(BriefingState.Error::class.java)
+        val error = observed as BriefingState.Error
+        assertThat(error.kind).isEqualTo(BriefingState.Error.Kind.Parse)
+        job.cancel()
+    }
+
+    @Test
+    fun `onlineWeather emits Unknown error for generic RuntimeException`() = runTest {
+        val briefing = FakeBriefingSource(
+            weather = Result.failure(RuntimeException("???"))
+        )
+        val vm = newVm(briefing)
+
+        val job = vm.onlineWeather.onEach { /* drain */ }.launchIn(backgroundScope)
+        advanceTimeBy(50L)
+
+        val observed = vm.onlineWeather.value
+        assertThat(observed).isInstanceOf(BriefingState.Error::class.java)
+        val error = observed as BriefingState.Error
+        assertThat(error.kind).isEqualTo(BriefingState.Error.Kind.Unknown)
+        job.cancel()
+    }
+
+    @Test
+    fun `onlineWeather emits Success with null data when provider returns no location`() = runTest {
+        // Success-with-null is a legitimate "provider resolved nothing" outcome
+        // (e.g. empty geocoding result) and is kept separate from errors so the
+        // UI can fall back to the sensor-based weather widget.
+        val briefing = FakeBriefingSource(weather = Result.success(null))
+        val vm = newVm(briefing)
+
+        val job = vm.onlineWeather.onEach { /* drain */ }.launchIn(backgroundScope)
+        advanceTimeBy(50L)
+
+        val observed = vm.onlineWeather.value
+        assertThat(observed).isInstanceOf(BriefingState.Success::class.java)
+        assertThat((observed as BriefingState.Success).data).isNull()
         job.cancel()
     }
 }

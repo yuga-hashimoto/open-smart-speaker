@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Mặc định hệ thống</string>
     <string name="locale_picker_requires_android_13">Yêu cầu Android 13 trở lên</string>
     <string name="locale_picker_close">Đóng</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Đang tải thời tiết…</string>
+    <string name="briefing_weather_error">Không thể tải thời tiết</string>
+    <string name="briefing_headlines_title">Tin nổi bật</string>
+    <string name="briefing_headlines_loading">Đang lấy tin nổi bật hôm nay…</string>
+    <string name="briefing_headlines_error">Không thể tải tin nổi bật</string>
+    <string name="briefing_error_network">Kiểm tra kết nối và thử lại.</string>
+    <string name="briefing_error_parse">Nguồn trả về phản hồi không mong đợi.</string>
+    <string name="briefing_error_unknown">Đã xảy ra lỗi. Vui lòng thử lại.</string>
+    <string name="briefing_retry">Thử lại</string>
 </resources>

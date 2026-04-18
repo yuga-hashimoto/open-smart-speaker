@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Valeur par défaut du système</string>
     <string name="locale_picker_requires_android_13">Nécessite Android 13 ou supérieur</string>
     <string name="locale_picker_close">Fermer</string>
+    <string name="weather_location_picker_title">Emplacement météo par défaut</string>
+    <string name="weather_location_picker_search_hint">Rechercher une ville</string>
+    <string name="weather_location_picker_use_default">Utiliser la valeur par défaut (Tokyo)</string>
+    <string name="weather_location_picker_close">Fermer</string>
+    <string name="weather_location_picker_no_results">Aucune ville correspondante</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (par défaut intégré)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Chargement de la météo…</string>
+    <string name="briefing_weather_error">Impossible de charger la météo</string>
+    <string name="briefing_headlines_title">À la une</string>
+    <string name="briefing_headlines_loading">Récupération des titres du jour…</string>
+    <string name="briefing_headlines_error">Impossible de charger les titres</string>
+    <string name="briefing_error_network">Vérifiez votre connexion et réessayez.</string>
+    <string name="briefing_error_parse">La source a renvoyé une réponse inattendue.</string>
+    <string name="briefing_error_unknown">Une erreur s\'est produite. Veuillez réessayer.</string>
+    <string name="briefing_retry">Réessayer</string>
 </resources>

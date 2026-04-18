@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">सिस्टम डिफ़ॉल्ट</string>
     <string name="locale_picker_requires_android_13">Android 13+ आवश्यक है</string>
     <string name="locale_picker_close">बंद करें</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">मौसम लोड हो रहा है…</string>
+    <string name="briefing_weather_error">मौसम लोड नहीं हो सका</string>
+    <string name="briefing_headlines_title">सुर्खियां</string>
+    <string name="briefing_headlines_loading">आज की सुर्खियां लाई जा रही हैं…</string>
+    <string name="briefing_headlines_error">सुर्खियां लोड नहीं हो सकीं</string>
+    <string name="briefing_error_network">अपना कनेक्शन जांचें और पुनः प्रयास करें।</string>
+    <string name="briefing_error_parse">स्रोत से अप्रत्याशित प्रतिक्रिया प्राप्त हुई।</string>
+    <string name="briefing_error_unknown">कुछ गड़बड़ हो गई। कृपया पुनः प्रयास करें।</string>
+    <string name="briefing_retry">पुनः प्रयास करें</string>
 </resources>

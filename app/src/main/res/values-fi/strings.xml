@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Järjestelmän oletus</string>
     <string name="locale_picker_requires_android_13">Edellyttää Android 13 tai uudempi</string>
     <string name="locale_picker_close">Sulje</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Ladataan säätä…</string>
+    <string name="briefing_weather_error">Säätä ei voitu ladata</string>
+    <string name="briefing_headlines_title">Otsikot</string>
+    <string name="briefing_headlines_loading">Haetaan päivän otsikoita…</string>
+    <string name="briefing_headlines_error">Otsikoita ei voitu ladata</string>
+    <string name="briefing_error_network">Tarkista yhteys ja yritä uudelleen.</string>
+    <string name="briefing_error_parse">Lähde palautti odottamattoman vastauksen.</string>
+    <string name="briefing_error_unknown">Jokin meni pieleen. Yritä uudelleen.</string>
+    <string name="briefing_retry">Yritä uudelleen</string>
 </resources>

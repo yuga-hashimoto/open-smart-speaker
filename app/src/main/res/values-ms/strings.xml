@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Lalai sistem</string>
     <string name="locale_picker_requires_android_13">Memerlukan Android 13+</string>
     <string name="locale_picker_close">Tutup</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Memuatkan cuaca…</string>
+    <string name="briefing_weather_error">Tidak dapat memuatkan cuaca</string>
+    <string name="briefing_headlines_title">Tajuk Utama</string>
+    <string name="briefing_headlines_loading">Mendapatkan tajuk utama hari ini…</string>
+    <string name="briefing_headlines_error">Tidak dapat memuatkan tajuk utama</string>
+    <string name="briefing_error_network">Semak sambungan anda dan cuba lagi.</string>
+    <string name="briefing_error_parse">Sumber mengembalikan respons yang tidak dijangka.</string>
+    <string name="briefing_error_unknown">Sesuatu berlaku. Sila cuba lagi.</string>
+    <string name="briefing_retry">Cuba lagi</string>
 </resources>

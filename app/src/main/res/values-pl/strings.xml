@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">Domyślne systemu</string>
     <string name="locale_picker_requires_android_13">Wymaga systemu Android 13 lub nowszego</string>
     <string name="locale_picker_close">Zamknij</string>
+    <string name="weather_location_picker_title">Domyślna lokalizacja pogody</string>
+    <string name="weather_location_picker_search_hint">Wyszukaj miasto</string>
+    <string name="weather_location_picker_use_default">Użyj wbudowanej domyślnej (Tokio)</string>
+    <string name="weather_location_picker_close">Zamknij</string>
+    <string name="weather_location_picker_no_results">Brak pasujących miast</string>
+    <string name="weather_location_picker_current_label_default">Tokio (wbudowana domyślna)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Ładowanie pogody…</string>
+    <string name="briefing_weather_error">Nie można załadować pogody</string>
+    <string name="briefing_headlines_title">Nagłówki</string>
+    <string name="briefing_headlines_loading">Pobieranie dzisiejszych nagłówków…</string>
+    <string name="briefing_headlines_error">Nie można załadować nagłówków</string>
+    <string name="briefing_error_network">Sprawdź połączenie i spróbuj ponownie.</string>
+    <string name="briefing_error_parse">Źródło zwróciło nieoczekiwaną odpowiedź.</string>
+    <string name="briefing_error_unknown">Coś poszło nie tak. Spróbuj ponownie.</string>
+    <string name="briefing_retry">Spróbuj ponownie</string>
 </resources>

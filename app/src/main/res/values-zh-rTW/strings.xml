@@ -13,6 +13,12 @@
     <string name="locale_picker_system_default">跟隨系統</string>
     <string name="locale_picker_requires_android_13">需要 Android 13 或以上</string>
     <string name="locale_picker_close">關閉</string>
+    <string name="weather_location_picker_title">預設天氣位置</string>
+    <string name="weather_location_picker_search_hint">搜尋城市</string>
+    <string name="weather_location_picker_use_default">使用內建預設 (東京)</string>
+    <string name="weather_location_picker_close">關閉</string>
+    <string name="weather_location_picker_no_results">沒有相符的城市</string>
+    <string name="weather_location_picker_current_label_default">東京 (內建預設)</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">正在載入天氣…</string>
+    <string name="briefing_weather_error">無法載入天氣</string>
+    <string name="briefing_headlines_title">頭條新聞</string>
+    <string name="briefing_headlines_loading">正在取得今日頭條…</string>
+    <string name="briefing_headlines_error">無法載入頭條</string>
+    <string name="briefing_error_network">請檢查網路連線後重試。</string>
+    <string name="briefing_error_parse">來源返回了非預期的回應。</string>
+    <string name="briefing_error_unknown">發生錯誤，請重試。</string>
+    <string name="briefing_retry">重試</string>
 </resources>

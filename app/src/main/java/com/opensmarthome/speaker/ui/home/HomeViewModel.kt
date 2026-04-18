@@ -19,6 +19,7 @@ import com.opensmarthome.speaker.util.BatteryStatus
 import com.opensmarthome.speaker.util.ThermalLevel
 import com.opensmarthome.speaker.util.ThermalMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.IOException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -154,34 +155,49 @@ class HomeViewModel @Inject constructor(
      * Online current-conditions briefing (Open-Meteo). Polled on the UI
      * lifecycle — `WhileSubscribed(5_000)` pauses the loop when Home is
      * off-screen so a tablet left on the Settings tab isn't burning mobile
-     * data. Emits nothing on network error; the previous emission stays
-     * the latest visible value.
+     * data.
+     *
+     * Emits [BriefingState.Loading] as the first visible value before any
+     * fetch completes so the card renders a skeleton instead of being
+     * invisible. On failure we emit [BriefingState.Error] so the dashboard
+     * can explain what went wrong rather than silently collapsing the
+     * tile — the old "`null` on error" shape was the root cause of users
+     * reporting "weather just isn't showing up".
      */
-    val onlineWeather: StateFlow<WeatherInfo?> = flow {
+    val onlineWeather: StateFlow<BriefingState<WeatherInfo?>> = flow {
         while (true) {
-            briefingSource.currentWeather()?.let { emit(it) }
+            val result = briefingSource.currentWeather()
+            result.fold(
+                onSuccess = { emit(BriefingState.Success(it)) },
+                onFailure = { emit(BriefingState.Error(it.classify())) },
+            )
             delay(WEATHER_REFRESH_MS)
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = null
+        initialValue = BriefingState.Loading
     )
 
     /**
-     * Latest RSS headlines. Same lifecycle treatment as [onlineWeather].
-     * Emits the raw feed response; UI trims summaries for tile display.
+     * Latest RSS headlines. Same lifecycle + error-visibility treatment
+     * as [onlineWeather]. Empty success lists are emitted too (not
+     * suppressed) so the UI can distinguish "fetched fine, feed empty"
+     * from "fetch failed".
      */
-    val headlines: StateFlow<List<NewsItem>> = flow {
+    val headlines: StateFlow<BriefingState<List<NewsItem>>> = flow {
         while (true) {
-            val items = briefingSource.latestHeadlines(HEADLINES_LIMIT)
-            if (items.isNotEmpty()) emit(items)
+            val result = briefingSource.latestHeadlines(HEADLINES_LIMIT)
+            result.fold(
+                onSuccess = { emit(BriefingState.Success(it)) },
+                onFailure = { emit(BriefingState.Error(it.classify())) },
+            )
             delay(HEADLINES_REFRESH_MS)
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList()
+        initialValue = BriefingState.Loading
     )
 
     /**
@@ -325,4 +341,16 @@ class HomeViewModel @Inject constructor(
             )
         }
     }
+}
+
+/**
+ * Maps a thrown briefing failure to the coarse [BriefingState.Error.Kind]
+ * the UI consumes. Kept narrow — the dashboard doesn't need to know the
+ * exception type, just whether it can tell the user "offline" vs. "the
+ * feed itself is broken".
+ */
+internal fun Throwable.classify(): BriefingState.Error.Kind = when (this) {
+    is IOException -> BriefingState.Error.Kind.Network
+    is IllegalStateException, is IllegalArgumentException -> BriefingState.Error.Kind.Parse
+    else -> BriefingState.Error.Kind.Unknown
 }

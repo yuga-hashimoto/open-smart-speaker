@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Zadano za sustav</string>
     <string name="locale_picker_requires_android_13">Zahtijeva Android 13 ili noviji</string>
     <string name="locale_picker_close">Zatvori</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Učitavanje vremena…</string>
+    <string name="briefing_weather_error">Vrijeme se nije moglo učitati</string>
+    <string name="briefing_headlines_title">Naslovi</string>
+    <string name="briefing_headlines_loading">Dohvaćanje današnjih naslova…</string>
+    <string name="briefing_headlines_error">Naslovi se nisu mogli učitati</string>
+    <string name="briefing_error_network">Provjerite vezu i pokušajte ponovno.</string>
+    <string name="briefing_error_parse">Izvor je vratio neočekivani odgovor.</string>
+    <string name="briefing_error_unknown">Nešto je pošlo po zlu. Pokušajte ponovno.</string>
+    <string name="briefing_retry">Pokušaj ponovno</string>
 </resources>

@@ -14,6 +14,12 @@
     <string name="locale_picker_system_default">Rendszer alapértelmezett</string>
     <string name="locale_picker_requires_android_13">Android 13+ szükséges</string>
     <string name="locale_picker_close">Bezárás</string>
+    <string name="weather_location_picker_title">Default weather location</string>
+    <string name="weather_location_picker_search_hint">Search a city</string>
+    <string name="weather_location_picker_use_default">Use built-in default (Tokyo)</string>
+    <string name="weather_location_picker_close">Close</string>
+    <string name="weather_location_picker_no_results">No matching cities</string>
+    <string name="weather_location_picker_current_label_default">Tokyo (built-in default)</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>
     <string name="settings_voice_interaction">Voice Interaction</string>
@@ -51,4 +57,13 @@
     <string name="news_feed_bbc_business">BBC Business</string>
     <string name="news_feed_hackernews">Hacker News</string>
     <string name="news_feed_custom">Custom URL</string>
+    <string name="briefing_weather_loading">Időjárás betöltése…</string>
+    <string name="briefing_weather_error">Nem sikerült betölteni az időjárást</string>
+    <string name="briefing_headlines_title">Címlapok</string>
+    <string name="briefing_headlines_loading">A mai címlapok lekérése…</string>
+    <string name="briefing_headlines_error">Nem sikerült betölteni a címlapokat</string>
+    <string name="briefing_error_network">Ellenőrizze a kapcsolatot, és próbálja újra.</string>
+    <string name="briefing_error_parse">A forrás váratlan választ adott.</string>
+    <string name="briefing_error_unknown">Valami hiba történt. Próbálja újra.</string>
+    <string name="briefing_retry">Újra</string>
 </resources>
