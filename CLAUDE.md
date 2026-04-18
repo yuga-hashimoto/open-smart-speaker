@@ -1,7 +1,11 @@
-# OpenSmartSpeaker
+# OpenDash
 
 Android tablet smart speaker with on-device LLM agent.
 Kotlin 2.1 + Jetpack Compose + Material 3 + Hilt + LiteRT-LM.
+
+> The repo was renamed from `open-smart-speaker` → `open-dash` (2026-04-18).
+> Android package `com.opensmarthome.speaker` is **not yet renamed** (separate
+> PR under discussion — touches applicationId / namespace / every source file).
 
 ## Vision
 Alexa-class smart-home device **+** OpenClaw-class local AI agent, on a single Android tablet.

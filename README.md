@@ -1,6 +1,8 @@
-# OpenSmartSpeaker
+# OpenDash
 
 **Turn any Android tablet into a voice-first smart-home device with a local AI brain.**
+
+> Formerly known as **OpenSmartSpeaker**. The repo moved to `yuga-hashimoto/open-dash`; GitHub redirects old URLs automatically. The Android package (`com.opensmarthome.speaker`) has not moved yet — see [docs/roadmap.md](docs/roadmap.md).
 
 Think "Alexa without the cloud, OpenClaw-level autonomy, all on-device."
 
