@@ -20,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
@@ -60,17 +62,41 @@ class EmbeddedLlmProvider(
     private var engine: Engine? = null
     private var conversation: Conversation? = null
 
-    override suspend fun startSession(config: Map<String, String>): AssistantSession {
-        if (engine == null) {
-            withContext(Dispatchers.IO) {
-                initializeEngine()
+    /**
+     * Serializes all native LiteRT-LM engine / conversation access.
+     *
+     * The LiteRT-LM `Engine` and `Conversation` are **not** thread-safe —
+     * concurrent `sendMessageAsync` / `createConversation` / `close` calls
+     * from multiple coroutines (primary agent loop + [FastPathLlmPolisher]
+     * + warmup/session rebuilds) corrupt internal state and crash the
+     * process with `SIGSEGV` inside `liblitertlm_jni.so`.
+     *
+     * Wrapping every native entry point in [engineMutex.withLock] forces
+     * one-at-a-time execution. The mutex is coroutine-aware (`suspendable`)
+     * so waiting does not block a worker thread. Calls waiting on the
+     * lock still honour outer `withTimeout` boundaries, which is the
+     * desired behaviour — crashing is worse than timing out.
+     */
+    private val engineMutex = Mutex()
+
+    /**
+     * Test-only accessor that lets concurrency tests externally hold or
+     * inspect the engine lock. Production code must never touch this.
+     */
+    internal val engineMutexForTest: Mutex get() = engineMutex
+
+    override suspend fun startSession(config: Map<String, String>): AssistantSession =
+        engineMutex.withLock {
+            if (engine == null) {
+                withContext(Dispatchers.IO) {
+                    initializeEngine()
+                }
             }
+            if (conversation == null) {
+                createConversation()
+            }
+            AssistantSession(providerId = id)
         }
-        if (conversation == null) {
-            createConversation()
-        }
-        return AssistantSession(providerId = id)
-    }
 
     /**
      * Pre-warm the engine off the main thread so the first user request
@@ -80,16 +106,18 @@ class EmbeddedLlmProvider(
      * Returns true on success, false on init failure (caller can fall back
      * to the legacy lazy path).
      */
-    suspend fun warmUp(): Boolean = withContext(Dispatchers.IO) {
-        if (engine != null) return@withContext true
-        try {
-            initializeEngine()
-            if (conversation == null) createConversation()
-            Timber.d("EmbeddedLlmProvider warmed up")
-            true
-        } catch (e: Exception) {
-            Timber.w(e, "EmbeddedLlmProvider warmup failed")
-            false
+    suspend fun warmUp(): Boolean = engineMutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (engine != null) return@withContext true
+            try {
+                initializeEngine()
+                if (conversation == null) createConversation()
+                Timber.d("EmbeddedLlmProvider warmed up")
+                true
+            } catch (e: Exception) {
+                Timber.w(e, "EmbeddedLlmProvider warmup failed")
+                false
+            }
         }
     }
 
@@ -158,22 +186,26 @@ class EmbeddedLlmProvider(
     }
 
     override suspend fun endSession(session: AssistantSession) {
-        conversation?.close()
-        conversation = null
+        engineMutex.withLock {
+            conversation?.close()
+            conversation = null
+        }
     }
 
     override suspend fun send(
         session: AssistantSession,
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
-    ): AssistantMessage = withContext(Dispatchers.IO) {
-        val firstAttempt = sendOnce(messages, tools, retry = false)
-        retryPolicy.finalize(
-            firstAttempt = firstAttempt,
-            tools = tools
-        ) {
-            Timber.d("Refusal detected in LLM output; retrying with stricter directive")
-            sendOnce(messages, tools, retry = true)
+    ): AssistantMessage = engineMutex.withLock {
+        withContext(Dispatchers.IO) {
+            val firstAttempt = sendOnce(messages, tools, retry = false)
+            retryPolicy.finalize(
+                firstAttempt = firstAttempt,
+                tools = tools
+            ) {
+                Timber.d("Refusal detected in LLM output; retrying with stricter directive")
+                sendOnce(messages, tools, retry = true)
+            }
         }
     }
 
@@ -195,18 +227,23 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): Flow<AssistantMessage.Delta> = flow {
-        val prompt = buildEnrichedPrompt(messages, tools, retry = false)
-        val response = StringBuilder()
+        // Hold the engine mutex for the entire streaming collection so the
+        // native `sendMessageAsync` pipeline is not interleaved with any
+        // other engine call (primary `send`, warmup, session rebuild).
+        engineMutex.withLock {
+            val prompt = buildEnrichedPrompt(messages, tools, retry = false)
+            val response = StringBuilder()
 
-        conversation?.sendMessageAsync(prompt)?.collect { message ->
-            val chunk = message.contents.toString()
-            if (chunk.isNotEmpty()) {
-                response.append(chunk)
-                emit(AssistantMessage.Delta(contentDelta = chunk))
+            conversation?.sendMessageAsync(prompt)?.collect { message ->
+                val chunk = message.contents.toString()
+                if (chunk.isNotEmpty()) {
+                    response.append(chunk)
+                    emit(AssistantMessage.Delta(contentDelta = chunk))
+                }
             }
-        }
 
-        emit(AssistantMessage.Delta(finishReason = "stop"))
+            emit(AssistantMessage.Delta(finishReason = "stop"))
+        }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun isAvailable(): Boolean {
@@ -215,7 +252,7 @@ class EmbeddedLlmProvider(
 
     override suspend fun latencyMs(): Long = 0L
 
-    fun unload() {
+    suspend fun unload() = engineMutex.withLock {
         conversation?.close()
         conversation = null
         engine?.let {
