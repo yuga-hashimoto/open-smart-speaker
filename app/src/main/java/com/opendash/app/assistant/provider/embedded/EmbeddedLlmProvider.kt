@@ -20,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
@@ -60,7 +62,15 @@ class EmbeddedLlmProvider(
     private var engine: Engine? = null
     private var conversation: Conversation? = null
 
-    override suspend fun startSession(config: Map<String, String>): AssistantSession {
+    /**
+     * Serializes every native LiteRT-LM call. Without this, concurrent access
+     * from VoicePipeline (main agent loop) and FastPathLlmPolisher (throwaway
+     * session for weather/news polish) races inside liblitertlm_jni.so and
+     * crashes with SIGSEGV.
+     */
+    private val engineMutex = Mutex()
+
+    override suspend fun startSession(config: Map<String, String>): AssistantSession = engineMutex.withLock {
         if (engine == null) {
             withContext(Dispatchers.IO) {
                 initializeEngine()
@@ -69,7 +79,7 @@ class EmbeddedLlmProvider(
         if (conversation == null) {
             createConversation()
         }
-        return AssistantSession(providerId = id)
+        AssistantSession(providerId = id)
     }
 
     /**
@@ -80,16 +90,18 @@ class EmbeddedLlmProvider(
      * Returns true on success, false on init failure (caller can fall back
      * to the legacy lazy path).
      */
-    suspend fun warmUp(): Boolean = withContext(Dispatchers.IO) {
-        if (engine != null) return@withContext true
-        try {
-            initializeEngine()
-            if (conversation == null) createConversation()
-            Timber.d("EmbeddedLlmProvider warmed up")
-            true
-        } catch (e: Exception) {
-            Timber.w(e, "EmbeddedLlmProvider warmup failed")
-            false
+    suspend fun warmUp(): Boolean = engineMutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (engine != null) return@withContext true
+            try {
+                initializeEngine()
+                if (conversation == null) createConversation()
+                Timber.d("EmbeddedLlmProvider warmed up")
+                true
+            } catch (e: Exception) {
+                Timber.w(e, "EmbeddedLlmProvider warmup failed")
+                false
+            }
         }
     }
 
@@ -157,7 +169,7 @@ class EmbeddedLlmProvider(
         }
     }
 
-    override suspend fun endSession(session: AssistantSession) {
+    override suspend fun endSession(session: AssistantSession) = engineMutex.withLock {
         conversation?.close()
         conversation = null
     }
@@ -166,14 +178,16 @@ class EmbeddedLlmProvider(
         session: AssistantSession,
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
-    ): AssistantMessage = withContext(Dispatchers.IO) {
-        val firstAttempt = sendOnce(messages, tools, retry = false)
-        retryPolicy.finalize(
-            firstAttempt = firstAttempt,
-            tools = tools
-        ) {
-            Timber.d("Refusal detected in LLM output; retrying with stricter directive")
-            sendOnce(messages, tools, retry = true)
+    ): AssistantMessage = engineMutex.withLock {
+        withContext(Dispatchers.IO) {
+            val firstAttempt = sendOnce(messages, tools, retry = false)
+            retryPolicy.finalize(
+                firstAttempt = firstAttempt,
+                tools = tools
+            ) {
+                Timber.d("Refusal detected in LLM output; retrying with stricter directive")
+                sendOnce(messages, tools, retry = true)
+            }
         }
     }
 
@@ -195,18 +209,20 @@ class EmbeddedLlmProvider(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>
     ): Flow<AssistantMessage.Delta> = flow {
-        val prompt = buildEnrichedPrompt(messages, tools, retry = false)
-        val response = StringBuilder()
+        engineMutex.withLock {
+            val prompt = buildEnrichedPrompt(messages, tools, retry = false)
+            val response = StringBuilder()
 
-        conversation?.sendMessageAsync(prompt)?.collect { message ->
-            val chunk = message.contents.toString()
-            if (chunk.isNotEmpty()) {
-                response.append(chunk)
-                emit(AssistantMessage.Delta(contentDelta = chunk))
+            conversation?.sendMessageAsync(prompt)?.collect { message ->
+                val chunk = message.contents.toString()
+                if (chunk.isNotEmpty()) {
+                    response.append(chunk)
+                    emit(AssistantMessage.Delta(contentDelta = chunk))
+                }
             }
-        }
 
-        emit(AssistantMessage.Delta(finishReason = "stop"))
+            emit(AssistantMessage.Delta(finishReason = "stop"))
+        }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun isAvailable(): Boolean {
