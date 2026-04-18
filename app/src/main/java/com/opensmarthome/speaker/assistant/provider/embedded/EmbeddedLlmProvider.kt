@@ -35,6 +35,7 @@ class EmbeddedLlmProvider(
     private val toolCallParser = ToolCallParser()
     private val retryPolicy = ToolCallRetryPolicy(toolCallParser)
     private val systemPromptBuilder = SystemPromptBuilder()
+    private val toolResultSummarizer = ToolResultSummarizer()
 
     override val id: String = "embedded_llm"
     override val displayName: String = "On-Device LLM"
@@ -233,18 +234,24 @@ class EmbeddedLlmProvider(
      *   1. (optional) tool annex — directive + tool list + few-shot examples
      *      since LiteRT-LM conversations have a fixed system instruction.
      *   2. (optional) device state snapshot.
-     *   3. The user's last message.
+     *   3. Either the user's last message, OR — when the most recent
+     *      message in history is a [AssistantMessage.ToolCallResult] —
+     *      the summarized tool result + an explicit "answer the user"
+     *      directive. The latter is the second round of the agent loop
+     *      (PR #418); without the directive Gemma 2B degenerates to
+     *      "..." because it has no context telling it to resume.
      *
      * When [retry] is true the tool annex is reinforced with a stricter
      * directive that forbids "I don't have tools" and instructs the model
      * to pick exactly one tool from the list.
+     *
+     * Internal for tests.
      */
-    private fun buildEnrichedPrompt(
+    internal fun buildEnrichedPrompt(
         messages: List<AssistantMessage>,
         tools: List<ToolSchema>,
         retry: Boolean
     ): String {
-        val userMessage = extractLastUserMessage(messages)
         val sb = StringBuilder()
 
         if (tools.isNotEmpty()) {
@@ -261,9 +268,81 @@ class EmbeddedLlmProvider(
             }
         }
 
-        sb.append(userMessage)
+        // If the most recent message is a tool result, we're in the 2nd
+        // (or later) round of the agent loop. Frame the turn as
+        // "here is the tool output — now answer the user" rather than
+        // repeating the original user question, which previously caused
+        // Gemma 2B to emit "..." because it thought the tool call was
+        // still pending.
+        val followUp = buildToolResultFollowUp(messages)
+        if (followUp != null) {
+            sb.append(followUp)
+        } else {
+            sb.append(extractLastUserMessage(messages))
+        }
         return sb.toString()
     }
+
+    /**
+     * Returns a formatted tool-result follow-up block when the most recent
+     * non-delta message in [messages] is a [AssistantMessage.ToolCallResult].
+     * Returns `null` otherwise (first round of the turn).
+     *
+     * The block contains:
+     *   1. The original user question (so the model knows what to answer).
+     *   2. One or more `[Tool Result: <name>] <summary>` blocks — one per
+     *      tool result since the last user turn. Each summary is produced
+     *      by [ToolResultSummarizer] so long JSON payloads do not blow the
+     *      context window.
+     *   3. An explicit directive to answer in natural language using the
+     *      tool result and never output a bare ellipsis.
+     */
+    private fun buildToolResultFollowUp(messages: List<AssistantMessage>): String? {
+        val lastNonDelta = messages.lastOrNull { it !is AssistantMessage.Delta }
+        if (lastNonDelta !is AssistantMessage.ToolCallResult) return null
+
+        // Walk back from the end collecting tool results + the matching
+        // assistant tool calls until we hit the preceding user message.
+        val toolResults = mutableListOf<AssistantMessage.ToolCallResult>()
+        val toolCallsByCallId = mutableMapOf<String, ToolCallRequestSnapshot>()
+        var userQuestion: String? = null
+        for (msg in messages.asReversed()) {
+            when (msg) {
+                is AssistantMessage.ToolCallResult -> toolResults.add(0, msg)
+                is AssistantMessage.Assistant -> {
+                    msg.toolCalls.forEach { call ->
+                        toolCallsByCallId[call.id] =
+                            ToolCallRequestSnapshot(name = call.name)
+                    }
+                }
+                is AssistantMessage.User -> {
+                    userQuestion = msg.content
+                    break
+                }
+                else -> Unit
+            }
+        }
+
+        val sb = StringBuilder()
+        if (!userQuestion.isNullOrBlank()) {
+            sb.append("User asked: ").append(userQuestion).append("\n\n")
+        }
+        for (result in toolResults) {
+            val toolName = toolCallsByCallId[result.callId]?.name ?: "tool"
+            val summary = toolResultSummarizer.summarize(toolName, result.result)
+            sb.append("[Tool Result: ").append(toolName).append("]\n")
+            sb.append(summary).append("\n\n")
+        }
+        sb.append(TOOL_RESULT_ANSWER_DIRECTIVE)
+        return sb.toString()
+    }
+
+    /**
+     * Minimal record for matching a tool call ID to its tool name when
+     * walking conversation history. Avoids importing the Moshi-serialized
+     * `ToolCallRequest` across modules.
+     */
+    private data class ToolCallRequestSnapshot(val name: String)
 
     /**
      * Builds a compact tool prompt annex. Re-uses [SystemPromptBuilder]'s
@@ -312,5 +391,18 @@ class EmbeddedLlmProvider(
                 "above and pick EXACTLY ONE tool whose description matches the " +
                 "user's request, then emit a tool call now using one of the " +
                 "supported formats. Do not apologize — just emit the tool call."
+
+        /**
+         * Directive appended after the summarized tool result on the 2nd
+         * round of the agent loop. Explicit enough to keep Gemma 2B from
+         * falling back to its "..." continuation failure mode when it
+         * doesn't know what to do with a tool result in history.
+         */
+        internal const val TOOL_RESULT_ANSWER_DIRECTIVE =
+            "Based on the tool result above, answer the user's question " +
+                "clearly in 1-2 short sentences in their language. " +
+                "Use the facts from the result — do not say \"I don't know\" " +
+                "or apologize. Do not output ellipsis or repeat the tool " +
+                "call. Do not invent facts that are not in the summary."
     }
 }

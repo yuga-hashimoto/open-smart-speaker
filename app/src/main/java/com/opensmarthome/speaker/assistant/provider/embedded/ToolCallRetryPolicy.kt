@@ -20,11 +20,13 @@ class ToolCallRetryPolicy(
      * Run the (already-executed) first attempt through parsing + refusal
      * detection and, if needed, call [retryFn] to obtain a second attempt.
      *
-     * [retryFn] is only invoked when:
-     *  - [tools] is non-empty, AND
+     * [retryFn] is invoked at most once when any of the following hold:
      *  - the first attempt did not produce any tool calls, AND
-     *  - the first attempt looks like a refusal (see
-     *    [ToolCallParser.looksLikeRefusal]).
+     *  - [tools] is non-empty AND the first attempt looks like a refusal
+     *    (see [ToolCallParser.looksLikeRefusal]), OR
+     *  - the first attempt is empty / whitespace-only / bare ellipsis
+     *    (see [looksEmpty]) — this is the 2nd-round agent-loop failure
+     *    mode where Gemma 2B chokes on the raw tool result JSON.
      *
      * Guarantees at most one retry.
      */
@@ -38,7 +40,11 @@ class ToolCallRetryPolicy(
             return assistant(parsedFirst.text, parsedFirst.toolCalls)
         }
 
-        if (tools.isEmpty() || !ToolCallParser.looksLikeRefusal(firstAttempt)) {
+        val shouldRetryOnRefusal =
+            tools.isNotEmpty() && ToolCallParser.looksLikeRefusal(firstAttempt)
+        val shouldRetryOnEmpty = looksEmpty(parsedFirst.text, firstAttempt)
+
+        if (!shouldRetryOnRefusal && !shouldRetryOnEmpty) {
             return assistant(parsedFirst.text.ifBlank { firstAttempt.trim() }, emptyList())
         }
 
@@ -47,8 +53,12 @@ class ToolCallRetryPolicy(
         if (parsedRetry.toolCalls.isNotEmpty()) {
             return assistant(parsedRetry.text, parsedRetry.toolCalls)
         }
+        // Prefer the retry text, then the first attempt, then a generic
+        // non-blank placeholder so the TTS never speaks a literal empty
+        // string.
         val fallbackText = parsedRetry.text
             .ifBlank { parsedFirst.text.ifBlank { firstAttempt.trim() } }
+            .ifBlank { EMPTY_RESPONSE_FALLBACK }
         return assistant(fallbackText, emptyList())
     }
 
@@ -65,4 +75,46 @@ class ToolCallRetryPolicy(
             content = AssistantReplyCleaner.cleanContent(content),
             toolCalls = toolCalls
         )
+
+    companion object {
+        /** Minimum length a "real" reply must have to skip the empty retry. */
+        private const val MIN_NONEMPTY_CHARS = 10
+
+        /**
+         * Characters we consider noise. When the response is made up
+         * entirely of these, it's Gemma's "..." failure mode — re-prompt.
+         */
+        private val NOISE_CHARS = setOf(
+            '.', '…', '·', '•', ' ', '\t', '\n', '\r'
+        )
+
+        /**
+         * Non-blank placeholder spoken when both the first attempt and the
+         * retry return bare ellipses. Keeps the user informed rather than
+         * silent. Intentionally language-neutral; the higher-level
+         * VoicePipeline fallback handles localization when the round cap
+         * is hit.
+         */
+        private const val EMPTY_RESPONSE_FALLBACK =
+            "I could not generate a response from the tool result."
+
+        /**
+         * True when the LLM produced essentially nothing useful — bare
+         * `...`, `…`, whitespace, or fewer than [MIN_NONEMPTY_CHARS] chars
+         * of noise. Checks both the parsed text (after XML/TOOL_CALL
+         * stripping) and the raw response so we never fail to catch a
+         * degenerate output regardless of which parser branch consumed it.
+         *
+         * Kept `internal` so tests can pin edge cases directly.
+         */
+        internal fun looksEmpty(parsedText: String, rawResponse: String): Boolean {
+            val text = parsedText.ifBlank { rawResponse }.trim()
+            if (text.isEmpty()) return true
+            if (text.all { it in NOISE_CHARS }) return true
+            if (text.length < MIN_NONEMPTY_CHARS && text.all { it in NOISE_CHARS || it == '.' }) {
+                return true
+            }
+            return false
+        }
+    }
 }

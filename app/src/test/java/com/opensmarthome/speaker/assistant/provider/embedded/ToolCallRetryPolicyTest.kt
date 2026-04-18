@@ -178,4 +178,94 @@ class ToolCallRetryPolicyTest {
         assertThat(retries).isEqualTo(1)
         assertThat(result.toolCalls).hasSize(1)
     }
+
+    // --- Empty / degenerate output detection (agent-loop 2nd-round "..." bug) ---
+
+    @Test
+    fun `bare ascii ellipsis triggers retry`() = runTest {
+        var retries = 0
+        val first = "..."
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "Tokyo is currently 18 degrees and clear."
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.content).contains("Tokyo")
+    }
+
+    @Test
+    fun `unicode horizontal ellipsis triggers retry`() = runTest {
+        var retries = 0
+        val first = "…"
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "Here is a useful answer."
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.content).contains("useful answer")
+    }
+
+    @Test
+    fun `whitespace-only response triggers retry`() = runTest {
+        var retries = 0
+        val first = "   \n   "
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "Concrete answer."
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.content).contains("Concrete")
+    }
+
+    @Test
+    fun `short gibberish under ten chars triggers retry`() = runTest {
+        var retries = 0
+        val first = "...\n..."
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "Real answer with enough characters."
+        }
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(result.content).contains("Real answer")
+    }
+
+    @Test
+    fun `empty retry does not trigger another retry`() = runTest {
+        var retries = 0
+        val first = "..."
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "..." // retry also empty
+        }
+
+        assertThat(retries).isEqualTo(1) // exactly one retry
+        // Fallback content must be non-blank so the user hears SOMETHING rather
+        // than silence after a double-"..." degenerate model pass.
+        assertThat(result.content).isNotEmpty()
+    }
+
+    @Test
+    fun `short real answer is not flagged as empty`() = runTest {
+        // "Yes." / "はい。" etc. are legitimate short answers and must NOT
+        // trigger a retry.
+        var retries = 0
+        val first = "はい、そうです。"
+
+        val result = policy.finalize(first, tools) {
+            retries++
+            "never"
+        }
+
+        assertThat(retries).isEqualTo(0)
+        assertThat(result.content).isEqualTo("はい、そうです。")
+    }
 }
