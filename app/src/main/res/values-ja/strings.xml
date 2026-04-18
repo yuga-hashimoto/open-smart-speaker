@@ -35,6 +35,28 @@
     <string name="settings_wake_word_interrupts_tts">ウェイクワードでTTSを割り込み</string>
     <string name="settings_media_button_trigger">メディアボタンでトリガー</string>
     <string name="settings_media_button_trigger_hint">Bluetoothヘッドセットのボタンで音声入力を開始します</string>
+    <string name="news_feed_picker_title">ニュースフィード</string>
+    <string name="news_feed_picker_custom_url">カスタム URL を適用</string>
+    <string name="news_feed_picker_custom_url_hint">RSS/Atom URL</string>
+    <string name="news_feed_picker_close">閉じる</string>
+    <string name="news_feed_section_header">ニュース</string>
+    <string name="news_feed_category_nhk">NHK（日本語）</string>
+    <string name="news_feed_category_bbc">BBC（英語）</string>
+    <string name="news_feed_category_other">その他</string>
+    <string name="news_feed_nhk_general">NHK 総合</string>
+    <string name="news_feed_nhk_society">NHK 社会</string>
+    <string name="news_feed_nhk_science">NHK 科学</string>
+    <string name="news_feed_nhk_politics">NHK 政治</string>
+    <string name="news_feed_nhk_economy">NHK 経済</string>
+    <string name="news_feed_nhk_world">NHK 国際</string>
+    <string name="news_feed_nhk_sports">NHK スポーツ</string>
+    <string name="news_feed_nhk_culture">NHK 文化</string>
+    <string name="news_feed_bbc_top">BBC トップストーリー</string>
+    <string name="news_feed_bbc_world">BBC ワールド</string>
+    <string name="news_feed_bbc_technology">BBC テクノロジー</string>
+    <string name="news_feed_bbc_business">BBC ビジネス</string>
+    <string name="news_feed_hackernews">Hacker News</string>
+    <string name="news_feed_custom">カスタム URL</string>
 
     <!-- Common buttons -->
     <string name="common_back">戻る</string>

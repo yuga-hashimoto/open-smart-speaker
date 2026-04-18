@@ -13,12 +13,22 @@ class NewsToolExecutor(
 ) : ToolExecutor {
 
     companion object {
-        // Pair of (human-readable name, RSS URL). All major-outlet public feeds.
-        val DEFAULT_FEEDS = listOf(
-            "bbc" to "https://feeds.bbci.co.uk/news/rss.xml",
-            "nhk" to "https://www3.nhk.or.jp/rss/news/cat0.xml",
-            "hackernews" to "https://news.ycombinator.com/rss"
-        )
+        /**
+         * (`source=` identifier → RSS URL) pairs. Derived from
+         * [BundledNewsFeeds] so the picker, the news tool, and the
+         * home-dashboard briefing source all share one source of truth.
+         *
+         * Backwards-compatible legacy aliases (`bbc`, `nhk`,
+         * `hackernews`) are listed first so they win the `firstOrNull`
+         * lookup in [resolveFeedUrl] — this preserves the exact URLs
+         * that pre-picker installs have been using.
+         *
+         * Every bundled feed is also reachable via its stable
+         * [BundledFeed.id] (e.g. `nhk_society`).
+         */
+        val DEFAULT_FEEDS: List<Pair<String, String>> =
+            BundledNewsFeeds.LEGACY_ALIASES.map { (alias, url) -> alias to url } +
+                BundledNewsFeeds.ALL.map { it.id to it.url }
     }
 
     override suspend fun availableTools(): List<ToolSchema> = listOf(

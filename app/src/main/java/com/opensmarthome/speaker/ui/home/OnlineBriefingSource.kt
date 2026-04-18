@@ -87,15 +87,21 @@ class DefaultOnlineBriefingSource @Inject constructor(
 
     override suspend fun latestHeadlines(limit: Int): Result<List<NewsItem>> {
         val safeLimit = limit.coerceIn(1, 10)
-        return runCatching { newsProvider.getHeadlines(DEFAULT_FEED, safeLimit) }
+        val configured = runCatching {
+            preferences.observe(PreferenceKeys.DEFAULT_NEWS_FEED_URL).first()
+        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        val feedUrl = configured ?: DEFAULT_FEED
+        return runCatching { newsProvider.getHeadlines(feedUrl, safeLimit) }
             .onFailure { Timber.w(it, "OnlineBriefingSource: headlines refresh failed") }
     }
 
     companion object {
         /**
-         * Default feed. Chosen because NHK ships as one of the bundled
-         * `NewsToolExecutor.DEFAULT_FEEDS` so users who have ever triggered
-         * the news tool are already going through this endpoint.
+         * Default feed used when the user has not picked a news source
+         * yet. Preserved as NHK General because this URL is what every
+         * pre-picker install has been seeing, so nothing silently
+         * changes under returning users on upgrade. New users can pick
+         * a different feed from Settings → News at any time.
          */
         const val DEFAULT_FEED: String = "https://www3.nhk.or.jp/rss/news/cat0.xml"
     }

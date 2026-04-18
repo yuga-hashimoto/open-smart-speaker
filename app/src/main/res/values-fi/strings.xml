@@ -35,6 +35,28 @@
     <string name="settings_wake_word_interrupts_tts">Wake Word Interrupts TTS</string>
     <string name="settings_media_button_trigger">Media Button Trigger</string>
     <string name="settings_media_button_trigger_hint">Use Bluetooth headset button to start voice input</string>
+    <string name="news_feed_picker_title">News feed</string>
+    <string name="news_feed_picker_custom_url">Apply custom URL</string>
+    <string name="news_feed_picker_custom_url_hint">RSS/Atom URL</string>
+    <string name="news_feed_picker_close">Close</string>
+    <string name="news_feed_section_header">News</string>
+    <string name="news_feed_category_nhk">NHK (日本語)</string>
+    <string name="news_feed_category_bbc">BBC (English)</string>
+    <string name="news_feed_category_other">Other</string>
+    <string name="news_feed_nhk_general">NHK General</string>
+    <string name="news_feed_nhk_society">NHK Society</string>
+    <string name="news_feed_nhk_science">NHK Science</string>
+    <string name="news_feed_nhk_politics">NHK Politics</string>
+    <string name="news_feed_nhk_economy">NHK Economy</string>
+    <string name="news_feed_nhk_world">NHK International</string>
+    <string name="news_feed_nhk_sports">NHK Sports</string>
+    <string name="news_feed_nhk_culture">NHK Culture</string>
+    <string name="news_feed_bbc_top">BBC Top Stories</string>
+    <string name="news_feed_bbc_world">BBC World</string>
+    <string name="news_feed_bbc_technology">BBC Technology</string>
+    <string name="news_feed_bbc_business">BBC Business</string>
+    <string name="news_feed_hackernews">Hacker News</string>
+    <string name="news_feed_custom">Custom URL</string>
 
     <!-- Common buttons -->
     <string name="common_back">Back</string>

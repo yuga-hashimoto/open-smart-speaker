@@ -106,4 +106,23 @@ object PreferenceKeys {
      * on startup and applies it via `AppCompatDelegate.setApplicationLocales`.
      */
     val APP_LOCALE_TAG = stringPreferencesKey("app_locale_tag")
+
+    /**
+     * User-chosen default news feed for the Home dashboard headlines card
+     * and the fallback used by `get_news` when the utterance doesn't name
+     * a specific feed. Value is an RSS/Atom URL; empty / unset means
+     * "fall back to the built-in NHK General feed" (backward-compat with
+     * pre-setting installs). Complements [DEFAULT_LOCATION].
+     */
+    val DEFAULT_NEWS_FEED_URL = stringPreferencesKey("default_news_feed_url")
+
+    /**
+     * Optional human label for the currently selected news feed —
+     * rendered next to the picker row ("NHK 社会" / "BBC Top Stories")
+     * so the UI doesn't need to re-parse the feed or resolve the bundled
+     * catalog just to show the user's current choice. Empty / unset means
+     * "fall back to the bundled label that matches DEFAULT_NEWS_FEED_URL,
+     * or the localized Default label if nothing matches".
+     */
+    val DEFAULT_NEWS_FEED_LABEL = stringPreferencesKey("default_news_feed_label")
 }

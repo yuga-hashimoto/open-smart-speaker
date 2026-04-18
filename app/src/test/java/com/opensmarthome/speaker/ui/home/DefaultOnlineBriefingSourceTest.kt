@@ -58,9 +58,16 @@ class DefaultOnlineBriefingSourceTest {
         }
     }
 
-    private fun prefsReturning(location: String?): AppPreferences {
+    private fun prefsReturning(
+        location: String?,
+        newsFeedUrl: String? = null,
+    ): AppPreferences {
         val prefs = mockk<AppPreferences>(relaxed = true)
         every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns flowOf(location)
+        // Tests written before the picker landed pass a single arg; default
+        // `null` keeps them behaviourally unchanged (briefing falls back to
+        // the built-in DEFAULT_FEED).
+        every { prefs.observe(PreferenceKeys.DEFAULT_NEWS_FEED_URL) } returns flowOf(newsFeedUrl)
         return prefs
     }
 
@@ -151,6 +158,36 @@ class DefaultOnlineBriefingSourceTest {
 
         source.latestHeadlines(limit = 100)
         assertThat(news.lastLimit).isEqualTo(10)
+    }
+
+    @Test
+    fun `latestHeadlines honours DEFAULT_NEWS_FEED_URL preference when set`() = runTest {
+        val news = FakeNewsProvider(result = emptyList())
+        val picked = "https://example.com/custom.rss"
+        val source = DefaultOnlineBriefingSource(
+            FakeWeatherProvider(),
+            news,
+            prefsReturning(location = null, newsFeedUrl = picked),
+        )
+
+        source.latestHeadlines(limit = 3)
+
+        assertThat(news.lastFeedUrl).isEqualTo(picked)
+        assertThat(news.lastLimit).isEqualTo(3)
+    }
+
+    @Test
+    fun `latestHeadlines falls back to default feed when preference is blank`() = runTest {
+        val news = FakeNewsProvider(result = emptyList())
+        val source = DefaultOnlineBriefingSource(
+            FakeWeatherProvider(),
+            news,
+            prefsReturning(location = null, newsFeedUrl = "   "),
+        )
+
+        source.latestHeadlines()
+
+        assertThat(news.lastFeedUrl).isEqualTo(DefaultOnlineBriefingSource.DEFAULT_FEED)
     }
 
     @Test

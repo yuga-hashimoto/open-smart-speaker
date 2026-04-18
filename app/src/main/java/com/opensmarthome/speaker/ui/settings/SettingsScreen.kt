@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.ui.settings.locale.LocalePickerRow
+import com.opensmarthome.speaker.ui.settings.news.NewsFeedPickerRow
 import com.opensmarthome.speaker.ui.settings.weather.WeatherLocationPickerRow
 
 @Composable
@@ -316,6 +317,17 @@ fun SettingsScreen(
             "Used when you ask for the weather without naming a place " +
                 "(\"what's the weather?\" / \"天気教えて\"). Leave empty " +
                 "to fall back to Tokyo."
+        )
+
+        SettingsDivider()
+
+        // === News ===
+        SectionHeader(stringResource(R.string.news_feed_section_header))
+        NewsFeedPickerRow()
+        SettingsHint(
+            "Controls the feed shown on the Home dashboard's headlines card " +
+                "and used as the default for voice news requests. Pick a bundled " +
+                "feed or paste your own RSS/Atom URL."
         )
 
         SettingsDivider()
