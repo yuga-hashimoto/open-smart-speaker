@@ -13,9 +13,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.multiroom.PairingFingerprint
 
 /**
@@ -55,13 +57,13 @@ fun SettingsMultiroomPairingCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Pairing phrase",
+                text = stringResource(R.string.pairing_phrase_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
             if (secret.isBlank() || phrase.isEmpty()) {
                 Text(
-                    text = "(no secret set)",
+                    text = stringResource(R.string.pairing_phrase_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -74,7 +76,7 @@ fun SettingsMultiroomPairingCard(
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Read this to the other speaker. Must match on every paired device.",
+                    text = stringResource(R.string.pairing_phrase_read_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

@@ -22,8 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import android.content.Intent
+import com.opensmarthome.speaker.R
 import com.opensmarthome.speaker.service.VoiceService
 import com.opensmarthome.speaker.ui.common.StatusIndicator
 import com.opensmarthome.speaker.ui.common.StatusIndicatorState
@@ -39,7 +41,7 @@ fun VoiceHealthSection() {
     }
 
     Text(
-        text = "Voice Health",
+        text = stringResource(R.string.voice_health_title),
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(bottom = 8.dp)
@@ -47,7 +49,7 @@ fun VoiceHealthSection() {
 
     if (items.isEmpty()) {
         Text(
-            text = "Running diagnostics...",
+            text = stringResource(R.string.voice_health_running),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -57,7 +59,6 @@ fun VoiceHealthSection() {
     Column {
         for (item in items) {
             DiagnosticCard(item) {
-                // Re-run after user returns from action
                 items = VoiceDiagnostics.run(context)
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -66,13 +67,9 @@ fun VoiceHealthSection() {
             onClick = { items = VoiceDiagnostics.run(context) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Refresh Diagnostics", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.voice_health_refresh), color = MaterialTheme.colorScheme.onSurface)
         }
         Spacer(modifier = Modifier.height(4.dp))
-        // Quick "does the mic work?" trigger that bypasses the wake word and
-        // opens an STT session through the same foreground-service path that
-        // a real wake would use. Useful when the user just changed the
-        // wake-word keyword / sensitivity and wants to verify mic + STT.
         OutlinedButton(
             onClick = {
                 val intent = Intent(context, VoiceService::class.java).apply {
@@ -80,11 +77,11 @@ fun VoiceHealthSection() {
                 }
                 try {
                     context.startService(intent)
-                } catch (_: Exception) { /* ignore — startForegroundService policy may refuse */ }
+                } catch (_: Exception) { /* startForegroundService policy may refuse */ }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Test Mic + STT Now", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.voice_health_test_mic), color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

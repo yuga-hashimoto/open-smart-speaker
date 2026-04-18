@@ -35,6 +35,17 @@
     <string name="settings_wake_word_interrupts_tts">Wake Word Interrupts TTS</string>
     <string name="settings_media_button_trigger">Media Button Trigger</string>
     <string name="settings_media_button_trigger_hint">Use Bluetooth headset button to start voice input</string>
+
+    <!-- Pairing card (multi-room) -->
+    <string name="pairing_phrase_title">Pairing phrase</string>
+    <string name="pairing_phrase_none">(no secret set)</string>
+    <string name="pairing_phrase_read_hint">Read this to the other speaker. Must match on every paired device.</string>
+
+    <!-- Voice health diagnostics -->
+    <string name="voice_health_title">Voice Health</string>
+    <string name="voice_health_running">Running diagnostics\u2026</string>
+    <string name="voice_health_refresh">Refresh Diagnostics</string>
+    <string name="voice_health_test_mic">Test Mic + STT Now</string>
     <string name="briefing_weather_loading">Időjárás betöltése…</string>
     <string name="briefing_weather_error">Nem sikerült betölteni az időjárást</string>
     <string name="briefing_headlines_title">Címlapok</string>

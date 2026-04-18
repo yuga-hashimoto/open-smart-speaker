@@ -35,6 +35,17 @@
     <string name="settings_wake_word_interrupts_tts">ウェイクワードでTTSを割り込み</string>
     <string name="settings_media_button_trigger">メディアボタンでトリガー</string>
     <string name="settings_media_button_trigger_hint">Bluetoothヘッドセットのボタンで音声入力を開始します</string>
+
+    <!-- Pairing card (multi-room) -->
+    <string name="pairing_phrase_title">ペアリングフレーズ</string>
+    <string name="pairing_phrase_none">（シークレット未設定）</string>
+    <string name="pairing_phrase_read_hint">他のスピーカーに向けて読み上げてください。ペアリング済みの全端末で一致している必要があります。</string>
+
+    <!-- Voice health diagnostics -->
+    <string name="voice_health_title">音声ヘルス</string>
+    <string name="voice_health_running">診断を実行中\u2026</string>
+    <string name="voice_health_refresh">診断を更新</string>
+    <string name="voice_health_test_mic">マイク + STT を今すぐテスト</string>
     <string name="briefing_weather_loading">天気を読み込み中…</string>
     <string name="briefing_weather_error">天気を取得できませんでした</string>
     <string name="briefing_headlines_title">ニュース</string>
