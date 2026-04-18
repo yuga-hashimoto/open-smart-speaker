@@ -22,10 +22,10 @@ import com.opensmarthome.speaker.tool.info.RandomToolExecutor
 import com.opensmarthome.speaker.tool.info.CurrencyToolExecutor
 import com.opensmarthome.speaker.voice.fastpath.DefaultFastPathRouter
 import com.opensmarthome.speaker.voice.fastpath.FastPathRouter
-import com.opensmarthome.speaker.tool.info.ChainedSearchProvider
+import com.opensmarthome.speaker.tool.info.DuckDuckGoHtmlSearchProvider
 import com.opensmarthome.speaker.tool.info.DuckDuckGoSearchProvider
 import com.opensmarthome.speaker.tool.info.HtmlWebFetcher
-import com.opensmarthome.speaker.tool.info.WikipediaSearchProvider
+import com.opensmarthome.speaker.tool.info.SearchProviderChain
 import com.opensmarthome.speaker.tool.info.InMemoryKnowledgeStore
 import com.opensmarthome.speaker.tool.info.KnowledgeToolExecutor
 import com.opensmarthome.speaker.tool.info.NewsToolExecutor
@@ -469,9 +469,16 @@ object DeviceModule {
                 appPreferences
             ),
             SearchToolExecutor(
-                ChainedSearchProvider(
-                    primary = DuckDuckGoSearchProvider(client, moshi),
-                    fallback = WikipediaSearchProvider(client, moshi)
+                // HTML scrape first (real SERP results); Instant-Answer API
+                // as a secondary for the few queries it handles well
+                // (unit conversions, math, well-known topics). Wikipedia
+                // fallback removed per user feedback — DDG HTML covers it.
+                // Stolen from openclaw: extensions/duckduckgo/src/ddg-client.ts
+                SearchProviderChain(
+                    providers = listOf(
+                        DuckDuckGoHtmlSearchProvider(client),
+                        DuckDuckGoSearchProvider(client, moshi)
+                    )
                 )
             ),
             WebFetchToolExecutor(HtmlWebFetcher(client)),
