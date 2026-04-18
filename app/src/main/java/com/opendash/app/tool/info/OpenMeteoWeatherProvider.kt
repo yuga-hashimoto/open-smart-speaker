@@ -84,31 +84,52 @@ class OpenMeteoWeatherProvider(
     internal data class Coords(val latitude: Double, val longitude: Double, val name: String)
 
     /**
-     * Resolve a location string to coordinates with up to four attempts to
-     * work around Open-Meteo's patchy matching of Japanese strings:
+     * Resolve a location string to coordinates with up to five attempts to
+     * work around Open-Meteo's patchy matching:
      *
      * 1. Original query, `language=en` (fast path — works for English and
      *    well-known romanized city names).
-     * 2. If zero results and query contains a Japanese suffix, strip a single
+     * 2. If the query is a comma-separated human-facing label
+     *    (`"Munakata, Fukuoka, Japan"`), retry with just the first segment
+     *    (`"Munakata"`) under `language=en`. This rescues values saved by
+     *    pre-fix builds of the Settings picker (PR #424) that persisted the
+     *    full display label instead of the simple city name.
+     * 3. If zero results and query contains a Japanese suffix, strip a single
      *    suffix and retry with `language=ja` (e.g. "宗像市" → "宗像").
-     * 3. If still zero results and query contains leading kanji, reduce to
+     * 4. If still zero results and query contains leading kanji, reduce to
      *    the leading kanji run and retry with `language=ja`
      *    (e.g. "東京都新宿区" → "東京").
-     * 4. If still zero results and the query is a known katakana foreign
+     * 5. If still zero results and the query is a known katakana foreign
      *    city name, map it to its English form and retry with `language=en`
      *    (e.g. "シドニー" → "Sydney"). Open-Meteo's geocoder does not
      *    resolve katakana loan-word spellings.
-     * 5. Otherwise throw RuntimeException as before.
+     * 6. Otherwise throw RuntimeException as before.
      */
     internal suspend fun resolveCoordinates(location: String?): Coords = withContext(Dispatchers.IO) {
         // If no location provided, default to Tokyo (could be enhanced with device location)
         val query = location?.takeIf { it.isNotBlank() } ?: "Tokyo"
 
         geocodeOnce(query, language = "en")
+            ?: firstCommaSegment(query)?.let { geocodeOnce(it, language = "en") }
             ?: stripJapaneseSuffix(query)?.let { geocodeOnce(it, language = "ja") }
             ?: leadingKanjiStem(query)?.let { geocodeOnce(it, language = "ja") }
             ?: KatakanaCityRomanizer.romanize(query)?.let { geocodeOnce(it, language = "en") }
             ?: throw RuntimeException("No geocoding results for $query")
+    }
+
+    /**
+     * Extract the first comma-delimited segment of a display-style label.
+     * Returns `null` when the query has no comma, when the leading segment
+     * is blank after trimming, or when the segment equals the full query
+     * (nothing to reduce). Used to rescue values saved by pre-fix builds
+     * of the Settings picker that persisted `"Munakata, Fukuoka, Japan"`
+     * into [com.opensmarthome.speaker.data.preferences.PreferenceKeys.DEFAULT_LOCATION]
+     * — Open-Meteo's geocoding endpoint cannot resolve that format.
+     */
+    internal fun firstCommaSegment(query: String): String? {
+        if (!query.contains(',')) return null
+        val head = query.substringBefore(',').trim()
+        return head.takeIf { it.isNotEmpty() && it != query }
     }
 
     private fun geocodeOnce(query: String, language: String): Coords? {

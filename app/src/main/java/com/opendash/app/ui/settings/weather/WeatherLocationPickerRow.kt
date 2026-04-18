@@ -48,13 +48,17 @@ fun WeatherLocationPickerRow(
     viewModel: WeatherLocationSettingsViewModel = hiltViewModel()
 ) {
     val currentLocation by viewModel.currentLocation.collectAsState()
+    val currentDisplayLabel by viewModel.currentDisplayLabel.collectAsState()
     val results by viewModel.queryResults.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
 
     val defaultLabel = stringResource(R.string.weather_location_picker_current_label_default)
-    val currentLabel = currentLocation.ifEmpty { defaultLabel }
+    // Prefer the human-facing display label (e.g. "Munakata, Fukuoka, Japan");
+    // fall back to the API-facing value for pre-migration installs, then the
+    // localized "Tokyo (built-in default)" string when nothing is set.
+    val currentLabel = currentDisplayLabel.ifEmpty { currentLocation }.ifEmpty { defaultLabel }
 
     Row(
         modifier = modifier
@@ -112,7 +116,7 @@ fun WeatherLocationPickerRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                viewModel.applyLocation("")
+                                viewModel.clearLocation()
                                 showDialog = false
                                 query = ""
                             }
@@ -146,7 +150,7 @@ fun WeatherLocationPickerRow(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            viewModel.applyLocation(suggestion.displayLabel)
+                                            viewModel.applyLocation(suggestion)
                                             showDialog = false
                                             query = ""
                                         }

@@ -51,12 +51,33 @@ class WeatherLocationSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Currently persisted default location label. Empty string when
-     * unset — the weather provider falls back to its built-in Tokyo
-     * default (see [PreferenceKeys.DEFAULT_LOCATION] kdoc).
+     * Currently persisted default location — the simple city name that the
+     * weather provider hands to Open-Meteo's geocoding API. Empty string
+     * when unset (the provider then falls back to its built-in Tokyo
+     * default; see [PreferenceKeys.DEFAULT_LOCATION] kdoc).
+     *
+     * This is the API-facing value — NOT what the picker row should render.
+     * Use [currentDisplayLabel] for UI text so the user sees the full
+     * `"Munakata, Fukuoka, Japan"` label they selected.
      */
     val currentLocation: StateFlow<String> =
         preferences.observe(PreferenceKeys.DEFAULT_LOCATION)
+            .map { it ?: "" }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000L),
+                initialValue = ""
+            )
+
+    /**
+     * Human-facing label the picker row renders. Falls back to the raw
+     * [currentLocation] when the label key is unset — this covers the
+     * edge case of a pre-migration install where only [PreferenceKeys.DEFAULT_LOCATION]
+     * was written (picker users upgrading from the PR #424 build that
+     * saved the label to the API-facing key).
+     */
+    val currentDisplayLabel: StateFlow<String> =
+        preferences.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL)
             .map { it ?: "" }
             .stateIn(
                 scope = viewModelScope,
@@ -110,13 +131,40 @@ class WeatherLocationSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Persist the user's selection to DataStore. Trimmed so the weather
-     * tool's [com.opendash.app.tool.info.WeatherToolExecutor]
-     * `resolveLocation` logic sees the exact label the picker rendered.
+     * Persist the user's selection to DataStore.
+     *
+     * Splits the suggestion into two writes:
+     * - `DEFAULT_LOCATION` gets the simple [CitySuggestion.name] that
+     *   Open-Meteo's geocoding API can actually resolve
+     *   (e.g. `"Munakata"`).
+     * - `DEFAULT_LOCATION_DISPLAY_LABEL` gets the human-facing
+     *   `"Munakata, Fukuoka, Japan"` string so the picker row can
+     *   render the same label the user saw when they chose it.
+     *
+     * This two-key split fixes the bug where `"Munakata, Fukuoka, Japan"`
+     * was fed verbatim to the geocoder and always returned zero results
+     * (PR #424 regression).
      */
-    fun applyLocation(label: String) {
+    fun applyLocation(suggestion: CitySuggestion) {
         viewModelScope.launch {
-            preferences.set(PreferenceKeys.DEFAULT_LOCATION, label.trim())
+            preferences.set(PreferenceKeys.DEFAULT_LOCATION, suggestion.name.trim())
+            preferences.set(
+                PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL,
+                suggestion.displayLabel.trim()
+            )
+        }
+    }
+
+    /**
+     * Reset the user's override so the provider falls back to its
+     * built-in Tokyo default. Clears both the API-facing value and the
+     * display label so the picker row returns to the localized
+     * "Tokyo (built-in default)" string.
+     */
+    fun clearLocation() {
+        viewModelScope.launch {
+            preferences.set(PreferenceKeys.DEFAULT_LOCATION, "")
+            preferences.set(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL, "")
         }
     }
 }

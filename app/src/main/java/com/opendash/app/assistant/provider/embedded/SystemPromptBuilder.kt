@@ -26,6 +26,8 @@ class SystemPromptBuilder(
         // System turn content
         val systemContent = buildString {
             append(systemPrompt)
+            append("\n\n")
+            append(CONVERSATION_CONTEXT_DIRECTIVE)
 
             if (skillsXml.isNotBlank()) {
                 append("\n\n")
@@ -245,5 +247,23 @@ class SystemPromptBuilder(
                 "say \"I cannot\" or refuse; try tools first. When a tool result is " +
                 "in the conversation, use it to answer the user in natural language, " +
                 "in the user's language."
+
+        /**
+         * Small on-device LLMs routinely answer follow-up questions like
+         * "why?" / "なぜ?" / "もっと詳しく" as if they were the very first
+         * turn, claiming they don't know what the user is referring to.
+         * The conversation history is right there in the prompt — we just
+         * have to tell the model to actually read it. Placed immediately
+         * after the system prompt so it is always visible even when tools
+         * are absent (LLM-only turns) or the skills XML is empty.
+         */
+        internal const val CONVERSATION_CONTEXT_DIRECTIVE =
+            "IMPORTANT: The conversation history above shows previous " +
+                "user/assistant turns. Always use that context when " +
+                "answering follow-up questions (e.g., \"なぜ?\" / \"why?\" / " +
+                "\"もっと詳しく\" / \"それは?\" / \"tell me more\"). Never " +
+                "pretend the previous turn did not happen; refer back to " +
+                "the prior user request and assistant reply when they are " +
+                "relevant to the current question."
     }
 }

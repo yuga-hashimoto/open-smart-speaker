@@ -159,32 +159,94 @@ class WeatherLocationSettingsViewModelTest {
     }
 
     @Test
-    fun `applyLocation persists the chosen label`() = runTest {
+    fun `applyLocation persists name to DEFAULT_LOCATION and full label to DEFAULT_LOCATION_DISPLAY_LABEL`() = runTest {
         val prefs = mockk<AppPreferences>()
         every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns MutableStateFlow(null)
-        val keySlot = slot<Preferences.Key<String>>()
-        val valueSlot = slot<String>()
-        coEvery { prefs.set(capture(keySlot), capture(valueSlot)) } just Runs
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns MutableStateFlow(null)
+        coEvery { prefs.set(any<Preferences.Key<String>>(), any<String>()) } just Runs
 
         val vm = WeatherLocationSettingsViewModel(prefs, mockk())
 
-        vm.applyLocation("宗像, Fukuoka, Japan")
+        val pick = suggestion("宗像", admin = "Fukuoka", country = "Japan")
+        vm.applyLocation(pick)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { prefs.set(PreferenceKeys.DEFAULT_LOCATION, "宗像, Fukuoka, Japan") }
+        // Simple city name for the geocoder
+        coVerify(exactly = 1) { prefs.set(PreferenceKeys.DEFAULT_LOCATION, "宗像") }
+        // Human-facing label for the picker row
+        coVerify(exactly = 1) {
+            prefs.set(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL, "宗像, Fukuoka, Japan")
+        }
     }
 
     @Test
-    fun `applyLocation trims whitespace`() = runTest {
+    fun `applyLocation trims whitespace in both keys`() = runTest {
         val prefs = mockk<AppPreferences>()
         every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns MutableStateFlow(null)
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns MutableStateFlow(null)
         coEvery { prefs.set(any<Preferences.Key<String>>(), any<String>()) } just Runs
         val vm = WeatherLocationSettingsViewModel(prefs, mockk())
 
-        vm.applyLocation("  Tokyo  ")
+        val pick = CitySuggestion(
+            name = "  Tokyo  ",
+            admin1 = null,
+            country = "Japan",
+            latitude = 0.0,
+            longitude = 0.0,
+            displayLabel = "  Tokyo, Japan  "
+        )
+        vm.applyLocation(pick)
         advanceUntilIdle()
 
         coVerify(exactly = 1) { prefs.set(PreferenceKeys.DEFAULT_LOCATION, "Tokyo") }
+        coVerify(exactly = 1) {
+            prefs.set(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL, "Tokyo, Japan")
+        }
+    }
+
+    @Test
+    fun `clearLocation resets both keys to empty string`() = runTest {
+        val prefs = mockk<AppPreferences>()
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns MutableStateFlow(null)
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns MutableStateFlow(null)
+        coEvery { prefs.set(any<Preferences.Key<String>>(), any<String>()) } just Runs
+        val vm = WeatherLocationSettingsViewModel(prefs, mockk())
+
+        vm.clearLocation()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { prefs.set(PreferenceKeys.DEFAULT_LOCATION, "") }
+        coVerify(exactly = 1) { prefs.set(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL, "") }
+    }
+
+    @Test
+    fun `currentDisplayLabel reflects stored display label preference`() = runTest {
+        val apiFlow = MutableStateFlow<String?>("Munakata")
+        val labelFlow = MutableStateFlow<String?>("Munakata, Fukuoka, Japan")
+        val prefs = mockk<AppPreferences>(relaxed = true)
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns apiFlow
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns labelFlow
+
+        val vm = WeatherLocationSettingsViewModel(prefs, mockk())
+
+        vm.currentDisplayLabel.test {
+            assertThat(awaitItem()).isEqualTo("")
+            assertThat(awaitItem()).isEqualTo("Munakata, Fukuoka, Japan")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `currentDisplayLabel maps unset preference to empty`() = runTest {
+        val prefs = mockk<AppPreferences>(relaxed = true)
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns MutableStateFlow(null)
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns MutableStateFlow(null)
+        val vm = WeatherLocationSettingsViewModel(prefs, mockk())
+
+        vm.currentDisplayLabel.test {
+            assertThat(awaitItem()).isEqualTo("")
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private fun suggestion(
@@ -203,6 +265,9 @@ class WeatherLocationSettingsViewModelTest {
     private fun prefsReturning(flow: Flow<String?>): AppPreferences {
         val prefs = mockk<AppPreferences>(relaxed = true)
         every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION) } returns flow
+        // The ViewModel also observes the display-label key; hand it the same
+        // flow so legacy tests don't need to distinguish the two streams.
+        every { prefs.observe(PreferenceKeys.DEFAULT_LOCATION_DISPLAY_LABEL) } returns flow
         every { prefs.observe<Any>(any<Preferences.Key<Any>>()) } answers {
             @Suppress("UNCHECKED_CAST")
             flow as Flow<Any?>

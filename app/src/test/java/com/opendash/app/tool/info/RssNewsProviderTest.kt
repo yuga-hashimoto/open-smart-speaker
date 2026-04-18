@@ -2,6 +2,10 @@ package com.opendash.app.tool.info
 
 import com.google.common.truth.Truth.assertThat
 import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Test
 
 class RssNewsProviderTest {
@@ -73,5 +77,51 @@ class RssNewsProviderTest {
     fun `returns empty on malformed feed`() {
         val items = provider.parseFeed("<not-a-feed>", limit = 5)
         assertThat(items).isEmpty()
+    }
+
+    /**
+     * Regression guard: `getHeadlines` must dispatch the blocking OkHttp
+     * `execute()` call onto [kotlinx.coroutines.Dispatchers.IO] so that
+     * callers on `Dispatchers.Main` (HomeViewModel → DefaultOnlineBriefingSource)
+     * never trigger `NetworkOnMainThreadException` under StrictMode on a
+     * real device.
+     *
+     * The test cannot observe thread policy directly on JVM, but exercising
+     * the full fetch → parse pipeline against MockWebServer verifies the
+     * suspend path executes to completion — which would itself fail if the
+     * `withContext(Dispatchers.IO)` wrapper were accidentally removed and
+     * the test happened to run on a dispatcher that disallows blocking.
+     */
+    @Test
+    fun `getHeadlines fetches feed via OkHttp and parses items`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+  <item>
+    <title>Network story</title>
+    <description>Fetched over HTTP.</description>
+    <link>https://example.com/network/1</link>
+    <pubDate>Mon, 18 Apr 2026 00:00:00 GMT</pubDate>
+  </item>
+</channel></rss>"""
+            )
+        )
+        server.start()
+        try {
+            val live = RssNewsProvider(client = OkHttpClient())
+
+            val items = live.getHeadlines(
+                feedUrl = server.url("/feed").toString(),
+                limit = 5,
+            )
+
+            assertThat(items).hasSize(1)
+            assertThat(items[0].title).isEqualTo("Network story")
+            assertThat(items[0].link).isEqualTo("https://example.com/network/1")
+        } finally {
+            server.shutdown()
+        }
     }
 }

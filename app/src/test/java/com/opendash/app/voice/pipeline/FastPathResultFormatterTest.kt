@@ -97,6 +97,63 @@ class FastPathResultFormatterTest {
         assertThat(spoken).isNotEqualTo("Done.")
     }
 
+    @Test
+    fun `web_search PR #421 results shape speaks top title and snippet in japanese`() {
+        // Shape produced by DuckDuckGoHtmlSearchProvider once #421's
+        // HTML-scrape exposes a `results` array on SearchResult.data.
+        val json =
+            """{"query":"LINEレンジャー","results":[""" +
+                """{"title":"LINEレンジャー 公式サイト","url":"https://example.com/1","snippet":"LINEレンジャーは人気のパズルRPGです。"},""" +
+                """{"title":"LINEレンジャー 攻略","url":"https://example.com/2","snippet":"攻略情報まとめ"}""" +
+                """]}"""
+        val spoken = FastPathResultFormatter.format("web_search", json, ttsLanguageTag = "ja-JP")
+
+        assertThat(spoken).contains("LINEレンジャー")
+        assertThat(spoken).contains("検索しました")
+        assertThat(spoken).contains("トップの結果")
+        assertThat(spoken).contains("LINEレンジャー 公式サイト")
+        assertThat(spoken).contains("LINEレンジャーは人気のパズルRPGです。")
+        // Must not be the apologetic fallback or the Done sentinel.
+        assertThat(spoken).isNotEqualTo("Done.")
+        assertThat(spoken).doesNotContain("見つかりませんでした")
+    }
+
+    @Test
+    fun `web_search PR #421 results shape speaks top title and snippet in english`() {
+        val json =
+            """{"query":"kotlin language","results":[""" +
+                """{"title":"Kotlin Programming Language","url":"https://kotlinlang.org","snippet":"Kotlin is a modern statically-typed language."},""" +
+                """{"title":"Kotlin on Android","url":"https://developer.android.com","snippet":"Android's preferred language."}""" +
+                """]}"""
+        val spoken = FastPathResultFormatter.format("web_search", json, ttsLanguageTag = "en-US")
+
+        assertThat(spoken).contains("kotlin language")
+        assertThat(spoken.lowercase()).contains("top result")
+        assertThat(spoken).contains("Kotlin Programming Language")
+        assertThat(spoken).contains("Kotlin is a modern statically-typed language.")
+    }
+
+    @Test
+    fun `web_search legacy abstract shape still works when results is absent`() {
+        // Backwards-compat: the original DDG Instant Answer shape (pre-#421)
+        // must still parse because DuckDuckGoSearchProvider is kept in the
+        // search chain as a fallback.
+        val json =
+            """{"query":"kotlin","abstract":"Kotlin is a modern JVM language.","source_url":"https://kotlinlang.org","related":["Compiler","JetBrains"]}"""
+        val spoken = FastPathResultFormatter.format("web_search", json, ttsLanguageTag = "en-US")
+        assertThat(spoken).contains("Kotlin is a modern JVM language.")
+    }
+
+    @Test
+    fun `web_search empty results array falls through to legacy abstract`() {
+        // results:[] must not masquerade as a valid result — we fall back
+        // to the abstract so the user still hears useful information.
+        val json =
+            """{"query":"foo","results":[],"abstract":"Legacy abstract here.","related":[]}"""
+        val spoken = FastPathResultFormatter.format("web_search", json, ttsLanguageTag = "en-US")
+        assertThat(spoken).contains("Legacy abstract here.")
+    }
+
     // --- get_news ---
 
     @Test

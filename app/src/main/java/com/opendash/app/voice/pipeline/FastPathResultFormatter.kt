@@ -251,8 +251,32 @@ object FastPathResultFormatter {
 
     // --- Web search ---
 
+    /**
+     * Speak the top web-search hit directly. Small on-device LLMs (Gemma
+     * 270m-2B) routinely hallucinate "I cannot search the web" when asked
+     * to polish SERP snippets, so the fast path short-circuits the polish
+     * step for `web_search` and speaks this formatter's output verbatim.
+     *
+     * Priority order (most useful first):
+     *  1. `results[0]` object (PR #421 HTML-scrape shape) — speaks
+     *     "[Query] について検索しました。トップの結果: [title]。[snippet]"
+     *     (or the English equivalent).
+     *  2. `abstract` — legacy DDG Instant Answer shape.
+     *  3. `related[0]` — legacy fallback.
+     *  4. apologetic "no results" phrase.
+     */
     private fun formatWebSearch(data: String, japanese: Boolean): String? {
         if (data.isBlank()) return null
+
+        val top = firstResultsEntry(data)
+        if (top != null) {
+            val title = stringField(top, "title")
+            val snippet = stringField(top, "snippet")
+            val query = stringField(data, "query")
+            val spoken = buildTopResultSentence(query, title, snippet, japanese)
+            if (spoken != null) return spoken
+        }
+
         val abstract = stringField(data, "abstract")
         if (!abstract.isNullOrBlank()) return abstract
 
@@ -261,6 +285,92 @@ object FastPathResultFormatter {
 
         return if (japanese) "検索結果が見つかりませんでした。"
         else "I couldn't find any results for that."
+    }
+
+    /**
+     * Extract the first object from a top-level `"results": [ ... ]` array
+     * inside [data]. Returns `null` when the array is missing, empty, or
+     * malformed. Reuses [splitObjectArray] after isolating the array body.
+     */
+    private fun firstResultsEntry(data: String): String? {
+        val arrayBody = extractArrayBody(data, "results") ?: return null
+        val wrapped = "[$arrayBody]"
+        return splitObjectArray(wrapped).firstOrNull()
+    }
+
+    /**
+     * Pull the raw body between `"key": [` and its balanced `]`. We don't
+     * reuse [stringArrayField]'s regex because the values inside are
+     * objects with nested braces, which the char-class regex can't handle.
+     */
+    private fun extractArrayBody(json: String, key: String): String? {
+        val marker = Regex("\"" + Regex.escape(key) + "\"\\s*:\\s*\\[")
+        val match = marker.find(json) ?: return null
+        val start = match.range.last + 1 // position after the opening '['
+        var depth = 1
+        var inString = false
+        var escape = false
+        for (i in start until json.length) {
+            val c = json[i]
+            if (escape) { escape = false; continue }
+            if (c == '\\') { escape = true; continue }
+            if (c == '"') { inString = !inString; continue }
+            if (inString) continue
+            when (c) {
+                '[' -> depth++
+                ']' -> {
+                    depth--
+                    if (depth == 0) return json.substring(start, i)
+                }
+            }
+        }
+        return null
+    }
+
+    private fun buildTopResultSentence(
+        query: String?,
+        title: String?,
+        snippet: String?,
+        japanese: Boolean
+    ): String? {
+        val cleanTitle = title?.takeIf { it.isNotBlank() }
+        val cleanSnippet = snippet?.takeIf { it.isNotBlank() }
+        if (cleanTitle == null && cleanSnippet == null) return null
+        val cleanQuery = query?.takeIf { it.isNotBlank() }
+        return if (japanese) {
+            buildString {
+                if (cleanQuery != null) {
+                    append(cleanQuery)
+                    append("について検索しました。")
+                }
+                if (cleanTitle != null) {
+                    append("トップの結果: ")
+                    append(cleanTitle)
+                    append("。")
+                }
+                if (cleanSnippet != null) {
+                    append(cleanSnippet)
+                    if (!cleanSnippet.endsWith("。") && !cleanSnippet.endsWith(".")) append("。")
+                }
+            }
+        } else {
+            buildString {
+                if (cleanQuery != null) {
+                    append("Here are the search results for ")
+                    append(cleanQuery)
+                    append(". ")
+                }
+                if (cleanTitle != null) {
+                    append("Top result: ")
+                    append(cleanTitle)
+                    append(". ")
+                }
+                if (cleanSnippet != null) {
+                    append(cleanSnippet)
+                    if (!cleanSnippet.endsWith(".") && !cleanSnippet.endsWith("。")) append(".")
+                }
+            }
+        }.trim()
     }
 
     // --- News ---

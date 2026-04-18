@@ -207,26 +207,37 @@ class VoicePipelineFastPathInfoToolTest {
     }
 
     @Test
-    fun `web_search fast-path uses LLM polisher`() = runTest {
+    fun `web_search fast-path skips LLM polisher and speaks top result directly`() = runTest {
+        // Bug A: FastPathLlmPolisher (PR #362) routinely causes Gemma 2B
+        // to refuse ("提供された情報だけでは…") when handed a SERP snippet.
+        // Speaking the regex formatter's top-result sentence is strictly
+        // more useful than an LLM-hallucinated refusal.
         every { fastPathRouter.match(any()) } returns FastPathMatch(
             toolName = "web_search",
-            arguments = mapOf("query" to "kotlin"),
+            arguments = mapOf("query" to "LINEレンジャー"),
             spokenConfirmation = null
         )
         coEvery { toolExecutor.execute(any<ToolCall>()) } returns ToolResult(
             callId = "fast_1",
             success = true,
-            data = """{"abstract":"Kotlin is a language.","related":[]}""",
+            data = """{"query":"LINEレンジャー","results":[""" +
+                """{"title":"LINEレンジャー 公式サイト","url":"https://example.com/1","snippet":"LINEレンジャーは人気のパズルRPGです。"}""" +
+                """]}""",
             error = null
         )
-        coEvery { polisher.polish(any(), "web_search", any(), any(), any()) } returns
-            "Kotlin is a modern statically-typed language."
+
+        val spoken = slot<String>()
+        coEvery { tts.speak(capture(spoken)) } returns Unit
 
         val pipeline = buildPipeline()
-        pipeline.processUserInput("what is kotlin")
+        pipeline.processUserInput("LINE レンジャー を Web で検索して")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { tts.speak("Kotlin is a modern statically-typed language.") }
+        // Polisher MUST NOT be invoked for web_search.
+        coVerify(exactly = 0) { polisher.polish(any(), eq("web_search"), any(), any(), any()) }
+        // Regex formatter output: top title + snippet should be audible.
+        assertThat(spoken.captured).contains("LINEレンジャー 公式サイト")
+        assertThat(spoken.captured).contains("人気のパズルRPG")
     }
 
     @Test

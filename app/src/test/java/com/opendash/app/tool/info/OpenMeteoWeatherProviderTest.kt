@@ -224,6 +224,67 @@ class OpenMeteoWeatherProviderTest {
         assertThat(server.requestCount).isEqualTo(2)
     }
 
+    // --- Geocoding retry: comma-separated display label fallback ---
+
+    @Test
+    fun `firstCommaSegment extracts head of comma-separated label`() {
+        assertThat(provider.firstCommaSegment("Munakata, Fukuoka, Japan")).isEqualTo("Munakata")
+        assertThat(provider.firstCommaSegment("Tokyo, Japan")).isEqualTo("Tokyo")
+        // Trims whitespace on the segment.
+        assertThat(provider.firstCommaSegment("  Shibuya  , Tokyo, Japan")).isEqualTo("Shibuya")
+    }
+
+    @Test
+    fun `firstCommaSegment returns null when there is no comma`() {
+        assertThat(provider.firstCommaSegment("Tokyo")).isNull()
+        assertThat(provider.firstCommaSegment("宗像")).isNull()
+    }
+
+    @Test
+    fun `firstCommaSegment returns null when head is blank`() {
+        // Leading comma → head is empty → nothing to retry with.
+        assertThat(provider.firstCommaSegment(", Tokyo, Japan")).isNull()
+    }
+
+    @Test
+    fun `getCurrent retries with first comma segment when full label returns empty`() = runTest {
+        // 1st: "Munakata, Fukuoka, Japan" (en) empty — this is the bug case
+        // from PR #424 where the picker saved the full display label.
+        server.enqueue(geoResponseEmpty())
+        // 2nd: "Munakata" (en) returns a hit.
+        server.enqueue(geoResponseOne(name = "Munakata", lat = 33.80, lon = 130.55))
+        // 3rd: forecast
+        server.enqueue(weatherResponseFixture())
+
+        val info = provider.getCurrent("Munakata, Fukuoka, Japan")
+
+        assertThat(info.location).isEqualTo("Munakata")
+        assertThat(server.requestCount).isEqualTo(3)
+
+        val first = server.takeRequest()
+        assertThat(first.path).contains("language=en")
+        // MockWebServer percent-encodes the comma + space; just assert the
+        // raw query that was sent.
+        val second = server.takeRequest()
+        assertThat(second.path).contains("language=en")
+        assertThat(second.path).contains("name=Munakata")
+        // The retry should NOT include the admin1/country fragments.
+        assertThat(second.path).doesNotContain("Fukuoka")
+    }
+
+    @Test
+    fun `single-segment queries do not trigger comma fallback`() = runTest {
+        // "Shibuya" has no comma, so firstCommaSegment returns null and we
+        // skip straight to the existing suffix/kanji/katakana fallbacks.
+        server.enqueue(geoResponseOne(name = "Shibuya", lat = 35.66, lon = 139.70))
+        server.enqueue(weatherResponseFixture())
+
+        val info = provider.getCurrent("Shibuya")
+
+        assertThat(info.location).isEqualTo("Shibuya")
+        assertThat(server.requestCount).isEqualTo(2)
+    }
+
     // --- Geocoding retry: katakana foreign-city romanization ---
 
     @Test

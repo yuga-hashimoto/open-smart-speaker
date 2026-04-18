@@ -709,7 +709,19 @@ class VoicePipeline(
                     // language replies (translates Open-Meteo conditions,
                     // avoids "Tokyo 18 Clear 65% 12 km/h"). Falls back to the
                     // regex formatter on timeout / error / non-info tool.
-                    val polished = if (toolName in FastPathLlmPolisher.SUPPORTED_TOOLS) {
+                    //
+                    // web_search is deliberately excluded: small on-device
+                    // LLMs (Gemma 270m-2B) frequently hallucinate "I cannot
+                    // search the web" or "I don't have enough information to
+                    // answer" even when the SERP snippet is right there in
+                    // the prompt. Speaking the top result verbatim via the
+                    // regex formatter is strictly more useful than a refusal
+                    // TTS — and the formatter now understands the PR #421
+                    // `results[]` HTML-scrape shape, so the phrasing is
+                    // already conversational.
+                    val shouldPolish = toolName in FastPathLlmPolisher.SUPPORTED_TOOLS &&
+                        toolName != "web_search"
+                    val polished = if (shouldPolish) {
                         try {
                             val provider = router.resolveProvider(userInput = userText)
                             fastPathLlmPolisher.polish(

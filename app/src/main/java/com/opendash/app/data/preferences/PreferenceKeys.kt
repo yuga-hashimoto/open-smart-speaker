@@ -81,8 +81,25 @@ object PreferenceKeys {
      * weather?"). Empty / unset means the tool's provider falls back to its
      * own built-in default (currently "Tokyo", preserved for backward
      * compatibility with pre-setting installs).
+     *
+     * IMPORTANT: this must be a simple city name (e.g. `"Munakata"`),
+     * NOT a human-facing `"Munakata, Fukuoka, Japan"` label. The
+     * Open-Meteo geocoding endpoint's `name=` parameter only matches a
+     * single locality — passing a comma-separated label returns zero
+     * results. The Settings picker stores the full label in
+     * [DEFAULT_LOCATION_DISPLAY_LABEL] for UI rendering only.
      */
     val DEFAULT_LOCATION = stringPreferencesKey("default_location")
+
+    /**
+     * Human-facing label (`"Munakata, Fukuoka, Japan"`) for the Weather
+     * location picker row in Settings. Rendered verbatim; never sent to
+     * the geocoding API — see [DEFAULT_LOCATION] for the API-facing value.
+     * Empty / unset means the row falls back to rendering the raw
+     * [DEFAULT_LOCATION] value (or the bundled "Tokyo (built-in default)"
+     * string for first-run / cleared installs).
+     */
+    val DEFAULT_LOCATION_DISPLAY_LABEL = stringPreferencesKey("default_location_display_label")
 
     // Setup
     val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")

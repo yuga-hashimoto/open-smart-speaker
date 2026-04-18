@@ -327,6 +327,33 @@ class SystemPromptBuilderTest {
     }
 
     @Test
+    fun `buildPrompt includes conversation context directive after system prompt`() {
+        val messages = listOf(AssistantMessage.User(content = "hello"))
+
+        val result = builder.build("You are helpful.", messages, emptyList())
+
+        // Directive present regardless of tools/skills — Bug B was in the
+        // LLM-only path (no tool call).
+        assertThat(result).contains("conversation history above")
+        assertThat(result).contains("follow-up questions")
+        // Specifically mentions the trigger phrases the user reported.
+        assertThat(result).contains("なぜ?")
+        assertThat(result).contains("why?")
+        assertThat(result).contains("もっと詳しく")
+        assertThat(result).contains("IMPORTANT")
+    }
+
+    @Test
+    fun `buildPrompt conversation context directive present even without tools or skills`() {
+        val messages = listOf(AssistantMessage.User(content = "anything"))
+
+        val result = builder.build("System", messages, emptyList(), skillsXml = "")
+
+        assertThat(result).contains("conversation history above")
+        assertThat(result).contains("follow-up")
+    }
+
+    @Test
     fun `buildPrompt skills section lists skill titles and descriptions inline`() {
         val messages = listOf(AssistantMessage.User(content = "hi"))
         val skillsXml = """<available_skills>
