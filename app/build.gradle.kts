@@ -17,7 +17,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Custom runner boots HiltTestApplication so @HiltAndroidTest tests can
+        // inject fakes into the real DI graph (see app/src/androidTest/.../HiltTestRunner.kt).
+        testInstrumentationRunner = "com.opendash.app.HiltTestRunner"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -237,10 +239,16 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.room.testing)
 
-    // Instrumented Tests
+    // Instrumented Tests (E2E)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.ext.junit)
+    androidTestImplementation(libs.test.uiautomator)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.test.manifest)
 }
