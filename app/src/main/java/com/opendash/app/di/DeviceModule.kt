@@ -524,6 +524,16 @@ object DeviceModule {
                 context,
                 AndroidContactsProvider(context),
             ),
+            com.opendash.app.tool.system.BluetoothToolExecutor(
+                com.opendash.app.tool.system.AndroidBluetoothInfoProvider(context)
+            ),
+            com.opendash.app.tool.system.WifiToolExecutor(
+                com.opendash.app.tool.system.AndroidWifiInfoProvider(context)
+            ),
+            com.opendash.app.tool.system.SetAlarmToolExecutor(context),
+            com.opendash.app.tool.system.MediaLibraryToolExecutor(
+                com.opendash.app.tool.system.AndroidMediaLibraryProvider(context)
+            ),
             DeviceHealthToolExecutor(
                 AndroidDeviceHealthProvider(context)
             ),

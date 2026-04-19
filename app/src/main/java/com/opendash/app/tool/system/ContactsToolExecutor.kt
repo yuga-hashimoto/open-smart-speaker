@@ -26,6 +26,15 @@ class ContactsToolExecutor(
             parameters = mapOf(
                 "limit" to ToolParameter("number", "Max results (1-200, default 50)", required = false)
             )
+        ),
+        ToolSchema(
+            name = "add_contact",
+            description = "Save a new contact to the device. Always confirm with the user before calling. Requires WRITE_CONTACTS.",
+            parameters = mapOf(
+                "name" to ToolParameter("string", "Display name", required = true),
+                "phone" to ToolParameter("string", "Optional phone number", required = false),
+                "email" to ToolParameter("string", "Optional email address", required = false)
+            )
         )
     )
 
@@ -34,12 +43,41 @@ class ContactsToolExecutor(
             when (call.name) {
                 "search_contacts" -> executeSearch(call)
                 "list_contacts" -> executeList(call)
+                "add_contact" -> executeAdd(call)
                 else -> ToolResult(call.id, false, "", "Unknown tool: ${call.name}")
             }
         } catch (e: Exception) {
             Timber.e(e, "Contacts tool failed: ${call.name}")
             ToolResult(call.id, false, "", e.message ?: "Execution failed")
         }
+    }
+
+    private suspend fun executeAdd(call: ToolCall): ToolResult {
+        if (!provider.hasWritePermission()) {
+            return ToolResult(
+                call.id, false, "",
+                "Contacts write permission not granted. Ask user to grant WRITE_CONTACTS."
+            )
+        }
+        val name = (call.arguments["name"] as? String)?.trim().orEmpty()
+        if (name.isEmpty()) return ToolResult(call.id, false, "", "name is required")
+        val phone = (call.arguments["phone"] as? String)?.trim()
+        val email = (call.arguments["email"] as? String)?.trim()
+        if (phone.isNullOrEmpty() && email.isNullOrEmpty()) {
+            return ToolResult(call.id, false, "", "Provide at least phone or email")
+        }
+        val id = provider.addContact(name, phone, email)
+            ?: return ToolResult(call.id, false, "", "Failed to insert contact")
+
+        return ToolResult(
+            call.id, true,
+            """{"raw_contact_id":$id,"name":"${name.escapeJson()}","phone":${phone.toJsonOrNull()},"email":${email.toJsonOrNull()}}"""
+        )
+    }
+
+    private fun String?.toJsonOrNull(): String {
+        val v = this
+        return if (v.isNullOrEmpty()) "null" else """"${v.escapeJson()}""""
     }
 
     private suspend fun executeSearch(call: ToolCall): ToolResult {

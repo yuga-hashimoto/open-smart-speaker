@@ -92,6 +92,87 @@ class CalendarToolExecutorTest {
     }
 
     @Test
+    fun `create_calendar_event without write permission errors`() = runTest {
+        every { provider.hasWritePermission() } returns false
+
+        val result = executor.execute(
+            ToolCall(
+                id = "c1",
+                name = "create_calendar_event",
+                arguments = mapOf(
+                    "title" to "Standup",
+                    "start" to "2030-01-01T09:00:00"
+                )
+            )
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.error).contains("WRITE_CALENDAR")
+    }
+
+    @Test
+    fun `create_calendar_event requires title`() = runTest {
+        every { provider.hasWritePermission() } returns true
+
+        val result = executor.execute(
+            ToolCall(
+                id = "c2",
+                name = "create_calendar_event",
+                arguments = mapOf("start" to "2030-01-01T09:00:00")
+            )
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.error).contains("title")
+    }
+
+    @Test
+    fun `create_calendar_event rejects unparseable start`() = runTest {
+        every { provider.hasWritePermission() } returns true
+
+        val result = executor.execute(
+            ToolCall(
+                id = "c3",
+                name = "create_calendar_event",
+                arguments = mapOf("title" to "X", "start" to "tomorrow")
+            )
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.error).contains("parse")
+    }
+
+    @Test
+    fun `create_calendar_event defaults end to start plus 1h and returns id`() = runTest {
+        every { provider.hasWritePermission() } returns true
+        coEvery {
+            provider.createEvent(
+                title = "Standup",
+                startMs = any(),
+                endMs = any(),
+                location = null,
+                description = null,
+                allDay = false
+            )
+        } returns 99L
+
+        val result = executor.execute(
+            ToolCall(
+                id = "c4",
+                name = "create_calendar_event",
+                arguments = mapOf(
+                    "title" to "Standup",
+                    "start" to "2030-01-01T09:00:00"
+                )
+            )
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.data).contains("\"event_id\":99")
+        assertThat(result.data).contains("Standup")
+    }
+
+    @Test
     fun `all_day event uses date-only format`() = runTest {
         every { provider.hasPermission() } returns true
         coEvery { provider.getUpcomingEvents(any()) } returns listOf(

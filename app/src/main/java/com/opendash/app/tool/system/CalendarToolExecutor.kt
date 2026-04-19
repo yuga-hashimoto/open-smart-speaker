@@ -6,9 +6,11 @@ import com.opendash.app.tool.ToolParameter
 import com.opendash.app.tool.ToolResult
 import com.opendash.app.tool.ToolSchema
 import timber.log.Timber
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * LLM tool for reading device calendar events.
@@ -29,6 +31,18 @@ class CalendarToolExecutor(
                     required = false
                 )
             )
+        ),
+        ToolSchema(
+            name = "create_calendar_event",
+            description = "Add a new event to the user's primary calendar. Always confirm with the user before calling. Times are local-timezone ISO-8601 (e.g. 2026-04-19T18:00:00).",
+            parameters = mapOf(
+                "title" to ToolParameter("string", "Event title", required = true),
+                "start" to ToolParameter("string", "Start time, local ISO-8601 (yyyy-MM-dd'T'HH:mm:ss) or yyyy-MM-dd if all_day=true", required = true),
+                "end" to ToolParameter("string", "End time, same format as start. Defaults to +1h if omitted.", required = false),
+                "location" to ToolParameter("string", "Optional location string", required = false),
+                "description" to ToolParameter("string", "Optional notes / description", required = false),
+                "all_day" to ToolParameter("boolean", "If true treat start/end as date-only", required = false)
+            )
         )
     )
 
@@ -36,12 +50,82 @@ class CalendarToolExecutor(
         return try {
             when (call.name) {
                 "get_calendar_events" -> executeGetEvents(call)
+                "create_calendar_event" -> executeCreateEvent(call)
                 else -> ToolResult(call.id, false, "", "Unknown tool: ${call.name}")
             }
         } catch (e: Exception) {
             Timber.e(e, "Calendar tool failed: ${call.name}")
             ToolResult(call.id, false, "", e.message ?: "Execution failed")
         }
+    }
+
+    private suspend fun executeCreateEvent(call: ToolCall): ToolResult {
+        if (!calendarProvider.hasWritePermission()) {
+            return ToolResult(
+                call.id, false, "",
+                "Calendar write permission not granted. Ask user to grant WRITE_CALENDAR in settings."
+            )
+        }
+
+        val title = (call.arguments["title"] as? String)?.trim().orEmpty()
+        if (title.isEmpty()) return ToolResult(call.id, false, "", "title is required")
+
+        val startStr = (call.arguments["start"] as? String)?.trim().orEmpty()
+        if (startStr.isEmpty()) return ToolResult(call.id, false, "", "start is required")
+
+        val allDay = call.arguments["all_day"] as? Boolean ?: false
+        val startMs = parseTime(startStr, allDay)
+            ?: return ToolResult(call.id, false, "", "Could not parse start: $startStr")
+
+        val endStr = (call.arguments["end"] as? String)?.trim().orEmpty()
+        val endMs = if (endStr.isEmpty()) {
+            startMs + 60L * 60 * 1000
+        } else {
+            parseTime(endStr, allDay)
+                ?: return ToolResult(call.id, false, "", "Could not parse end: $endStr")
+        }
+        if (endMs <= startMs) {
+            return ToolResult(call.id, false, "", "end must be after start")
+        }
+
+        val location = (call.arguments["location"] as? String)?.trim()
+        val description = (call.arguments["description"] as? String)?.trim()
+
+        val id = calendarProvider.createEvent(title, startMs, endMs, location, description, allDay)
+            ?: return ToolResult(
+                call.id, false, "",
+                "Failed to create event (no writable calendar found?)"
+            )
+
+        return ToolResult(
+            call.id, true,
+            """{"event_id":$id,"title":"${title.escapeJson()}","start":"${formatTime(startMs, allDay)}","end":"${formatTime(endMs, allDay)}","all_day":$allDay}"""
+        )
+    }
+
+    private fun parseTime(value: String, allDay: Boolean): Long? {
+        val patterns = if (allDay) {
+            listOf("yyyy-MM-dd")
+        } else {
+            listOf(
+                "yyyy-MM-dd'T'HH:mm:ss",
+                "yyyy-MM-dd'T'HH:mm",
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy-MM-dd HH:mm"
+            )
+        }
+        for (p in patterns) {
+            try {
+                val fmt = SimpleDateFormat(p, Locale.US).apply {
+                    timeZone = TimeZone.getDefault()
+                    isLenient = false
+                }
+                return fmt.parse(value)?.time
+            } catch (_: ParseException) {
+                // try next
+            }
+        }
+        return null
     }
 
     private suspend fun executeGetEvents(call: ToolCall): ToolResult {

@@ -1,6 +1,8 @@
 package com.opendash.app.tool.system
 
 import android.Manifest
+import android.content.ContentProviderOperation
+import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
@@ -32,6 +34,89 @@ class AndroidContactsProvider(
         return ContextCompat.checkSelfPermission(
             context, Manifest.permission.READ_CONTACTS
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun hasWritePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context, Manifest.permission.WRITE_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override suspend fun addContact(
+        displayName: String,
+        phoneNumber: String?,
+        email: String?
+    ): Long? {
+        if (!hasWritePermission()) return null
+        if (displayName.isBlank()) return null
+
+        val ops = ArrayList<ContentProviderOperation>()
+        // Local-only RawContact (account_type=null) — sync to a Google account
+        // can be done later by the user.
+        ops.add(
+            ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                .build()
+        )
+        ops.add(
+            ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(
+                    ContactsContract.Data.MIMETYPE,
+                    ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE
+                )
+                .withValue(
+                    ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME,
+                    displayName.trim()
+                )
+                .build()
+        )
+        phoneNumber?.takeIf { it.isNotBlank() }?.let { number ->
+            ops.add(
+                ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(
+                        ContactsContract.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE
+                    )
+                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, number.trim())
+                    .withValue(
+                        ContactsContract.CommonDataKinds.Phone.TYPE,
+                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE
+                    )
+                    .build()
+            )
+        }
+        email?.takeIf { it.isNotBlank() }?.let { addr ->
+            ops.add(
+                ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(
+                        ContactsContract.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE
+                    )
+                    .withValue(ContactsContract.CommonDataKinds.Email.ADDRESS, addr.trim())
+                    .withValue(
+                        ContactsContract.CommonDataKinds.Email.TYPE,
+                        ContactsContract.CommonDataKinds.Email.TYPE_HOME
+                    )
+                    .build()
+            )
+        }
+
+        return try {
+            val results = context.contentResolver.applyBatch(
+                ContactsContract.AUTHORITY, ops
+            )
+            results.firstOrNull()?.uri?.let { ContentUris.parseId(it) }
+        } catch (e: SecurityException) {
+            Timber.w(e, "Contact write blocked")
+            null
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to insert contact")
+            null
+        }
     }
 
     private fun queryContacts(

@@ -21,9 +21,9 @@ class ContactsToolExecutorTest {
     }
 
     @Test
-    fun `availableTools includes search and list`() = runTest {
+    fun `availableTools includes search list and add`() = runTest {
         val names = executor.availableTools().map { it.name }
-        assertThat(names).containsExactly("search_contacts", "list_contacts")
+        assertThat(names).containsExactly("search_contacts", "list_contacts", "add_contact")
     }
 
     @Test
@@ -77,6 +77,56 @@ class ContactsToolExecutorTest {
 
         assertThat(result.success).isTrue()
         assertThat(result.data).isEqualTo("[]")
+    }
+
+    @Test
+    fun `add_contact without write permission errors`() = runTest {
+        every { provider.hasWritePermission() } returns false
+
+        val result = executor.execute(
+            ToolCall(
+                id = "a1",
+                name = "add_contact",
+                arguments = mapOf("name" to "Bob", "phone" to "+1")
+            )
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.error).contains("WRITE_CONTACTS")
+    }
+
+    @Test
+    fun `add_contact requires phone or email`() = runTest {
+        every { provider.hasWritePermission() } returns true
+
+        val result = executor.execute(
+            ToolCall(
+                id = "a2",
+                name = "add_contact",
+                arguments = mapOf("name" to "Bob")
+            )
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.error).contains("phone or email")
+    }
+
+    @Test
+    fun `add_contact returns id on success`() = runTest {
+        every { provider.hasWritePermission() } returns true
+        coEvery { provider.addContact("Bob", "+1", null) } returns 42L
+
+        val result = executor.execute(
+            ToolCall(
+                id = "a3",
+                name = "add_contact",
+                arguments = mapOf("name" to "Bob", "phone" to "+1")
+            )
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(result.data).contains("\"raw_contact_id\":42")
+        assertThat(result.data).contains("Bob")
     }
 
     @Test
