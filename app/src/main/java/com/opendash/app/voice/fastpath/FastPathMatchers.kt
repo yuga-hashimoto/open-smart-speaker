@@ -562,30 +562,119 @@ object LightsMatcher : FastPathMatcher {
     )
 }
 
-/** "pause music", "play", "next track", "前の曲" — targets all media_player devices. */
+/**
+ * Music playback control via the device's default music app
+ * (`MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH` + media-key events
+ * dispatched through `AudioManager.dispatchMediaKeyEvent`). No Home
+ * Assistant dependency — works with Spotify / YouTube Music / Play
+ * Music / Amazon Music / any app that holds audio focus.
+ *
+ * Pattern order matters: query-bearing "play <song>" variants must fire
+ * before the bare "play music" fallback, otherwise every song request
+ * collapses into a no-query resume.
+ */
 object MediaControlMatcher : FastPathMatcher {
-    private data class Pattern(val regex: Regex, val haAction: String, val spoken: String)
+    private data class Pattern(
+        val regex: Regex,
+        val action: String,
+        val spoken: String,
+        val queryGroup: Int = -1
+    )
+
+    // Generic music nouns we strip from captured queries so "音楽をかけて"
+    // routes to a no-query resume instead of searching for the word "音楽".
+    private val genericMusicNouns = setOf(
+        "music", "song", "media", "audio", "track", "some music",
+        "音楽", "曲"
+    )
+
+    // Nouns that look like they could match "<X>をかけて / play <X>" but
+    // belong to other matchers (phone calls, timers, locks, …). If the
+    // captured query contains any of these substrings, bail out of the
+    // play match so the downstream matcher can win.
+    private val reservedNonMusicSubstrings = listOf(
+        // EN
+        "timer", "alarm", "call ", "a call",
+        "the lights", "the light", "the fan", "the ac",
+        "the door", "a routine", "routine",
+        // JA
+        "電話", "通話",
+        "タイマー", "アラーム", "目覚まし",
+        "鍵", "ロック", "ドア",
+        "電気", "ライト", "明かり",
+        "エアコン", "扇風機",
+        "ルーチン"
+    )
 
     private val patterns = listOf(
-        Pattern(Regex("""(?:pause|stop)\s+(?:music|media|song|audio|track)"""), "media_pause", "Paused."),
-        Pattern(Regex("""(?:play|resume)\s+(?:music|media|song|audio)"""), "media_play", "Playing."),
-        Pattern(Regex("""(?:skip|next)\s*(?:track|song)?"""), "media_next_track", "Next."),
-        Pattern(Regex("""(?:previous|prev|last)\s*(?:track|song)"""), "media_previous_track", "Previous."),
-        Pattern(Regex("""(?:音楽|曲|再生)\s*(?:を)?\s*(?:止めて|ストップ|一時停止)"""), "media_pause", "一時停止しました。"),
-        Pattern(Regex("""(?:音楽|曲)\s*(?:を)?\s*(?:再生|かけて|流して)"""), "media_play", "再生します。"),
-        Pattern(Regex("""次\s*の\s*曲"""), "media_next_track", "次の曲を流します。"),
-        Pattern(Regex("""前\s*の\s*曲"""), "media_previous_track", "前の曲を流します。")
+        // Query-bearing play must precede the pause/next/etc. patterns
+        // because "play <anything>" would otherwise match them via substring.
+        // Verbs are limited to `play` and `put on` — `start` / `run` overlap
+        // with LaunchAppMatcher / RunRoutineMatcher (both registered later
+        // in the router order) so they stay off this list.
+        Pattern(
+            Regex("""(?:play|put\s+on)\s+(.+?)\s*[!?.]*\s*$"""),
+            "play",
+            "Playing.",
+            queryGroup = 1
+        ),
+        // Japanese: "despacitoをかけて", "ボヘミアンラプソディを流して", "XXを再生して"
+        Pattern(
+            Regex("""(.+?)\s*(?:を|って)\s*(?:再生|かけて|流して)"""),
+            "play",
+            "再生します。",
+            queryGroup = 1
+        ),
+        // Pause / stop
+        Pattern(
+            Regex("""(?:pause|stop)\s+(?:music|media|song|audio|track)"""),
+            "pause",
+            "Paused."
+        ),
+        Pattern(
+            Regex("""(?:音楽|曲|再生)\s*(?:を)?\s*(?:止めて|ストップ|一時停止)"""),
+            "pause",
+            "一時停止しました。"
+        ),
+        // Skip / next
+        Pattern(
+            Regex("""(?:skip|next)\s*(?:track|song)?"""),
+            "next",
+            "Next."
+        ),
+        Pattern(Regex("""次\s*の\s*曲"""), "next", "次の曲を流します。"),
+        // Previous
+        Pattern(
+            Regex("""(?:previous|prev|last)\s*(?:track|song)"""),
+            "previous",
+            "Previous."
+        ),
+        Pattern(Regex("""前\s*の\s*曲"""), "previous", "前の曲を流します。")
     )
 
     override fun tryMatch(normalized: String): FastPathMatch? {
         for (p in patterns) {
-            if (p.regex.containsMatchIn(normalized)) {
-                return FastPathMatch(
-                    toolName = "execute_command",
-                    arguments = mapOf("device_type" to "media_player", "action" to p.haAction),
-                    spokenConfirmation = p.spoken
-                )
+            val match = p.regex.find(normalized) ?: continue
+            val args = mutableMapOf<String, Any?>("action" to p.action)
+            if (p.queryGroup > 0 && p.action == "play") {
+                val raw = match.groupValues.getOrNull(p.queryGroup).orEmpty()
+                val cleaned = raw.trim().trimEnd('。', '.', '!', '?', 'ー').trim()
+                val lower = cleaned.lowercase()
+                // Bail out if the "query" is actually a reserved noun owned
+                // by a different matcher (phone/timer/lights/…). Returning
+                // null lets the router fall through to the correct matcher.
+                if (reservedNonMusicSubstrings.any { lower.contains(it) }) {
+                    return null
+                }
+                if (cleaned.isNotEmpty() && lower !in genericMusicNouns) {
+                    args["query"] = cleaned
+                }
             }
+            return FastPathMatch(
+                toolName = "play_music",
+                arguments = args.toMap(),
+                spokenConfirmation = p.spoken
+            )
         }
         return null
     }

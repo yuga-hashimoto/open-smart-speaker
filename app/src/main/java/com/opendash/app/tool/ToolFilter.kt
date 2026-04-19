@@ -34,6 +34,7 @@ object ToolFilter {
                 "音楽", "曲", "再生"
             ),
             tools = setOf(
+                "play_music",
                 "execute_command", "get_now_playing", "get_devices_by_type", "set_volume"
             )
         ),

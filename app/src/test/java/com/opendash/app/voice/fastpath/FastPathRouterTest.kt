@@ -235,27 +235,63 @@ class FastPathRouterTest {
     @Test
     fun `pause music fast-path`() {
         val m = router.match("pause music")
-        assertThat(m?.toolName).isEqualTo("execute_command")
-        assertThat(m?.arguments?.get("action")).isEqualTo("media_pause")
-        assertThat(m?.arguments?.get("device_type")).isEqualTo("media_player")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("pause")
+        assertThat(m?.arguments?.get("query")).isNull()
     }
 
     @Test
     fun `next track fast-path`() {
         val m = router.match("next track")
-        assertThat(m?.arguments?.get("action")).isEqualTo("media_next_track")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("next")
     }
 
     @Test
     fun `japanese pause fast-path`() {
         val m = router.match("音楽を止めて")
-        assertThat(m?.arguments?.get("action")).isEqualTo("media_pause")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("pause")
     }
 
     @Test
     fun `japanese next song`() {
         val m = router.match("次の曲")
-        assertThat(m?.arguments?.get("action")).isEqualTo("media_next_track")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("next")
+    }
+
+    @Test
+    fun `play music no query resumes`() {
+        val m = router.match("play music")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("play")
+        // "music" is a generic noun — must not leak through as a query.
+        assertThat(m?.arguments?.get("query")).isNull()
+    }
+
+    @Test
+    fun `japanese play music no query resumes`() {
+        val m = router.match("音楽をかけて")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("play")
+        assertThat(m?.arguments?.get("query")).isNull()
+    }
+
+    @Test
+    fun `play specific song captures query`() {
+        val m = router.match("play despacito")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("play")
+        assertThat(m?.arguments?.get("query")).isEqualTo("despacito")
+    }
+
+    @Test
+    fun `japanese play specific song captures query`() {
+        val m = router.match("ボヘミアンラプソディを流して")
+        assertThat(m?.toolName).isEqualTo("play_music")
+        assertThat(m?.arguments?.get("action")).isEqualTo("play")
+        assertThat(m?.arguments?.get("query")).isEqualTo("ボヘミアンラプソディ")
     }
 
     @Test

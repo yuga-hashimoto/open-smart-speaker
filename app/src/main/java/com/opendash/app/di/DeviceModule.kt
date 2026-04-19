@@ -529,6 +529,7 @@ object DeviceModule {
             ),
             OpenSettingsToolExecutor(context),
             OpenUrlToolExecutor(context),
+            com.opendash.app.tool.system.NativeMediaPlayerToolExecutor(context),
             com.opendash.app.tool.system.LocaleToolExecutor(localeManager),
             com.opendash.app.tool.system.LockScreenToolExecutor(context),
             com.opendash.app.tool.system.BroadcastTtsToolExecutor(announcementBroadcaster),
