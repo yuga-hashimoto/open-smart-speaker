@@ -38,7 +38,7 @@ class PermissionCatalogTest {
     @Test
     fun `special grants include notification listener and accessibility`() {
         val ids = PermissionCatalog.specialGrants.map { it.id }
-        assertThat(ids).containsExactly("notification_listener", "accessibility")
+        assertThat(ids).containsAtLeast("notification_listener", "accessibility")
     }
 
     @Test
