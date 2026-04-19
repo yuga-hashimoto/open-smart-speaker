@@ -82,7 +82,7 @@ fun ChatScreen(
 
         if (messages.isEmpty() && state is ConversationState.Idle) {
             Text(
-                text = "Say \"Hey Speaker\" or tap the mic to start talking.",
+                text = "Say \"Dash\" or tap the mic to start talking.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodyMedium

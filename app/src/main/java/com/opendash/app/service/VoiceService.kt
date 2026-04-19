@@ -266,7 +266,7 @@ class VoiceService : Service() {
             val downloader = VoskModelDownloader(this)
             if (!downloader.isModelDownloaded()) return
 
-            val savedWakeWord = preferences.observe(PreferenceKeys.WAKE_WORD).first() ?: "hey speaker"
+            val savedWakeWord = preferences.observe(PreferenceKeys.WAKE_WORD).first() ?: "dash"
             val savedSensitivity = preferences.observe(PreferenceKeys.WAKE_WORD_SENSITIVITY).first() ?: 0.6f
             val config = WakeWordConfig(keyword = savedWakeWord, sensitivity = savedSensitivity)
 

@@ -622,7 +622,7 @@ class VoicePipeline(
 
     /**
      * Re-arm the wake-word detector during TTS playback so users can say
-     * "hey speaker" to interrupt a reply (barge-in). VoiceService handles the
+     * "dash" to interrupt a reply (barge-in). VoiceService handles the
      * actual detector lifecycle: ACTION_RESUME_HOTWORD flips isSessionActive
      * back to false and re-starts the Vosk detector on a 500ms delay. When
      * the detector fires mid-speech, its callback calls

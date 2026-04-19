@@ -167,7 +167,8 @@ fun ModeScaffold(
         // it on the trailing side in RTL layouts automatically, mirroring
         // the locale. Idle alpha is slightly dimmed so the FAB reads as a
         // secondary affordance; the breathing animation + glow ring bring
-        // it back to full presence once listening starts.
+        // it back to full presence once listening starts. Wake word for
+        // hands-free invocation is "dash" (configurable in Settings).
         MicFab(
             isListening = voiceState is VoicePipelineState.Listening,
             onClick = { viewModel.startVoiceInput() },

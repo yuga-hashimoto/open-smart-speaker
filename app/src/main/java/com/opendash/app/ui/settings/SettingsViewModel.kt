@@ -50,7 +50,7 @@ class SettingsViewModel @Inject constructor(
     val mqttBrokerUrl: StateFlow<String> = _mqttBrokerUrl.asStateFlow()
 
     // Wake word
-    private val _wakeWord = MutableStateFlow("hey speaker")
+    private val _wakeWord = MutableStateFlow("dash")
     val wakeWord: StateFlow<String> = _wakeWord.asStateFlow()
 
     private val _wakeWordSensitivity = MutableStateFlow(0.6f)
@@ -168,7 +168,7 @@ class SettingsViewModel @Inject constructor(
         _switchBotToken.value = securePreferences.getString(SecurePreferences.KEY_SWITCHBOT_TOKEN)
         _multiroomSecret.value = securePreferences.getString(SecurePreferences.KEY_MULTIROOM_SECRET)
         viewModelScope.launch { preferences.observe(PreferenceKeys.MQTT_BROKER_URL).collect { _mqttBrokerUrl.value = it ?: "" } }
-        viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD).collect { _wakeWord.value = it ?: "hey speaker" } }
+        viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD).collect { _wakeWord.value = it ?: "dash" } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.WAKE_WORD_SENSITIVITY).collect { _wakeWordSensitivity.value = it ?: 0.6f } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.BATTERY_SAVER_ENABLED).collect { _batterySaverEnabled.value = it ?: false } }
         viewModelScope.launch { preferences.observe(PreferenceKeys.MULTIROOM_BROADCAST_ENABLED).collect { _multiroomBroadcastEnabled.value = it ?: false } }

@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
  *
  * Examples:
  *   key="user.name" value="John"
- *   key="preference.wake_word" value="hey speaker"
+ *   key="preference.wake_word" value="dash"
  *   key="fact.birthday.wife" value="May 3rd"
  */
 @Entity(tableName = "memory")
