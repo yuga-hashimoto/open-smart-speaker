@@ -188,16 +188,23 @@ object TimeQueryMatcher : FastPathMatcher {
     }
 }
 
-/** "volume up", "louder", "音量上げて", "mute" */
+/** "volume up", "louder", "音量上げて", "音量1下げて", "mute" */
 object VolumeMatcher : FastPathMatcher {
     private val upPatterns = listOf(
         Regex("""(?:volume\s+up|louder|turn\s+(?:it\s+)?up)"""),
-        Regex("""音量\s*(?:を\s*)?(?:上げて|大きく)""")
+        Regex("""音量\s*(?:を\s*)?(?:少し\s*|ちょっと\s*)?(?:上げて|大きく)""")
     )
     private val downPatterns = listOf(
         Regex("""(?:volume\s+down|quieter|turn\s+(?:it\s+)?down)"""),
-        Regex("""音量\s*(?:を\s*)?(?:下げて|小さく)""")
+        Regex("""音量\s*(?:を\s*)?(?:少し\s*|ちょっと\s*)?(?:下げて|小さく)""")
     )
+    // "音量1下げて", "音量を3上げて", "音量2段下げて" etc.
+    // Captured number is interpreted as hardware volume steps for adjust_volume.
+    // Must sit before SettingsMatcher's permissive "音量" rule — see FastPathRouter.
+    private val japaneseStepUpPattern =
+        Regex("""音量\s*(?:を\s*)?(\d+)\s*(?:つ|段|だん|ステップ|ノッチ|回)?\s*(?:ほど|くらい|ぐらい)?\s*(?:上げて|大きく)""")
+    private val japaneseStepDownPattern =
+        Regex("""音量\s*(?:を\s*)?(\d+)\s*(?:つ|段|だん|ステップ|ノッチ|回)?\s*(?:ほど|くらい|ぐらい)?\s*(?:下げて|小さく)""")
     private val mutePatterns = listOf(
         Regex("""^\s*mute\s*[!?.]*\s*$"""),
         Regex("""(?:be\s+)?(?:quiet|silent)"""),
@@ -221,10 +228,27 @@ object VolumeMatcher : FastPathMatcher {
         if (unmutePatterns.any { it.containsMatchIn(normalized) }) {
             return FastPathMatch(toolName = "set_volume", arguments = mapOf("level" to 50.0), spokenConfirmation = "Unmuted.")
         }
-        // Relative nudge via adjust_volume: 1 hardware step, no system volume
-        // overlay (set_volume used to jump to a fixed 70/30 and flash
+        // Relative nudge via adjust_volume: default 1 hardware step; Japanese
+        // utterances may include an explicit step count ("音量3下げて"). No system
+        // volume overlay (set_volume used to jump to a fixed 70/30 and flash
         // FLAG_SHOW_UI, which surprised users). Stolen from Ava's
         // VolumeControlService.
+        japaneseStepUpPattern.find(normalized)?.let {
+            val steps = it.groupValues[1].toInt().coerceIn(1, 20)
+            return FastPathMatch(
+                toolName = "adjust_volume",
+                arguments = mapOf("steps" to steps.toDouble()),
+                spokenConfirmation = "Volume up."
+            )
+        }
+        japaneseStepDownPattern.find(normalized)?.let {
+            val steps = it.groupValues[1].toInt().coerceIn(1, 20)
+            return FastPathMatch(
+                toolName = "adjust_volume",
+                arguments = mapOf("steps" to -steps.toDouble()),
+                spokenConfirmation = "Volume down."
+            )
+        }
         if (upPatterns.any { it.containsMatchIn(normalized) }) {
             return FastPathMatch(
                 toolName = "adjust_volume",

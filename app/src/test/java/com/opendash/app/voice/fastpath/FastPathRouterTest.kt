@@ -75,6 +75,37 @@ class FastPathRouterTest {
     }
 
     @Test
+    fun `japanese volume down with explicit step count routes to adjust_volume`() {
+        // Regression: "音量1下げて" used to fall through VolumeMatcher and be
+        // captured by SettingsMatcher's permissive "音量" rule, which opened the
+        // sound settings screen instead of nudging the volume.
+        val m = router.match("音量1下げて")
+        assertThat(m?.toolName).isEqualTo("adjust_volume")
+        assertThat(m?.arguments?.get("steps")).isEqualTo(-1.0)
+    }
+
+    @Test
+    fun `japanese volume up with step count and particle routes to adjust_volume`() {
+        val m = router.match("音量を3上げて")
+        assertThat(m?.toolName).isEqualTo("adjust_volume")
+        assertThat(m?.arguments?.get("steps")).isEqualTo(3.0)
+    }
+
+    @Test
+    fun `japanese volume down with step counter suffix routes to adjust_volume`() {
+        val m = router.match("音量2段下げて")
+        assertThat(m?.toolName).isEqualTo("adjust_volume")
+        assertThat(m?.arguments?.get("steps")).isEqualTo(-2.0)
+    }
+
+    @Test
+    fun `japanese volume down with soft qualifier routes to adjust_volume`() {
+        val m = router.match("音量を少し下げて")
+        assertThat(m?.toolName).isEqualTo("adjust_volume")
+        assertThat(m?.arguments?.get("steps")).isEqualTo(-1.0)
+    }
+
+    @Test
     fun `set volume to 50`() {
         val m = router.match("set volume to 50")
         assertThat(m?.toolName).isEqualTo("set_volume")
