@@ -51,21 +51,96 @@ class NewsToolExecutorTest {
     }
 
     @Test
-    fun `get_news without source or url returns error`() = runTest {
+    fun `get_news without source or url falls back to NHK general`() = runTest {
+        var capturedUrl: String? = null
+        coEvery { provider.getHeadlines(any(), any()) } coAnswers {
+            capturedUrl = firstArg()
+            emptyList()
+        }
+
         val result = executor.execute(
             ToolCall("3", "get_news", emptyMap())
         )
 
-        assertThat(result.success).isFalse()
+        assertThat(result.success).isTrue()
+        assertThat(capturedUrl).isEqualTo(BundledNewsFeeds.NHK_GENERAL.url)
     }
 
     @Test
-    fun `get_news with unknown source returns error`() = runTest {
+    fun `get_news with unknown source falls back to NHK general`() = runTest {
+        var capturedUrl: String? = null
+        coEvery { provider.getHeadlines(any(), any()) } coAnswers {
+            capturedUrl = firstArg()
+            emptyList()
+        }
+
         val result = executor.execute(
             ToolCall("4", "get_news", mapOf("source" to "nonexistent"))
         )
 
-        assertThat(result.success).isFalse()
+        assertThat(result.success).isTrue()
+        assertThat(capturedUrl).isEqualTo(BundledNewsFeeds.NHK_GENERAL.url)
+    }
+
+    @Test
+    fun `get_news uses user-configured default feed when no args provided`() = runTest {
+        val userFeed = "https://example.com/user-default.rss"
+        val executorWithUserDefault = NewsToolExecutor(
+            provider,
+            defaultFeedUrlProvider = { userFeed }
+        )
+        var capturedUrl: String? = null
+        coEvery { provider.getHeadlines(any(), any()) } coAnswers {
+            capturedUrl = firstArg()
+            emptyList()
+        }
+
+        val result = executorWithUserDefault.execute(
+            ToolCall("6", "get_news", emptyMap())
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(capturedUrl).isEqualTo(userFeed)
+    }
+
+    @Test
+    fun `get_news user-configured default is ignored when explicit feed_url is given`() = runTest {
+        val userFeed = "https://example.com/user-default.rss"
+        val executorWithUserDefault = NewsToolExecutor(
+            provider,
+            defaultFeedUrlProvider = { userFeed }
+        )
+        var capturedUrl: String? = null
+        coEvery { provider.getHeadlines(any(), any()) } coAnswers {
+            capturedUrl = firstArg()
+            emptyList()
+        }
+
+        executorWithUserDefault.execute(
+            ToolCall("7", "get_news", mapOf("feed_url" to "https://explicit.example/rss"))
+        )
+
+        assertThat(capturedUrl).isEqualTo("https://explicit.example/rss")
+    }
+
+    @Test
+    fun `get_news falls back to NHK when user-configured default is blank`() = runTest {
+        val executorWithBlankDefault = NewsToolExecutor(
+            provider,
+            defaultFeedUrlProvider = { "   " }
+        )
+        var capturedUrl: String? = null
+        coEvery { provider.getHeadlines(any(), any()) } coAnswers {
+            capturedUrl = firstArg()
+            emptyList()
+        }
+
+        val result = executorWithBlankDefault.execute(
+            ToolCall("8", "get_news", emptyMap())
+        )
+
+        assertThat(result.success).isTrue()
+        assertThat(capturedUrl).isEqualTo(BundledNewsFeeds.NHK_GENERAL.url)
     }
 
     @Test

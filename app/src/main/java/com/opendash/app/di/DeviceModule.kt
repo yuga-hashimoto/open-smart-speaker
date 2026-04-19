@@ -51,6 +51,7 @@ import com.opendash.app.tool.accessibility.ScreenToolExecutor
 import com.opendash.app.data.db.DocumentChunkDao
 import com.opendash.app.data.db.ToolUsageDao
 import com.opendash.app.data.preferences.AppPreferences
+import kotlinx.coroutines.flow.first
 import com.opendash.app.tool.analytics.PersistentToolUsageStats
 import com.opendash.app.tool.analytics.ToolUsageRecorder
 import com.opendash.app.data.db.MemoryDao
@@ -506,7 +507,14 @@ object DeviceModule {
             RandomToolExecutor(),
             CurrencyToolExecutor(),
             NewsToolExecutor(
-                RssNewsProvider(client)
+                RssNewsProvider(client),
+                defaultFeedUrlProvider = {
+                    runCatching {
+                        appPreferences.observe(
+                            com.opendash.app.data.preferences.PreferenceKeys.DEFAULT_NEWS_FEED_URL
+                        ).first()
+                    }.getOrNull()
+                }
             ),
             KnowledgeToolExecutor(InMemoryKnowledgeStore()),
             NotificationToolExecutor(notificationProvider),
