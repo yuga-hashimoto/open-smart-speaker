@@ -13,16 +13,13 @@ import com.opendash.app.voice.pipeline.VoicePipeline
 import com.opendash.app.voice.stt.AndroidSttProvider
 import com.opendash.app.voice.stt.DelegatingSttProvider
 import com.opendash.app.voice.stt.SpeechToText
-import com.opendash.app.data.preferences.SecurePreferences
 import com.opendash.app.voice.tts.TextToSpeech
-import com.opendash.app.voice.tts.TtsManager
 import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
 import javax.inject.Singleton
 
 @Module
@@ -39,14 +36,8 @@ object VoiceModule {
         android = AndroidSttProvider(context)
     )
 
-    @Provides
-    @Singleton
-    fun provideTextToSpeech(
-        @ApplicationContext context: Context,
-        preferences: AppPreferences,
-        securePreferences: SecurePreferences,
-        httpClient: OkHttpClient
-    ): TextToSpeech = TtsManager(context, preferences, securePreferences, httpClient)
+    // provideTextToSpeech moved to TtsModule so @TestInstallIn can swap the
+    // TTS implementation independently of the rest of the voice graph.
 
     @Provides
     @Singleton

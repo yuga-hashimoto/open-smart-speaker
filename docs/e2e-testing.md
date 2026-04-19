@@ -62,6 +62,17 @@ keep L4 manual. Specifically:
 | `e2e/AppLaunchE2ETest.kt` | Cold-launches `MainActivity` via UiAutomator, asserts a known landing-screen text appears. |
 | `e2e/FastPathRouterE2ETest.kt` | Sanity-checks `DefaultFastPathRouter` matches `set_timer` (EN+JA), `help` (speak-only), and lets ambiguous queries fall through to the LLM. |
 | `e2e/HiltInjectionE2ETest.kt` | Demonstrates the `@HiltAndroidTest` pipeline by round-tripping a value through the real `AppPreferences` `DataStore`. |
+| `e2e/VoicePipelineFastPathE2ETest.kt` | Drives the **real** `VoicePipeline.processUserInput(text)` through FastPathRouter → ToolExecutor → TimerManager → TTS confirmation, asserting EN+JA `set_timer` utterances both speak the right confirmation and create the right alarm. Uses `fakes/FakeTextToSpeech` swapped via `FakeTtsTestModule`. |
+
+### Swapping providers via `@TestInstallIn`
+
+Each provider boundary that we want to swap lives in its own Hilt module so a `@TestInstallIn(replaces = [<Module>::class])` can stub it out without touching the rest of the graph. Today:
+
+| Boundary | Production module | Test module |
+|---|---|---|
+| `TextToSpeech` | `di/TtsModule.kt` → `TtsManager` | `e2e/fakes/FakeTtsTestModule.kt` → `FakeTextToSpeech` |
+
+Future swaps (planned: `SpeechToText`, `AssistantProvider`, `WakeWordDetector`) follow the same pattern — extract the binding into its own module under `di/`, then add a `@TestInstallIn` test module under `androidTest/.../e2e/fakes/`. Keep production modules narrow so swapping one doesn't drag others.
 
 Together these prove the four pieces of L3 plumbing work:
 
