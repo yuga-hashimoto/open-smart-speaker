@@ -28,6 +28,8 @@ turbine = "1.2.0"
 truth = "1.4.4"
 espresso = "3.6.1"
 test-runner = "1.6.2"
+test-ext-junit = "1.2.1"
+uiautomator = "2.3.0"
 
 [libraries]
 # Compose
@@ -98,6 +100,9 @@ truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 test-runner = { group = "androidx.test", name = "runner", version.ref = "test-runner" }
+test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "test-ext-junit" }
+test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
