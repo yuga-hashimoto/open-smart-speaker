@@ -36,6 +36,7 @@ object FastPathResultFormatter {
             "get_forecast" -> formatForecast(data, japanese) ?: FALLBACK
             "web_search" -> formatWebSearch(data, japanese) ?: FALLBACK
             "get_news" -> formatNews(data, japanese) ?: FALLBACK
+            "get_location" -> formatLocation(data, japanese) ?: FALLBACK
             else -> FALLBACK
         }
     }
@@ -372,6 +373,60 @@ object FastPathResultFormatter {
             }
         }.trim()
     }
+
+    // --- Location ---
+
+    /**
+     * Speak the device's coordinates back to the user. Without a reverse
+     * geocoder we can't resolve a city name, so the fast path reads the
+     * rounded latitude/longitude and (when present) the accuracy radius.
+     * Returns `null` when the payload is missing both coordinates so the
+     * caller falls back to "Done." instead of speaking a malformed sentence.
+     */
+    private fun formatLocation(data: String, japanese: Boolean): String? {
+        if (data.isBlank()) return null
+        val lat = numberField(data, "latitude") ?: return null
+        val lon = numberField(data, "longitude") ?: return null
+        val accuracy = numberField(data, "accuracy_m")
+        val latStr = formatCoord(lat)
+        val lonStr = formatCoord(lon)
+        return if (japanese) {
+            buildString {
+                append("現在地は、緯度")
+                append(latStr)
+                append("、経度")
+                append(lonStr)
+                append("です。")
+                if (accuracy != null) {
+                    append("精度は約")
+                    append(formatInt(accuracy))
+                    append("メートルです。")
+                }
+            }
+        } else {
+            buildString {
+                append("You're at latitude ")
+                append(latStr)
+                append(", longitude ")
+                append(lonStr)
+                append(".")
+                if (accuracy != null) {
+                    append(" Accuracy is about ")
+                    append(formatInt(accuracy))
+                    append(" meters.")
+                }
+            }
+        }
+    }
+
+    /**
+     * Round a lat/lon to two decimals (e.g., 35.6812 → "35.68"). Pinned to
+     * [java.util.Locale.US] so locales that use a comma as the decimal
+     * separator (de-DE, fr-FR, ...) don't produce `"35,68"` which TTS then
+     * reads as "thirty-five, sixty-eight".
+     */
+    private fun formatCoord(value: Double): String =
+        "%.2f".format(java.util.Locale.US, value)
 
     // --- News ---
 

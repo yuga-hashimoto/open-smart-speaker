@@ -125,6 +125,13 @@ class VoicePipelineConversationContextTest {
             error = null
         )
 
+        // Force the fast-path polisher down the regex-formatter fallback path
+        // so the turn-1 assistant reply is the deterministic top-result
+        // sentence (LINEレンジャー...) rather than whatever the mocked LLM
+        // would hallucinate. Under the current policy web_search IS polished,
+        // so we can't just rely on provider.send not being reached.
+        coEvery { polisher.polish(any(), eq("web_search"), any(), any(), any()) } returns null
+
         // Capture the exact message list passed to provider.send on turn 2.
         val messagesSlot = slot<List<AssistantMessage>>()
         coEvery {

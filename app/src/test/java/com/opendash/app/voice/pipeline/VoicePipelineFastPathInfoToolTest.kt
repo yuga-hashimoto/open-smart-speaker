@@ -207,11 +207,13 @@ class VoicePipelineFastPathInfoToolTest {
     }
 
     @Test
-    fun `web_search fast-path skips LLM polisher and speaks top result directly`() = runTest {
-        // Bug A: FastPathLlmPolisher (PR #362) routinely causes Gemma 2B
-        // to refuse ("提供された情報だけでは…") when handed a SERP snippet.
-        // Speaking the regex formatter's top-result sentence is strictly
-        // more useful than an LLM-hallucinated refusal.
+    fun `web_search fast-path polishes when LLM available, falls back to regex on null`() = runTest {
+        // Historically web_search bypassed the polisher (Gemma 2B refused on
+        // SERP snippets). After Gemma 4 E2B landed, VoicePipeline.kt now
+        // polishes web_search too — see the "Polish every info tool" comment
+        // around tryHandleFastPath. This test pins the current contract: the
+        // polisher IS invoked, and when it returns null (failure / refusal),
+        // the regex formatter's top-result sentence is spoken as a fallback.
         every { fastPathRouter.match(any()) } returns FastPathMatch(
             toolName = "web_search",
             arguments = mapOf("query" to "LINEレンジャー"),
@@ -225,6 +227,8 @@ class VoicePipelineFastPathInfoToolTest {
                 """]}""",
             error = null
         )
+        // Simulate polisher refusing / timing out so the regex fallback runs.
+        coEvery { polisher.polish(any(), eq("web_search"), any(), any(), any()) } returns null
 
         val spoken = slot<String>()
         coEvery { tts.speak(capture(spoken)) } returns Unit
@@ -233,9 +237,10 @@ class VoicePipelineFastPathInfoToolTest {
         pipeline.processUserInput("LINE レンジャー を Web で検索して")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Polisher MUST NOT be invoked for web_search.
-        coVerify(exactly = 0) { polisher.polish(any(), eq("web_search"), any(), any(), any()) }
-        // Regex formatter output: top title + snippet should be audible.
+        // Polisher IS invoked for web_search under the new policy.
+        coVerify { polisher.polish(any(), eq("web_search"), any(), any(), any()) }
+        // When polish returns null we fall back to the regex formatter's
+        // top-result sentence — top title + snippet should be audible.
         assertThat(spoken.captured).contains("LINEレンジャー 公式サイト")
         assertThat(spoken.captured).contains("人気のパズルRPG")
     }

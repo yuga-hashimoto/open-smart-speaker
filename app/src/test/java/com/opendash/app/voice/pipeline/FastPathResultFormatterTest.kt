@@ -255,4 +255,60 @@ class FastPathResultFormatterTest {
         val summary = FastPathResultFormatter.buildPolishSummary("get_weather", "", "en-US")
         assertThat(summary).isEmpty()
     }
+
+    // --- get_location ---
+    //
+    // Regression: "現在地教えて" used to speak "Done." because get_location
+    // was unhandled and fell through to the FALLBACK branch. The matcher
+    // does fire (LocationMatcher → toolName=get_location), so the fix
+    // belongs here in the formatter, not in the router.
+
+    @Test
+    fun `location json is spoken in japanese for ja locale`() {
+        val json =
+            """{"latitude":35.6812,"longitude":139.7671,"accuracy_m":12.0,""" +
+                """"timestamp_ms":1713510000000,"provider":"network"}"""
+        val spoken = FastPathResultFormatter.format("get_location", json, ttsLanguageTag = "ja-JP")
+        assertThat(spoken).isNotEqualTo("Done.")
+        assertThat(spoken).contains("現在地")
+        assertThat(spoken).contains("35.68")
+        assertThat(spoken).contains("139.77")
+        assertThat(spoken).contains("12")
+    }
+
+    @Test
+    fun `location json is spoken in english by default`() {
+        val json = """{"latitude":-37.8136,"longitude":144.9631,"accuracy_m":8.0}"""
+        val spoken = FastPathResultFormatter.format("get_location", json, ttsLanguageTag = null)
+        assertThat(spoken).isNotEqualTo("Done.")
+        assertThat(spoken.lowercase()).contains("latitude")
+        assertThat(spoken).contains("-37.81")
+        assertThat(spoken).contains("144.96")
+        assertThat(spoken).contains("8")
+    }
+
+    @Test
+    fun `location with missing accuracy still renders a sentence`() {
+        val json = """{"latitude":35.68,"longitude":139.77}"""
+        val spoken = FastPathResultFormatter.format("get_location", json, ttsLanguageTag = "ja-JP")
+        assertThat(spoken).contains("35.68")
+        assertThat(spoken).contains("139.77")
+        assertThat(spoken).doesNotContain("精度")
+    }
+
+    @Test
+    fun `location with blank data falls back to Done`() {
+        val spoken = FastPathResultFormatter.format("get_location", "", ttsLanguageTag = "ja-JP")
+        assertThat(spoken).isEqualTo("Done.")
+    }
+
+    @Test
+    fun `location with missing coordinates falls back to Done`() {
+        val spoken = FastPathResultFormatter.format(
+            "get_location",
+            """{"provider":"network"}""",
+            ttsLanguageTag = "en-US"
+        )
+        assertThat(spoken).isEqualTo("Done.")
+    }
 }
