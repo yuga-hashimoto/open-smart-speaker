@@ -29,19 +29,75 @@ OpenDash is all three at once, on a single Android tablet you already own.
 
 ### Smart-home device ("Alexa feel")
 - Custom wake word (Vosk) with always-on foreground service
-- Sub-200ms fast-path for 30+ common intents: lights, volume, timers, alarms,
-  weather, forecast, calendar, notifications, location, find-device, briefings,
-  routines, app launch (fuzzy), media control (play/pause/skip/volume/shuffle/
-  repeat/source), presence (`"I'm home"` / `"I'm leaving"`), goodnight, device
-  health, battery, lock screen, open URL, Settings deep-links, peer listing,
-  broadcast TTS / timer / announcement / cancel-timer, session handoff — full
-  catalog in [docs/fast-paths.md](docs/fast-paths.md)
+- Sub-200ms fast-path for 40+ common intents (see full catalog below) — lights,
+  volume, timers, alarms, weather, forecast, calendar, notifications, location,
+  find-device, briefings, routines, app launch (fuzzy), media control, presence
+  (`"I'm home"` / `"I'm leaving"`), goodnight, device health, battery, lock
+  screen, open URL, Settings deep-links, multi-room broadcast + handoff
 - Voice-first UI: breathing `VoiceOrb` shows pipeline state (listening / thinking /
   speaking) with audio-level reactive scaling
 - Error recovery copy: `"I didn't catch that. Try again?"` not `"list index out of range"`
 - Filler phrases ("Got it", "One moment") while the LLM is working
 - Audio focus handling, barge-in, continuous conversation mode
 - Battery-saver + thermal-throttle aware; model-download resume over flaky Wi-Fi
+
+<details>
+<summary><strong>Fast-path catalog (click to expand — 40+ matchers)</strong></summary>
+
+Utterances handled directly by [`FastPathRouter`](app/src/main/java/com/opendash/app/voice/fastpath/FastPathRouter.kt) without round-tripping through the LLM (<200ms target). All matchers are EN + JA aware. Ordering in `DEFAULT_MATCHERS` is significant.
+
+| Matcher | Sample utterances | Tool |
+|---|---|---|
+| `BroadcastCancelTimerMatcher` | "cancel timers on all speakers", "全スピーカーのタイマーをキャンセル" | `broadcast_cancel_timer` |
+| `CancelAllTimersMatcher` | "cancel all timers", "タイマー全部止めて" | `cancel_all_timers` |
+| `BroadcastTimerMatcher` | "set a 5 minute timer on all speakers", "全スピーカーで5分タイマー" | `broadcast_timer` |
+| `TimerMatcher` | "set timer for 5 minutes", "5分タイマー" | `set_timer` |
+| `AlarmMatcher` | "wake me up at 6:30", "7時にアラーム" | `set_timer` (wall-clock) |
+| `TimeQueryMatcher` | "what time is it", "今何時" | `get_datetime` |
+| `VolumeMatcher` | "volume up/down", "set volume to 50", "mute", "ミュート" | `set_volume` |
+| `ThermostatMatcher` | "set thermostat to 22", "エアコン25度" | `execute_command` climate |
+| `FanMatcher` | "fan on/off", "扇風機を消して" | `execute_command` fan |
+| `TvMatcher` | "TV on/off", "テレビをつけて" | `execute_command` media_player |
+| `LockMatcher` | "lock/unlock the door", "ドアをロック" | `execute_command` lock |
+| `CoverMatcher` | "open the blinds", "カーテンを開けて" | `execute_command` cover |
+| `EverythingOffMatcher` | "turn off everything", "全部消して" | `execute_command` light off |
+| `LightsMatcher` | "lights on", "dim the lights", "明るさ80%", "bedroom lights off" | `execute_command` light |
+| `MediaControlMatcher` | "pause music", "next track", "再生して" | `execute_command` media_player |
+| `RunRoutineMatcher` | "run X routine", "Xルーチンを実行" | `run_routine` |
+| `SettingsMatcher` | "open wifi settings", "Wi-Fiの設定", "アクセシビリティ" | `open_settings_page` |
+| `OpenUrlMatcher` | "open https://example.com", "go to github.com" | `open_url` |
+| `LaunchAppMatcher` | "open camera", "Chromeを開いて", "天気アプリ開いて" | `launch_app` |
+| `FindDeviceMatcher` | "find my tablet", "デバイスを探して" | `find_device` |
+| `GoodnightMatcher` | "goodnight", "おやすみ" | `goodnight` (composite) |
+| `ArriveHomeMatcher` | "I'm home", "ただいま" | `arrive_home` (composite) |
+| `LeaveHomeMatcher` | "I'm leaving", "行ってきます" | `leave_home` (composite) |
+| `MorningBriefingMatcher` | "morning briefing", "朝のサマリー" | `morning_briefing` |
+| `EveningBriefingMatcher` | "evening briefing", "夜のサマリー" | `evening_briefing` |
+| `ForecastMatcher` | "weather tomorrow", "明日の天気" | `get_forecast` |
+| `WeatherMatcher` | "what's the weather", "今日の天気" | `get_weather` |
+| `NewsMatcher` | "news", "ニュース" | `get_news` |
+| `CalendarMatcher` | "what's on my calendar today", "今日の予定" | `get_calendar_events` |
+| `ClearNotificationsMatcher` | "clear notifications", "通知を消して" | `clear_notifications` |
+| `ListNotificationsMatcher` | "show notifications", "通知一覧" | `list_notifications` |
+| `LocationMatcher` | "where am I", "現在地を教えて" | `get_location` |
+| `ListMemoryMatcher` | "what do you remember", "覚えていること" | `list_memory` |
+| `ListDevicesMatcher` | "list my devices", "デバイス一覧" | `get_devices_by_type` |
+| `ListTimersMatcher` | "list timers", "タイマー一覧" | `get_timers` |
+| `DeviceHealthMatcher` | "system status", "storage space", "システム状態", "ストレージ残量" | `get_device_health` |
+| `BatteryMatcher` | "battery level", "バッテリー残量" | BatteryMonitor (speak-only) |
+| `LockScreenMatcher` | "lock the tablet", "画面をロック" | `lock_screen` |
+| `ListPeersMatcher` | "list nearby speakers", "近くのスピーカー" | `list_peers` |
+| `BroadcastGroupMatcher` | "broadcast X to kitchen", "キッチンに X ってアナウンス" | `broadcast_tts` (group) |
+| `BroadcastTtsMatcher` | "tell all speakers X", "全スピーカーにアナウンス：X" | `broadcast_tts` |
+| `HandoffMatcher` | "move this to the kitchen speaker", "キッチンにハンドオフ" | `handoff_session` |
+| `FlipCoinMatcher` | "flip a coin", "コインを投げて" | `flip_coin` |
+| `DatetimeMatcher` | "what's today's date", "今日は何日" | `get_datetime` |
+| `GreetingMatcher` | "thanks", "ありがとう", "おはよう" | speak-only |
+| `HelpMatcher` | "help", "what can you do", "できることを教えて" | speak-only |
+
+Full notes with precedence rules in [docs/fast-paths.md](docs/fast-paths.md).
+
+</details>
 
 ### Local AI agent ("OpenClaw feel")
 - On-device LLM via **LiteRT-LM** (Gemma 3n / 4 family) with GPU→CPU fallback and
@@ -51,7 +107,52 @@ OpenDash is all three at once, on a single Android tablet you already own.
 - Context compaction keeps long conversations coherent
 - Device state auto-injected into every prompt (`<device_state>`)
 - **Skills system** — drop a `SKILL.md` into `assets/skills/<name>/` or install one
-  at runtime via `install_skill_from_url` (OpenClaw-style)
+  at runtime via `install_skill_from_url` (OpenClaw-style). 36 bundled skills:
+
+  <details>
+  <summary><strong>Bundled skills catalog (click to expand)</strong></summary>
+
+  | Skill | Purpose |
+  |---|---|
+  | `arrival-home` | Warm welcome on arrival — entry lights, next event, urgent notifications |
+  | `bedtime-for-kids` | Family wind-down — broadcast warning, dim lights, pause media, cool-down timer |
+  | `bedtime-routine` | Evening wind-down — pause media, dim lights, set alarm, summary |
+  | `breathing-exercise` | 4-7-8 breathing guide — four voice-cued cycles |
+  | `cooking-assistant` | Recipes, steps, unit conversions, kitchen timers |
+  | `cooking-session` | Multi-timer cooking — labeled parallel timers + "dinner is ready" broadcast |
+  | `dinner-call` | Broadcast TTS to every speaker + pinned banner |
+  | `dog-walk` | Weather cue, 30-min backstop timer, welcome-home prompt |
+  | `eye-break` | 20-20-20 screen-break reminder |
+  | `focus-mode` | Deep work — quiet alerts, steady light, optional Pomodoro |
+  | `gratitude-journal` | Nightly 3-item gratitude prompt stored via `remember` |
+  | `guest-mode` | Relax the agent for visitors — silence wake-word + personal data |
+  | `home-control` | Smart-home control via HA and other providers |
+  | `hydration-reminder` | Low-friction hourly water nudge |
+  | `leaving-home` | Send-off — lights out, battery reminder, weather preview |
+  | `meditation` | Quiet session — dim warm light, silence notifications, optional bell |
+  | `morning-routine` | Wake-up flow — briefing, lights, ambient music, schedule |
+  | `movie-night` | Dim lights, pause notifications, queue media |
+  | `news-briefing` | Daily news + weather briefing |
+  | `party-mode` | Colourful lights, music, volume up, multi-speaker announcements |
+  | `pomodoro` | 25/5 cycles with 15-min rest every fourth block |
+  | `power-nap` | 20-min nap — dim to 20%, short timer, gentle wake |
+  | `quick-note` | Rapid voice-note capture into `notes` memory namespace |
+  | `quiet-hours` | Night-time noise cap — low TTS, skip broadcasts |
+  | `rainy-day` | Forecast-driven cozy indoor plan suggestion |
+  | `reading-time` | Warm light, silence everything else, optional timer |
+  | `remind-me-tomorrow` | Dated memory entry surfaced in morning-briefing |
+  | `sick-day` | Rest mode — dim lights, low volume, hydration every 2h |
+  | `stretch-break` | 5-min guided stretch routine |
+  | `study-mode` | Quiet study — dim lights, silence, optional Pomodoro |
+  | `task-manager` | Capture/recall to-do items via long-term memory |
+  | `travel-mode` | Trip mode — all lights off, cancel timers, goodbye broadcast |
+  | `voice-assistant` | General voice interaction rules (loaded every turn) |
+  | `wake-up-gently` | Sunrise-style 10-min light ramp + briefing |
+  | `where-did-i-put-it` | Search memory for prior "I put X in Y" statements |
+  | `workout` | Bright lights, upbeat music, interval timers |
+
+  </details>
+
 - **50+ built-in LLM tools**:
   - System: timer, volume, app launcher, datetime, notifications, calendar,
     contacts, SMS, camera, photos, screen record, device health, location,
